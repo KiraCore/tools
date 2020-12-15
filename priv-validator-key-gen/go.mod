@@ -1,4 +1,4 @@
-module github.com/KiraCore/tools/priv_validator_key
+module github.com/KiraCore/tools/priv-validator-key-gen
 
 go 1.15
 
