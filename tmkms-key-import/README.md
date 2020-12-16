@@ -7,9 +7,13 @@ apt-get install -y python python3 python3-pip
 
 pip3 install ECPy
 
+cd $HOME
+
 git clone https://github.com/KiraCore/tools.git
 
-cd ./tools/tmkms-key-import
+cd $HOME/tools/tmkms-key-import
+/tools/tmkms-key-import
+
 ```
 ## How to use
 
