@@ -3,17 +3,18 @@
 ## Install
 
 ```bash
+go build
 make install
+ln -s ./priv-validator-key-gen /bin/priv-validator-key-gen
 ```
-It will create a binary `priv-validator-key-gen` in go path.
 
 ## How to use
 
 ```bash
-priv-validator-key-gen --mnemonic="mnemonic here" --output="path here"
+priv-validator-key-gen --mnemonic="mnemonic here"
 ```
 
-With default mnemonic and path
+Will create json file in the current directory
 ```bash
-priv-validator-key-gen
+priv_validator_key.json
 ```
