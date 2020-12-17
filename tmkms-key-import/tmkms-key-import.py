@@ -173,6 +173,7 @@ class BIP32Ed25519:
 if __name__ == "__main__":
     mnemArg = sys.argv[1]
     jsonPath = sys.argv[2]
+    keyPath = sys.argv[3]
     pathArr = [ 
         0x80000000 | 44, 
         0x80000000 | 118, 
@@ -202,3 +203,9 @@ if __name__ == "__main__":
 
     with open(jsonPath, 'w') as f:
         json.dump(data_set, f, ensure_ascii=False, indent=2)
+        f.close()
+
+    with open(jsonPath, 'w') as f:
+        f.write(keyPath)
+        f.close()
+
