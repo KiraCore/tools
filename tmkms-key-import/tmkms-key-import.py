@@ -10,6 +10,7 @@ import hashlib
 import binascii
 import unicodedata
 import base64
+import json
 
 TRACE=False
 def trace(x):
@@ -171,6 +172,7 @@ class BIP32Ed25519:
 
 if __name__ == "__main__":
     mnemArg = sys.argv[1]
+    jsonPath = sys.argv[2]
     pathArr = [ 
         0x80000000 | 44, 
         0x80000000 | 118, 
@@ -181,3 +183,22 @@ if __name__ == "__main__":
     ((kL, kR), A, c) = node
     # base64.b64encode(kL) is the 32B key that can be placed raw inside the key file without need for tmkms import
     print(str(base64.b64encode(kL), "utf-8"))
+
+    privkey = str(base64.b64encode(kL + kR), "utf-8")
+    pubkey = str(base64.b64encode(A), "utf-8")
+    address = _h256(A)[:20].hex().upper()
+
+    data_set = {
+        "address": address,
+        "pub_key": {
+            "type": "tendermint/PubKeyEd25519",
+            "value": pubkey
+        },
+        "priv_key": {
+            "type": "tendermint/PrivKeyEd25519",
+            "value": privkey
+        }
+    }
+
+    with open(jsonPath, 'w') as f:
+        json.dump(data_set, f, ensure_ascii=False, indent=2)
