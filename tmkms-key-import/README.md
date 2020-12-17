@@ -18,5 +18,5 @@ cd $HOME/tools/tmkms-key-import
 ## How to use
 
 ```bash
-python3 ./tmkms-key-import.py "twenty four mnemonic words come here..."
+python3 ./tmkms-key-import.py "twenty four mnemonic words come here..." "json file path here"
 ```
