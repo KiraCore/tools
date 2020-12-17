@@ -182,8 +182,6 @@ if __name__ == "__main__":
         0]
     node = BIP32Ed25519().derive_mnemonic(pathArr, mnemArg)
     ((kL, kR), A, c) = node
-    # base64.b64encode(kL) is the 32B key that can be placed raw inside the key file without need for tmkms import
-    print(str(base64.b64encode(kL), "utf-8"))
 
     privkey = str(base64.b64encode(kL + kR), "utf-8")
     pubkey = str(base64.b64encode(A), "utf-8")
@@ -205,7 +203,8 @@ if __name__ == "__main__":
         json.dump(data_set, f, ensure_ascii=False, indent=2)
         f.close()
 
-    with open(jsonPath, 'w') as f:
-        f.write(keyPath)
+    # base64.b64encode(kL) is the 32B key that can be placed raw inside the key file without need for tmkms import
+    with open(keyPath, 'w') as f:
+        f.write(str(base64.b64encode(kL), "utf-8"))
         f.close()
 
