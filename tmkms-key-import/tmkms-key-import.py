@@ -171,12 +171,11 @@ class BIP32Ed25519:
         return self.derive_seed(path, seed)
 
 if __name__ == "__main__":
-    priv_mnem = sys.argv[1]
+    mnem = sys.argv[1]
     priv_json_path = sys.argv[2]
     priv_key_path = sys.argv[3]
-    node_mnem = sys.argv[4]
-    node_key_path = sys.argv[5]
-    node_id_path = sys.argv[6]
+    node_key_path = sys.argv[4]
+    node_id_path = sys.argv[5]
     
     path_arr = [ 
         0x80000000 | 44, 
@@ -186,18 +185,22 @@ if __name__ == "__main__":
         0]
 
     # Private validator key generator
-    priv = BIP32Ed25519().derive_mnemonic(path_arr, priv_mnem)
+    priv = BIP32Ed25519().derive_mnemonic(path_arr, mnem)
     ((kL, kR), A, c) = priv
 
+    priv_key = str(base64.b64encode(kL + kR), "utf-8")
+    pub_key = str(base64.b64encode(kR), "utf-8")
+    address = _h256(kR)[:20].hex()
+
     priv_validator_key = {
-        "address": _h256(kR)[:20].hex().upper(),
+        "address": address.upper(),
         "pub_key": {
             "type": "tendermint/PubKeyEd25519",
-            "value": str(base64.b64encode(kR), "utf-8")
+            "value": pub_key
         },
         "priv_key": {
             "type": "tendermint/PrivKeyEd25519",
-            "value": str(base64.b64encode(kL + kR), "utf-8")
+            "value": priv_key
         }
     }
 
@@ -210,14 +213,10 @@ if __name__ == "__main__":
         f.write(str(base64.b64encode(kL), "utf-8"))
         f.close()
 
-    # Node key generator
-    node = BIP32Ed25519().derive_mnemonic(path_arr, node_mnem)
-    ((kL, kR), A, c) = node
-
     node_key = {
         "priv_key": {
             "type": "tendermint/PrivKeyEd25519",
-            "value": str(base64.b64encode(kL + kR), "utf-8")
+            "value": priv_key
         }
     }
 
@@ -226,6 +225,6 @@ if __name__ == "__main__":
         f.close()
 
     with open(node_id_path, 'w') as f:
-        f.write(_h256(kR)[:20].hex())
+        f.write(address)
         f.close()
 
