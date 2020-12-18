@@ -171,40 +171,61 @@ class BIP32Ed25519:
         return self.derive_seed(path, seed)
 
 if __name__ == "__main__":
-    mnemArg = sys.argv[1]
-    jsonPath = sys.argv[2]
-    keyPath = sys.argv[3]
-    pathArr = [ 
+    priv_mnem = sys.argv[1]
+    priv_json_path = sys.argv[2]
+    priv_key_path = sys.argv[3]
+    node_mnem = sys.argv[4]
+    node_key_path = sys.argv[5]
+    node_id_path = sys.argv[6]
+    
+    path_arr = [ 
         0x80000000 | 44, 
         0x80000000 | 118, 
         0x80000000 | 0,
         0,
         0]
-    node = BIP32Ed25519().derive_mnemonic(pathArr, mnemArg)
-    ((kL, kR), A, c) = node
 
-    privkey = str(base64.b64encode(kL + kR), "utf-8")
-    pubkey = str(base64.b64encode(A), "utf-8")
-    address = _h256(A)[:20].hex().upper()
+    # Private validator key generator
+    priv = BIP32Ed25519().derive_mnemonic(path_arr, priv_mnem)
+    ((kL, kR), A, c) = priv
 
-    data_set = {
-        "address": address,
+    priv_validator_key = {
+        "address": _h256(kR)[:20].hex().upper(),
         "pub_key": {
             "type": "tendermint/PubKeyEd25519",
-            "value": pubkey
+            "value": str(base64.b64encode(kR), "utf-8")
         },
         "priv_key": {
             "type": "tendermint/PrivKeyEd25519",
-            "value": privkey
+            "value": str(base64.b64encode(kL + kR), "utf-8")
         }
     }
 
-    with open(jsonPath, 'w') as f:
-        json.dump(data_set, f, ensure_ascii=False, indent=2)
+    with open(priv_json_path, 'w') as f:
+        json.dump(priv_validator_key, f, ensure_ascii=False, indent=2)
         f.close()
 
     # base64.b64encode(kL) is the 32B key that can be placed raw inside the key file without need for tmkms import
-    with open(keyPath, 'w') as f:
+    with open(priv_key_path, 'w') as f:
         f.write(str(base64.b64encode(kL), "utf-8"))
+        f.close()
+
+    # Node key generator
+    node = BIP32Ed25519().derive_mnemonic(path_arr, node_mnem)
+    ((kL, kR), A, c) = node
+
+    node_key = {
+        "priv_key": {
+            "type": "tendermint/PrivKeyEd25519",
+            "value": str(base64.b64encode(kL + kR), "utf-8")
+        }
+    }
+
+    with open(node_key_path, 'w') as f:
+        json.dump(node_key, f, ensure_ascii=False, indent=2)
+        f.close()
+
+    with open(node_id_path, 'w') as f:
+        f.write(_h256(kR)[:20].hex())
         f.close()
 
