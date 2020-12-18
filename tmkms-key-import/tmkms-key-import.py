@@ -171,40 +171,60 @@ class BIP32Ed25519:
         return self.derive_seed(path, seed)
 
 if __name__ == "__main__":
-    mnemArg = sys.argv[1]
-    jsonPath = sys.argv[2]
-    keyPath = sys.argv[3]
-    pathArr = [ 
+    mnem = sys.argv[1]
+    priv_json_path = sys.argv[2]
+    priv_key_path = sys.argv[3]
+    node_key_path = sys.argv[4]
+    node_id_path = sys.argv[5]
+    
+    path_arr = [ 
         0x80000000 | 44, 
         0x80000000 | 118, 
         0x80000000 | 0,
         0,
         0]
-    node = BIP32Ed25519().derive_mnemonic(pathArr, mnemArg)
-    ((kL, kR), A, c) = node
 
-    privkey = str(base64.b64encode(kL + kR), "utf-8")
-    pubkey = str(base64.b64encode(A), "utf-8")
-    address = _h256(A)[:20].hex().upper()
+    # Private validator key generator
+    priv = BIP32Ed25519().derive_mnemonic(path_arr, mnem)
+    ((kL, kR), A, c) = priv
 
-    data_set = {
-        "address": address,
+    priv_key = str(base64.b64encode(kL + kR), "utf-8")
+    pub_key = str(base64.b64encode(kR), "utf-8")
+    address = _h256(kR)[:20].hex()
+
+    priv_validator_key = {
+        "address": address.upper(),
         "pub_key": {
             "type": "tendermint/PubKeyEd25519",
-            "value": pubkey
+            "value": pub_key
         },
         "priv_key": {
             "type": "tendermint/PrivKeyEd25519",
-            "value": privkey
+            "value": priv_key
         }
     }
 
-    with open(jsonPath, 'w') as f:
-        json.dump(data_set, f, ensure_ascii=False, indent=2)
+    with open(priv_json_path, 'w') as f:
+        json.dump(priv_validator_key, f, ensure_ascii=False, indent=2)
         f.close()
 
     # base64.b64encode(kL) is the 32B key that can be placed raw inside the key file without need for tmkms import
-    with open(keyPath, 'w') as f:
+    with open(priv_key_path, 'w') as f:
         f.write(str(base64.b64encode(kL), "utf-8"))
+        f.close()
+
+    node_key = {
+        "priv_key": {
+            "type": "tendermint/PrivKeyEd25519",
+            "value": priv_key
+        }
+    }
+
+    with open(node_key_path, 'w') as f:
+        json.dump(node_key, f, ensure_ascii=False, indent=2)
+        f.close()
+
+    with open(node_id_path, 'w') as f:
+        f.write(address)
         f.close()
 
