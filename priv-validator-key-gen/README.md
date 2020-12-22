@@ -11,10 +11,10 @@ ln -s ./priv-validator-key-gen /bin/priv-validator-key-gen
 ## How to use
 
 ```bash
-priv-validator-key-gen --mnemonic="mnemonic here"
+priv-validator-key-gen --mnemonic="mnemonic here" --valkey="private validator key path here" --nodekey="node key path here" --keyid="node id path here"
 ```
 
-Will create json file in the current directory
+E.g.
 ```bash
-priv_validator_key.json
+priv-validator-key-gen --mnemonic="swap exercise equip shoot mad inside floor wheel loan visual stereo build frozen always bulb naive subway foster marine erosion shuffle flee action there" --valkey=./priv_validator_key.json --nodekey=./node_key.json --keyid=./node_id.key
 ```
