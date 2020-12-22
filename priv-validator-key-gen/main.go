@@ -23,18 +23,6 @@ func main() {
 		fmt.Println("mnemonic not set!")
 		return
 	}
-	if len(*valkey) == 0 {
-		fmt.Println("valkey not set!")
-		return
-	}
-	if len(*nodekey) == 0 {
-		fmt.Println("nodekey not set!")
-		return
-	}
-	if len(*keyid) == 0 {
-		fmt.Println("keyid not set!")
-		return
-	}
 
 	master, ch := hd.ComputeMastersFromSeed(bip39.NewSeed(*mnemonic, ""))
 	priv, err := hd.DerivePrivateKeyForPath(master, ch, "44'/118'/0'/0/0")
@@ -44,19 +32,23 @@ func main() {
 
 	privKey := ed25519.GenPrivKeyFromSecret(priv)
 	filepvkey := privval.NewFilePV(privKey, *valkey, "").Key
-	filepvkey.Save()
-
 	filenodekey := p2p.NodeKey{
 		PrivKey: privKey,
 	}
 
-	err = filenodekey.SaveAs(*nodekey)
-	if err != nil {
-		panic(err)
+	if len(*valkey) != 0 {
+		filepvkey.Save()
 	}
-
-	err = ioutil.WriteFile(*keyid, []byte(filenodekey.ID()), 0644)
-	if err != nil {
-		panic(err)
+	if len(*nodekey) != 0 {
+		err = filenodekey.SaveAs(*nodekey)
+		if err != nil {
+			panic(err)
+		}
+	}
+	if len(*keyid) != 0 {
+		err = ioutil.WriteFile(*keyid, []byte(filenodekey.ID()), 0644)
+		if err != nil {
+			panic(err)
+		}
 	}
 }
