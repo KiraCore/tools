@@ -9,5 +9,6 @@ make install
 ## How to use
 
 ```bash
-tmconnect handshake --address=<ip:port> --node_key=<path> --timeout=<seconds> --verbose=<bool>
+tmconnect id --address=<ip:port> --node_key=<path> --timeout=<seconds> --verbose=<bool>
+tmconnect handshake --address=<node_id@ip:port> --node_key=<path> --timeout=<seconds> --verbose=<bool>
 ```
