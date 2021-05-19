@@ -1,11 +1,10 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"net"
+	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -17,23 +16,28 @@ import (
 )
 
 var (
-	address     string
-	nodeKeyPath string
-	timeout     string
-	verbose     bool
+	address        string
+	nodeKeyPath    string
+	timeout        string
+	verbose        bool
+	connectionTime int64
 )
 
 type response struct {
-	Code   uint32
-	Error  error
+	Code   int
 	Result string
 }
 
-const codeSuccess uint32 = 0
-const codeFail uint32 = 1
+const codeSuccess int = 0
+const codeFail int = 1
+
+func makeTimestamp() int64 {
+	return time.Now().UnixNano() / int64(time.Millisecond)
+}
 
 func main() {
 	// tmconnect handshake --address=<node_id@ip:port> --node_key=<path> --timeout=<seconds> --verbose=<bool>
+	// tmconnect id --address=<ip:port> --node_key=<path> --timeout=<seconds> --verbose=<bool>
 
 	var rootCmd = &cobra.Command{
 		Use:   "tmconnect [sub]",
@@ -42,8 +46,16 @@ func main() {
 
 	var handshakeCommand = &cobra.Command{
 		Use:   "handshake [options]",
-		Short: "Test handshake connection",
+		Short: "handshake",
+		Long:  "Test handshake connection",
 		RunE:  cmdHandshake,
+	}
+
+	var idCommand = &cobra.Command{
+		Use:   "id [options]",
+		Short: "id",
+		Long:  "Get node id from address",
+		RunE:  cmdNodeId,
 	}
 
 	handshakeCommand.PersistentFlags().StringVarP(&address, "address", "a", "", "<ip:port> address to connect")
@@ -51,120 +63,93 @@ func main() {
 	handshakeCommand.PersistentFlags().StringVarP(&timeout, "timeout", "t", "", "<seconds> timeout seconds")
 	handshakeCommand.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "print the command and results as if it were a console session")
 
+	idCommand.PersistentFlags().StringVarP(&address, "address", "a", "", "<node_id@ip:port> address to connect")
+	idCommand.PersistentFlags().StringVarP(&nodeKeyPath, "node_key", "n", "", "<path> node_key path")
+	idCommand.PersistentFlags().StringVarP(&timeout, "timeout", "t", "", "<seconds> timeout seconds")
+	idCommand.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "print the command and results as if it were a console session")
+
 	rootCmd.AddCommand(handshakeCommand)
+	rootCmd.AddCommand(idCommand)
 
 	rootCmd.Execute()
 }
 
-func cmdHandshake(cmd *cobra.Command, args []string) error {
-	// parse address parameter
-	if address == "" {
-		printResponse(cmd, args, response{
-			Code:  codeFail,
-			Error: errors.New("empty address option"),
-		})
-		return nil
-	}
-
+func connect(
+	netAddress *p2p.NetAddress,
+	nodeKeyPath string,
+	timeout string,
+) (p2p.NodeInfo, response) {
 	// parse node_key parameter
+	printVerbose("parsing node_key: " + nodeKeyPath)
 	if nodeKeyPath == "" {
-		printResponse(cmd, args, response{
-			Code:  codeFail,
-			Error: errors.New("empty node_key option"),
-		})
-		return nil
-	}
-
-	// load node_key
-	nodeKey, err := p2p.LoadNodeKey(nodeKeyPath)
-	if err != nil {
-		printResponse(cmd, args, response{
-			Code:  codeFail,
-			Error: err,
-		})
-		return err
+		return nil, response{
+			Code:   codeFail,
+			Result: "empty node_key option",
+		}
 	}
 
 	// parse timeout parameter
+	printVerbose("parsing timeout: " + timeout + " (in seconds)")
 	if timeout == "" {
-		printResponse(cmd, args, response{
-			Code:  codeFail,
-			Error: errors.New("empty timeout option"),
-		})
-		return nil
+		return nil, response{
+			Code:   codeFail,
+			Result: "empty timeout option",
+		}
 	}
 
 	timeoutDuration, err := time.ParseDuration(timeout + "s")
 
 	if err != nil {
-		printResponse(cmd, args, response{
-			Code:  codeFail,
-			Error: err,
-		})
-		return nil
-	}
-
-	// parse address to host and port
-	host, portStr, err := net.SplitHostPort(address)
-	if err != nil {
-		printResponse(cmd, args, response{
-			Code:  codeFail,
-			Error: err,
-		})
-		return nil
-	}
-	if len(host) == 0 {
-		printResponse(cmd, args, response{
-			Code:  codeFail,
-			Error: errors.New("invalid address"),
-		})
-		return nil
-	}
-
-	ip := net.ParseIP(host)
-	if ip == nil {
-		ips, err := net.LookupIP(host)
-		if err != nil {
-			printResponse(cmd, args, response{
-				Code:  codeFail,
-				Error: err,
-			})
-			return nil
+		return nil, response{
+			Code:   codeFail,
+			Result: "invalid timeout option",
 		}
-		ip = ips[0]
 	}
 
-	port, err := strconv.ParseUint(portStr, 10, 16)
+	// load node_key
+	printVerbose("loading node_key")
+	nodeKey, err := p2p.LoadNodeKey(nodeKeyPath)
 	if err != nil {
-		printResponse(cmd, args, response{
-			Code:  codeFail,
-			Error: err,
-		})
-		return nil
+		return nil, response{
+			Code:   codeFail,
+			Result: "invalid node_key option",
+		}
 	}
-
-	// get network address from ip:port
-	netAddress := p2p.NewNetAddressIPPort(ip, uint16(port))
 
 	// dial to address
+	printVerbose("dialing to " + address)
+
+	startTime := makeTimestamp()
 	connection, err := netAddress.DialTimeout(timeoutDuration)
-	if err != nil {
-		printResponse(cmd, args, response{
-			Code:  codeFail,
-			Error: err,
-		})
-		return nil
+	endTime := makeTimestamp()
+	if endTime-startTime > connectionTime {
+		connectionTime = endTime - startTime
 	}
 
-	// create secret connection
-	secretConn, err := upgradeSecretConn(connection, timeoutDuration, nodeKey.PrivKey)
 	if err != nil {
-		printResponse(cmd, args, response{
-			Code:  codeFail,
-			Error: err,
-		})
-		return nil
+		return nil, response{
+			Code:   codeFail,
+			Result: "connection failed",
+		}
 	}
+	printVerbose("dialing success")
+
+	// create secret connection
+	printVerbose("upgrading secret connection")
+	startTime = makeTimestamp()
+	secretConn, err := upgradeSecretConn(connection, timeoutDuration, nodeKey.PrivKey)
+	endTime = makeTimestamp()
+	if endTime-startTime > connectionTime {
+		connectionTime = endTime - startTime
+	}
+
+	if err != nil {
+		return nil, response{
+			Code:   codeFail,
+			Result: "secret connection failed",
+		}
+	}
+	printVerbose("upgrading success")
 
 	/*
 		channels, err := hex.DecodeString("40202122233038606100")
@@ -188,41 +173,137 @@ func cmdHandshake(cmd *cobra.Command, args []string) error {
 	*/
 
 	// handshake
+	printVerbose("handshaking")
+	startTime = makeTimestamp()
 	peerNodeInfo, err := handshake(secretConn, timeoutDuration, p2p.DefaultNodeInfo{})
+	endTime = makeTimestamp()
+	if endTime-startTime > connectionTime {
+		connectionTime = endTime - startTime
+	}
+
 	if err != nil {
-		printResponse(cmd, args, response{
-			Code:  codeFail,
-			Error: err,
-		})
-		return nil
+		return nil, response{
+			Code:   codeFail,
+			Result: "handshake failed",
+		}
 	}
+	printVerbose("handshaking success")
 
-	if peerNodeInfo.ID() == "" {
-		printResponse(cmd, args, response{
-			Code:  codeFail,
-			Error: errors.New("failed to connect"),
-		})
-		return nil
-	}
-
-	printResponse(cmd, args, response{
+	return peerNodeInfo, response{
 		Code:   codeSuccess,
-		Result: "connected node id: " + string(peerNodeInfo.ID()),
-	})
+		Result: string(peerNodeInfo.ID()),
+	}
+}
+
+func cmdHandshake(cmd *cobra.Command, args []string) error {
+	// parse address to host and port
+	printVerbose("parsing address: " + address)
+
+	netAddress, err := p2p.NewNetAddressString(address)
+	if err != nil {
+		response{
+			Code:   codeFail,
+			Result: "invalid address",
+		}.printResponse()
+		return nil
+	}
+
+	peerNodeInfo, resp := connect(netAddress, nodeKeyPath, timeout)
+
+	if resp.Code == codeFail {
+		resp.printResponse()
+		return nil
+	}
+
+	printVerbose("checking node_id: " + string(netAddress.ID) + " == " + string(peerNodeInfo.ID()))
+
+	if peerNodeInfo.ID() != netAddress.ID {
+		response{
+			Code:   codeFail,
+			Result: "node_id doesn't match",
+		}.printResponse()
+		return nil
+	}
+
+	response{
+		Code:   codeSuccess,
+		Result: strconv.FormatInt(connectionTime, 10),
+	}.printResponse()
 
 	return nil
 }
 
-func printResponse(cmd *cobra.Command, args []string, log response) {
-	fmt.Println(log.Code)
+func cmdNodeId(cmd *cobra.Command, args []string) error {
+	// parse address to host and port
+	printVerbose("parsing address: " + address)
 
-	if verbose == true {
-		if log.Error != nil {
-			fmt.Println(">", cmd.Use, strings.Join(args, " "))
-			panic(log.Error)
-		} else {
-			fmt.Println(log.Result)
+	host, portStr, err := net.SplitHostPort(address)
+	if err != nil {
+		response{
+			Code:   codeFail,
+			Result: "invalid address",
+		}.printResponse()
+
+		return nil
+	}
+	if len(host) == 0 {
+		response{
+			Code:   codeFail,
+			Result: "invalid host",
+		}.printResponse()
+
+		return nil
+	}
+
+	ip := net.ParseIP(host)
+	if ip == nil {
+		ips, err := net.LookupIP(host)
+		if err != nil {
+			response{
+				Code:   codeFail,
+				Result: "invalid ip",
+			}.printResponse()
+
+			return nil
 		}
+		ip = ips[0]
+	}
+
+	port, err := strconv.ParseUint(portStr, 10, 16)
+	if err != nil {
+		response{
+			Code:   codeFail,
+			Result: "invalid port",
+		}.printResponse()
+
+		return nil
+	}
+
+	// get network address from ip:port
+	netAddress := p2p.NewNetAddressIPPort(ip, uint16(port))
+
+	peerNodeInfo, resp := connect(netAddress, nodeKeyPath, timeout)
+
+	if resp.Code == codeFail {
+		resp.printResponse()
+		return nil
+	}
+
+	response{
+		Code:   codeFail,
+		Result: string(peerNodeInfo.ID()),
+	}.printResponse()
+	return nil
+}
+
+func (log response) printResponse() {
+	fmt.Println(log.Result)
+	os.Exit(log.Code)
+}
+
+func printVerbose(text string) {
+	if verbose {
+		fmt.Println(text)
 	}
 }
 
