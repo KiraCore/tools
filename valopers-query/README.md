@@ -1,5 +1,5 @@
-# Valoper query
-Creates for files with val. addresses. Each contain all, produced, claimed or waiting addresses.
+# Valopers query
+Creates four files with val. addresses. Each contain all, produced, claimed or waiting addresses.
 
 ### Setup
 `

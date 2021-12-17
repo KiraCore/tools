@@ -31,7 +31,7 @@ class Testnet:
         if option == "produced":
             self._write_produced()
         if option == "claimed":
-            pass
+            self._write_claimed()
     
     def _write_all(self):
         self._write_waiting(name="all")
