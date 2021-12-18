@@ -2,15 +2,19 @@
 Creates four files with val. addresses. Each contains all, produced, claimed or waiting addresses.
 
 ### Setup
+
 `
 sudo apt install python3
 sudo pip3 install -r requirements.txt
 `
+
 ### Usage
+
 `
 python3 main.py
 `
 By default will try to parse jsons from kira/testnet directory and write 4 files with parsed kira address.
+
 `
 python3 main.py path_to_files
 `
