@@ -4,7 +4,6 @@ Creates four files with val. addresses. Each contains all, produced, claimed or 
 ### Setup
 `
 sudo apt install python3
-sudo ap
 sudo pip3 install -r requirements.txt
 `
 ### Usage
