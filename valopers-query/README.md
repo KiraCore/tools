@@ -24,8 +24,7 @@ It also accept several paths (url, local) as sequnce of argq
 Input:
 
 `
-python3 main.py ~/tmp/valopers.json https://raw.githubusercontent.com/KiraCore/testnet/main/testnet-7/valopers-end.json
-/home/eugene/tmp/valopers.json
+python3 main.py ~/tmp/valopers.json https://raw.githubusercontent.com/KiraCore/testnet/main/testnet-7/valopers-end.json /home/eugene/tmp/valopers.json
 `
 Output:
 
