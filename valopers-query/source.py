@@ -44,7 +44,7 @@ class Source:
         except AttributeError:
             u = ""
         f = path.rsplit("/",1)[-1].replace(".","_")
-        if u: return u+f
+        if u: return f"{u}_{f}"
         else: return f
         
         
