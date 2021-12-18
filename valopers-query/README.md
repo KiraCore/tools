@@ -23,28 +23,13 @@ It also accept several paths (url, local) as sequnce of argq
 ### Example
 Input:
 
-`
-python3 main.py ~/tmp/valopers.json https://raw.githubusercontent.com/KiraCore/testnet/main/testnet-7/valopers-end.json /home/eugene/tmp/valopers.json
-`
+`python3 main.py ~/tmp/valopers.json https://raw.githubusercontent.com/KiraCore/testnet/main/testnet-7/valopers-end.json`
+
 Output:
 
-`
-Name:           valopers_json
-Produced:       380
-Claimed:        384
-Waiting:        268
-Total:          652
+![image](https://user-images.githubusercontent.com/70693118/146642039-56f1f3c7-0df0-4ae4-a37e-bc145362170a.png)
 
-Name:           testnet-7_valopers-end_json
-Produced:       294
-Claimed:        319
-Waiting:        290
-Total:          609
-`
 Files created:
 
-`
-testnet-7_valopers-end_json_produced.txt    valopers_json_claimed.txt
-testnet-7_valopers-end_json_all.txt         testnet-7_valopers-end_json_waiting.txt   valopers_json_produced.txt
-testnet-7_valopers-end_json_claimed.txt     valopers_json_all.txt
-`
+![image](https://user-images.githubusercontent.com/70693118/146642110-44f49084-eadd-43e8-9b79-bcffdc821338.png)
+
