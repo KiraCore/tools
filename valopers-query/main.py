@@ -2,7 +2,7 @@ import sys
 from testnet import Testnet   
 
 def main():
-    if sys.argv:
+    if sys.argv[1:]:
         for arg in sys.argv[1:]:
             cli = Testnet(arg)
             cli.write("all")
