@@ -5,6 +5,8 @@ Creates four files with val. addresses. Each contains all, produced, claimed or 
 
 `
 sudo apt install python3
+`\
+`
 sudo pip3 install -r requirements.txt
 `
 
@@ -12,14 +14,14 @@ sudo pip3 install -r requirements.txt
 
 `
 python3 main.py
-`
-By default will try to parse jsons from kira/testnet directory and write 4 files with parsed kira address.
+`\
+By default will try to parse jsons from kira/testnet directory and write 4 files with parsed kira address.\
 
 `
 python3 main.py path_to_files
-`
+`\
 The app accept url or absolute path to the file location.
-It also accept several paths (url, local) as sequnce of argq
+It also accept several paths (url, local) as sequnce of args
 ### Example
 Input:
 
