@@ -4,7 +4,6 @@ from testnet import Testnet
 def main():
     if sys.argv:
         for arg in sys.argv[1:]:
-            print(arg)
             cli = Testnet(arg)
             cli.write("all")
             cli.stats()
