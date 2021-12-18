@@ -4,6 +4,9 @@ Creates four files with val. addresses. Each contains all, produced, claimed or 
 ### Setup
 
 `
+mkdir -p ~/tmp
+cd ~/tmp
+git clone https://github.com/KiraCore/tools.git
 sudo apt install python3
 `\
 `
