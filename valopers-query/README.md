@@ -18,11 +18,13 @@ The app accept url or absolute path to the file location.
 It also accept several paths (url, local) as sequnce of argq
 ### Example
 Input:
+
 `
 python3 main.py ~/tmp/valopers.json https://raw.githubusercontent.com/KiraCore/testnet/main/testnet-7/valopers-end.json
 /home/eugene/tmp/valopers.json
 `
 Output:
+
 `
 Name:           valopers_json
 Produced:       380
@@ -37,6 +39,7 @@ Waiting:        290
 Total:          609
 `
 Files created:
+
 `
 testnet-7_valopers-end_json_produced.txt    valopers_json_claimed.txt
 testnet-7_valopers-end_json_all.txt         testnet-7_valopers-end_json_waiting.txt   valopers_json_produced.txt
