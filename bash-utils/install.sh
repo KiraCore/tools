@@ -12,7 +12,7 @@ echo "INFO: Installing KIRA utils... "
 echo "INFO: Default tools branch: $KIRA_TOOLS_BRANCH"
 echo "INFO:   Default glob store: $KIRA_GLOBS_DIR"
 echo "INFO:    Default utils src: $KIRA_TOOLS_SRC"
-sleep 0.5
+sleep 2
 
 mkdir -p "$KIRA_GLOBS_DIR"
 
