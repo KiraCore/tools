@@ -7,6 +7,5 @@ The ultimate collection of various bash-shell function to make access to various
 ```
 cd /tmp && read -p "Input branch name: " BRANCH && \
  wget https://raw.githubusercontent.com/KiraCore/tools/$BRANCH/bash-utils/install.sh -O ./i.sh && \
- chmod 555 -v ./i.sh "$BRANCH" "/var/kiraglob"
+ chmod 555 -v ./i.sh && ./i.sh "$BRANCH" "/var/kiraglob" || echo "ERROR: Failed kira bash-utils installation"
 ```
-

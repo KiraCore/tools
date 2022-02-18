@@ -646,17 +646,24 @@ function setGlobEnv() {
     local ENV_VALUE=$2
     
     local GLOB_SRC="source /etc/profile"
+    local SUDOUSER="${SUDO_USER}" && [ "$SUDOUSER" == "root" ] && SUDOUSER=""
     local USERNAME="${USER}" && [ "$USERNAME" == "root" ] && USERNAME=""
     local LOGNAME=$(logname 2> /dev/null echo "") && [ "$LOGNAME" == "root" ] && LOGNAME=""
 
     local TARGET="/$LOGNAME/.bashrc"
-    if [ ! -z $LOGNAME ] && [ -f  $TARGET ] ; then
+    if [ ! -z "$LOGNAME" ] && [ -f  $TARGET ] ; then
         local LINE_NR=$(getLastLineByPrefix "$GLOB_SRC" "$TARGET" 2> /dev/null || echo "-1")
         [ $LINE_NR -lt 0 ] && echo $GLOB_SRC >> $TARGET || echoErr "ERROR: Failed to append global env source file to '$TARGET'"
     fi
 
     TARGET="/$USERNAME/.bashrc"
-    if [ ! -z $USERNAME ] && [ -f $TARGET ] ; then
+    if [ ! -z "$USERNAME" ] && [ -f $TARGET ] ; then
+        local LINE_NR=$(getLastLineByPrefix "$GLOB_SRC" "$TARGET" 2> /dev/null || echo "-1")
+        [ $LINE_NR -lt 0 ] && echo $GLOB_SRC >> $TARGET || echoErr "ERROR: Failed to append global env source file to '$TARGET'"
+    fi
+
+    TARGET="/$SUDOUSER/.bashrc"
+    if [ ! -z "$SUDOUSER" ] && [ -f $TARGET ] ; then
         local LINE_NR=$(getLastLineByPrefix "$GLOB_SRC" "$TARGET" 2> /dev/null || echo "-1")
         [ $LINE_NR -lt 0 ] && echo $GLOB_SRC >> $TARGET || echoErr "ERROR: Failed to append global env source file to '$TARGET'"
     fi
