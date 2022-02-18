@@ -669,7 +669,7 @@ function setGlobEnv() {
     fi
 
     TARGET="/root/.bashrc"
-    if [ -f $TARGET ] ; then
+    if [ -f $TARGET ] && [ -f $TARGET ] ; then
         local LINE_NR=$(getLastLineByPrefix "$GLOB_SRC" "$TARGET" 2> /dev/null || echo "-1")
         [ $LINE_NR -lt 0 ] && echo $GLOB_SRC >> $TARGET || echoErr "ERROR: Failed to append global env source file to '$TARGET'"
     fi
