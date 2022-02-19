@@ -11,7 +11,7 @@ REGEX_PUBLIC_IP='^([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?<!172\.(16|1
 REGEX_KIRA="^(kira)[a-zA-Z0-9]{39}$"
 
 function utilsVersion() {
-    echo "v0.0.2"
+    echo "v0.0.3"
 }
 
 function isNullOrEmpty() {
@@ -495,9 +495,13 @@ function resolveDNS {
 }
 
 function isSubStr {
-    local STR=$1
-    local SUB=$2
-    [[ $STR == *"$SUB"* ]] && echo "true" || echo "false"
+    local STR="$1"
+    local SUB="$2"
+    SUB=${SUB//"\n"/"\\n"}
+    local L1=${#STR}
+    STR=${STR//"$SUB"/""}
+    local L2=${#STR}
+    [ $L1 -ne $L2 ] && echo "true" || echo "false"
 }
 
 function isCommand {
@@ -606,6 +610,7 @@ function getLastLineByPrefix() {
     if [ -z "$PREFIX" ] || [ -z "$FILE" ] || [ ! -f $FILE ] ; then echo "-1" ; else
         PREFIX=${PREFIX//"="/"\="}
         PREFIX=${PREFIX//"/"/"\/"}
+        PREFIX=${PREFIX//"["/"\["}
         local lines=$(sed -n "/^${PREFIX}/=" $FILE)
         if [ -z "$lines" ] ; then echo "-1" ; else
             local lineArr=($(echo $lines))
@@ -675,6 +680,62 @@ function setGlobEnv() {
     fi
 
     setEnv "$ENV_NAME" "$ENV_VALUE" "/etc/profile"
+}
+
+function setGlobPath() {
+    local VAL="$1"
+    GLOBENV_SRC=/etc/profile
+
+    ($(isNullOrEmpty "$VAL")) && echoWarn "WARNING: Value is undefined, no need to append anything to PATH at '$GLOBENV_SRC"
+    
+    local LINE_NR=$(getLastLineByPrefix "PATH=" "$GLOBENV_SRC" 2> /dev/null || echo "-1")
+    if [ $LINE_NR -lt 0 ] ; then
+        echoInfo "INFO: Global PATH variable was NOT fount at '$GLOBENV_SRC', appending..."
+        echo "PATH=\"\$PATH\"" >> $GLOBENV_SRC
+    fi
+
+    LINE_NR=$(getLastLineByPrefix "PATH=" "$GLOBENV_SRC" 2> /dev/null || echo "-1")
+    [ $LINE_NR -lt 0 ] && echoErr "ERROR: Failed to locate PATH variable at '$GLOBENV_SRC'" && return 1
+
+    PATH_CONTENT=$(sed "${LINE_NR}q;d" "$GLOBENV_SRC")
+    # remove quotes and variable key prefix
+    PATH_CONTENT=$(echo ${PATH_CONTENT#"PATH="} | tr -d '"')
+
+    if ($(isSubStr "$PATH_CONTENT" "$VAL")); then
+        echoWarn "WARNING: PATH already contains value '$VAL', nothing to append"
+    else
+        PATH_CONTENT="${PATH_CONTENT}:$VAL"
+    fi
+
+    setGlobEnv "PATH" "$PATH_CONTENT"
+}
+
+# set or update global line of text by prefix
+# setGlobLine "mount -t drvfs C:" "mount -t drvfs C: /mnt/c"
+function setGlobLine() {
+    local PREFIX="$1"
+    local VALUE="$2"
+    GLOBENV_SRC=/etc/profile
+
+    ($(isNullOrEmpty "$PREFIX")) && echoErr "ERROR: Prefix was undefined, there is nothing to append to '$GLOBENV_SRC" && return 1
+    
+    local LINE_NR=$(getLastLineByPrefix "$PREFIX" "$GLOBENV_SRC" 2> /dev/null || echo "-1")
+    if [ $LINE_NR -lt 0 ] ; then
+        echoWarn "WARNING: Global line was NOT fount at '$GLOBENV_SRC'"
+        echoInfo "INFO: Appending '$VALUE' to the file '$GLOBENV_SRC'"
+        echo "$VALUE" >> $GLOBENV_SRC
+        return 0
+    fi
+
+    echoWarn "WARNING: Wiped old line '$LINE_NR' in the file '$GLOBENV_SRC'"
+    sed -i "${LINE_NR}d" $GLOBENV_SRC
+    
+    if ($(isNullOrEmpty "$VALUE")) ; then
+        echoInfo "INFO: There was nothing defined to append to the file '$GLOBENV_SRC'"
+    else
+        echoInfo "INFO: Appending '$VALUE' to the file '$GLOBENV_SRC'"
+        echo "$VALUE" >> $GLOBENV_SRC
+    fi
 }
 
 function loadGlobEnvs() {
