@@ -11,7 +11,7 @@ REGEX_PUBLIC_IP='^([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?<!172\.(16|1
 REGEX_KIRA="^(kira)[a-zA-Z0-9]{39}$"
 
 function utilsVersion() {
-    echo "v0.0.3"
+    echo "v0.0.4"
 }
 
 function isNullOrEmpty() {
@@ -626,13 +626,14 @@ function setEnv() {
     
     if [ ! -z "$ENV_NAME" ] && [ -f $ENV_FILE ] ; then
         local LINE_NR=$(getLastLineByPrefix "${ENV_NAME}=" "$ENV_FILE" 2> /dev/null || echo "-1")
+        [ $LINE_NR -lt 0 ] && LINE_NR=$(getLastLineByPrefix "export ${ENV_NAME}=" "$ENV_FILE" 2> /dev/null || echo "-1")
 
         # add quotes if string has any whitespaces
         echoInfo "INFO: Appending env '$ENV_NAME' with value '$ENV_VALUE' to file '$ENV_FILE'"
         if [ -z "$ENV_VALUE" ] || [[ "$ENV_VALUE" = *" "* ]] ; then
-            echo "${ENV_NAME}=\"${ENV_VALUE}\"" >> $ENV_FILE
+            echo "export ${ENV_NAME}=\"${ENV_VALUE}\"" >> $ENV_FILE
         else
-            echo "${ENV_NAME}=${ENV_VALUE}" >> $ENV_FILE
+            echo "export ${ENV_NAME}=${ENV_VALUE}" >> $ENV_FILE
         fi
 
         if [ $LINE_NR -ge 0 ] ; then
@@ -689,12 +690,15 @@ function setGlobPath() {
     ($(isNullOrEmpty "$VAL")) && echoWarn "WARNING: Value is undefined, no need to append anything to PATH at '$GLOBENV_SRC"
     
     local LINE_NR=$(getLastLineByPrefix "PATH=" "$GLOBENV_SRC" 2> /dev/null || echo "-1")
+    [ $LINE_NR -lt 0 ] && LINE_NR=$(getLastLineByPrefix "export PATH=" "$GLOBENV_SRC" 2> /dev/null || echo "-1")
+
     if [ $LINE_NR -lt 0 ] ; then
         echoInfo "INFO: Global PATH variable was NOT fount at '$GLOBENV_SRC', appending..."
-        echo "PATH=\"\$PATH\"" >> $GLOBENV_SRC
+        echo "export PATH=\"\$PATH\"" >> $GLOBENV_SRC
     fi
 
     LINE_NR=$(getLastLineByPrefix "PATH=" "$GLOBENV_SRC" 2> /dev/null || echo "-1")
+    [ $LINE_NR -lt 0 ] && LINE_NR=$(getLastLineByPrefix "export PATH=" "$GLOBENV_SRC" 2> /dev/null || echo "-1")
     [ $LINE_NR -lt 0 ] && echoErr "ERROR: Failed to locate PATH variable at '$GLOBENV_SRC'" && return 1
 
     PATH_CONTENT=$(sed "${LINE_NR}q;d" "$GLOBENV_SRC")
