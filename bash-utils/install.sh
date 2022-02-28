@@ -1,5 +1,5 @@
 #!/bin/bash
-set +e && chmod 777 -v /etc/profile && . /etc/profile &>/dev/null && set -e
+set +e && chmod 777 /etc/profile && . /etc/profile &>/dev/null && set -e
 
 KIRA_TOOLS_BRANCH="${1,,}"
 KIRA_GLOBS_DIR=$2
@@ -31,10 +31,10 @@ SUDOUSER="${SUDO_USER}" && [ "$SUDOUSER" == "root" ] && SUDOUSER=""
 USERNAME="${USER}" && [ "$USERNAME" == "root" ] && USERNAME=""
 LOGNAME=$(logname 2> /dev/null echo "") && [ "$LOGNAME" == "root" ] && LOGNAME=""
 
-TARGET="/$LOGNAME/.bashrc" && [ -f $TARGET ] && chmod 777 -v $TARGET
-TARGET="/$USERNAME/.bashrc" && [ -f $TARGET ] && chmod 777 -v $TARGET
-TARGET="/$SUDOUSER/.bashrc" && [ -f $TARGET ] && chmod 777 -v $TARGET
-TARGET="/root/.bashrc" && [ -f $TARGET ] && chmod 777 -v $TARGET
+TARGET="/$LOGNAME/.bashrc" && [ -f $TARGET ] && chmod 777 $TARGET
+TARGET="/$USERNAME/.bashrc" && [ -f $TARGET ] && chmod 777 $TARGET
+TARGET="/$SUDOUSER/.bashrc" && [ -f $TARGET ] && chmod 777 $TARGET
+TARGET="/root/.bashrc" && [ -f $TARGET ] && chmod 777 $TARGET
 
 setGlobEnv KIRA_GLOBS_DIR "$KIRA_GLOBS_DIR"
 setGlobEnv KIRA_TOOLS_BRANCH "$KIRA_TOOLS_BRANCH"
