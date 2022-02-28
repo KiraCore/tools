@@ -1,8 +1,8 @@
 #!/bin/bash
 set +e && chmod 777 /etc/profile && . /etc/profile &>/dev/null && set -e
 
-KIRA_TOOLS_BRANCH="${1,,}" 
-KIRA_GLOBS_DIR=$2
+KIRA_TOOLS_BRANCH="$1" 
+KIRA_GLOBS_DIR="$2"
 
 [ -z "$KIRA_TOOLS_BRANCH" ] && KIRA_TOOLS_BRANCH="main"
 [ -z "$KIRA_GLOBS_DIR" ] && KIRA_GLOBS_DIR="/var/kiraglob"
