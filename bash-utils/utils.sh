@@ -11,7 +11,7 @@ REGEX_PUBLIC_IP='^([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?<!172\.(16|1
 REGEX_KIRA="^(kira)[a-zA-Z0-9]{39}$"
 
 function utilsVersion() {
-    echo "v0.0.6"
+    echo "v0.0.7"
 }
 
 function isNullOrEmpty() {
@@ -709,13 +709,14 @@ function setGlobPath() {
         echo "export PATH=\"\$PATH\"" >> $GLOBENV_SRC
     fi
 
-    LINE_NR=$(getLastLineByPrefix "PATH=" "$GLOBENV_SRC" 2> /dev/null || echo "-1")
-    [[ $LINE_NR -lt 0 ]] && LINE_NR=$(getLastLineByPrefix "export PATH=" "$GLOBENV_SRC" 2> /dev/null || echo "-1")
+    local EXPORT_PREFIX="false" && LINE_NR=$(getLastLineByPrefix "PATH=" "$GLOBENV_SRC" 2> /dev/null || echo "-1")
+    [[ $LINE_NR -lt 0 ]] && LINE_NR=$(getLastLineByPrefix "export PATH=" "$GLOBENV_SRC" 2> /dev/null || echo "-1") && EXPORT_PREFIX="true"
     [[ $LINE_NR -lt 0 ]] && echoErr "ERROR: Failed to locate PATH variable at '$GLOBENV_SRC'" && return 1
 
     PATH_CONTENT=$(sed "${LINE_NR}q;d" "$GLOBENV_SRC")
     # remove quotes and variable key prefix
-    PATH_CONTENT=$(echo ${PATH_CONTENT#"PATH="} | tr -d '"')
+    [ "${EXPORT_PREFIX}" == "false" ] && PATH_CONTENT=$(echo ${PATH_CONTENT#"PATH="} | tr -d '"')
+    [ "${EXPORT_PREFIX}" == "true" ] && PATH_CONTENT=$(echo ${PATH_CONTENT#"export PATH="} | tr -d '"')
 
     if ($(isSubStr "$PATH_CONTENT" "$VAL")); then
         echoWarn "WARNING: PATH already contains value '$VAL', nothing to append"
