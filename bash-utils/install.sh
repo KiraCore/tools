@@ -1,9 +1,11 @@
 #!/bin/bash
-set +e && chmod 777 /etc/profile && . /etc/profile &>/dev/null && set -e
+set -e
+touch /etc/profile 
+chmod 777 /etc/profile
+. /etc/profile
 
-KIRA_TOOLS_BRANCH="$1" 
-KIRA_GLOBS_DIR="$2"
-
+[ ! -z "$1" ] && KIRA_TOOLS_BRANCH="$1"
+[ ! -z "$2" ] && KIRA_GLOBS_DIR="$2"
 [ -z "$KIRA_TOOLS_BRANCH" ] && KIRA_TOOLS_BRANCH="main"
 [ -z "$KIRA_GLOBS_DIR" ] && KIRA_GLOBS_DIR="/var/kiraglob"
 [ -z "$KIRA_TOOLS_SRC" ] && KIRA_TOOLS_SRC="/usr/local/bin/kira-utils.sh"
@@ -31,18 +33,20 @@ SUDOUSER="${SUDO_USER}" && [ "$SUDOUSER" == "root" ] && SUDOUSER=""
 USERNAME="${USER}" && [ "$USERNAME" == "root" ] && USERNAME=""
 LOGNAME=$(logname 2> /dev/null echo "") && [ "$LOGNAME" == "root" ] && LOGNAME=""
 
-TARGET="/$LOGNAME/.bashrc" && [ -f $TARGET ] && chmod 777 $TARGET
-TARGET="/$USERNAME/.bashrc" && [ -f $TARGET ] && chmod 777 $TARGET
-TARGET="/$SUDOUSER/.bashrc" && [ -f $TARGET ] && chmod 777 $TARGET
-TARGET="/root/.bashrc" && [ -f $TARGET ] && chmod 777 $TARGET
+TARGET="/$LOGNAME/.bashrc" && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
+TARGET="/$USERNAME/.bashrc" && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
+TARGET="/$SUDOUSER/.bashrc" && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
+TARGET="/root/.bashrc" && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
+TARGET=~/.bashrc && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
+TARGET=~/.zshrc && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
 
 setGlobEnv KIRA_GLOBS_DIR "$KIRA_GLOBS_DIR"
 setGlobEnv KIRA_TOOLS_BRANCH "$KIRA_TOOLS_BRANCH"
 setGlobEnv KIRA_TOOLS_SRC "$KIRA_TOOLS_SRC"
 
-AUTOLOAD_SET=$(getLastLineByPrefix "source $KIRA_TOOLS_SRC" /etc/profile)
+AUTOLOAD_SET=$(getLastLineByPrefix "source $KIRA_TOOLS_SRC" /etc/profile 2> /dev/null || echo "-1")
 
-if [ $AUTOLOAD_SET -lt 0 ] ; then
+if [[ $AUTOLOAD_SET -lt 0 ]] ; then
     echo "source $KIRA_TOOLS_SRC || echo \"ERROR: Failed to load kira utils from $KIRA_TOOLS_SRC\"" >> /etc/profile
 fi
 

@@ -11,7 +11,7 @@ REGEX_PUBLIC_IP='^([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?<!172\.(16|1
 REGEX_KIRA="^(kira)[a-zA-Z0-9]{39}$"
 
 function utilsVersion() {
-    echo "v0.0.5"
+    echo "v0.0.6"
 }
 
 function isNullOrEmpty() {
@@ -93,7 +93,7 @@ function isMnemonic() {
     kg_mnem=$(echo "$1" | xargs 2> /dev/null || echo -n "")
     kg_count=$(echo "$kg_mnem" | wc -w 2> /dev/null || echo -n "")
     (! $(isNaturalNumber $kg_count)) && kg_count=0
-    if (( $kg_count % 3 == 0 )) && [ $kg_count -ge 12 ] ; then echo "true" ; else echo "false" ; fi
+    if (( $kg_count % 3 == 0 )) && [[ $kg_count -ge 12 ]] ; then echo "true" ; else echo "false" ; fi
 }
 
 function date2unix() {
@@ -602,19 +602,19 @@ function echol() {
     grep -n "$1" $0 |  sed "s/echo_line_no//" 
 }
 
-
 # for now this funciton is only intended for env variables discovery
 function getLastLineByPrefix() {
     local PREFIX=$1
     local FILE=$2
-    if [ -z "$PREFIX" ] || [ -z "$FILE" ] || [ ! -f $FILE ] ; then echo "-1" ; else
+    if ($(isNullOrWhitespaces "$PREFIX")) || ($(isNullOrWhitespaces "$FILE")) || [ ! -f $FILE ] ; then echo "-1" ; else
         PREFIX=${PREFIX//"="/"\="}
         PREFIX=${PREFIX//"/"/"\/"}
         PREFIX=${PREFIX//"["/"\["}
         local lines=$(sed -n "/^${PREFIX}/=" $FILE)
-        if [ -z "$lines" ] ; then echo "-1" ; else
+        if ($(isNullOrWhitespaces "$lines")) ; then echo "-1" ; else
             local lineArr=($(echo $lines))
-            echo ${lineArr[-1]}
+            local lineNr=${lineArr[-1]}
+            ($(isNaturalNumber "$lineNr")) && echo "$lineNr" || echo "-1"
         fi
     fi
 }
@@ -626,7 +626,7 @@ function setEnv() {
     
     if [ ! -z "$ENV_NAME" ] && [ -f $ENV_FILE ] ; then
         local LINE_NR=$(getLastLineByPrefix "${ENV_NAME}=" "$ENV_FILE" 2> /dev/null || echo "-1")
-        [ $LINE_NR -lt 0 ] && LINE_NR=$(getLastLineByPrefix "export ${ENV_NAME}=" "$ENV_FILE" 2> /dev/null || echo "-1")
+        [[ $LINE_NR -lt 0 ]] && LINE_NR=$(getLastLineByPrefix "export ${ENV_NAME}=" "$ENV_FILE" 2> /dev/null || echo "-1")
 
         # add quotes if string has any whitespaces
         echoInfo "INFO: Appending env '$ENV_NAME' with value '$ENV_VALUE' to file '$ENV_FILE'"
@@ -636,7 +636,7 @@ function setEnv() {
             echo "export ${ENV_NAME}=${ENV_VALUE}" >> $ENV_FILE
         fi
 
-        if [ $LINE_NR -ge 0 ] ; then
+        if [[ $LINE_NR -ge 0 ]] ; then
             echoWarn "WARNING: Wiped old env '$ENV_NAME' at line '$LINE_NR' in the file '$ENV_FILE'"
             sed -i "${LINE_NR}d" $ENV_FILE
         fi
@@ -659,25 +659,37 @@ function setGlobEnv() {
     local TARGET="/$LOGNAME/.bashrc"
     if [ ! -z "$LOGNAME" ] && [ -f  $TARGET ] ; then
         local LINE_NR=$(getLastLineByPrefix "$GLOB_SRC" "$TARGET" 2> /dev/null || echo "-1")
-        [ $LINE_NR -lt 0 ] && ( echo $GLOB_SRC >> $TARGET || echoErr "ERROR: Failed to append global env source file to '$TARGET'" )
+        [[ $LINE_NR -lt 0 ]] && ( echo $GLOB_SRC >> $TARGET || echoErr "ERROR: Failed to append global env source file to '$TARGET'" )
     fi
 
     TARGET="/$USERNAME/.bashrc"
     if [ ! -z "$USERNAME" ] && [ -f $TARGET ] ; then
         local LINE_NR=$(getLastLineByPrefix "$GLOB_SRC" "$TARGET" 2> /dev/null || echo "-1")
-        [ $LINE_NR -lt 0 ] && ( echo $GLOB_SRC >> $TARGET || echoErr "ERROR: Failed to append global env source file to '$TARGET'" )
+        [[ $LINE_NR -lt 0 ]] && ( echo $GLOB_SRC >> $TARGET || echoErr "ERROR: Failed to append global env source file to '$TARGET'" )
     fi
 
     TARGET="/$SUDOUSER/.bashrc"
     if [ ! -z "$SUDOUSER" ] && [ -f $TARGET ] ; then
         local LINE_NR=$(getLastLineByPrefix "$GLOB_SRC" "$TARGET" 2> /dev/null || echo "-1")
-        [ $LINE_NR -lt 0 ] && ( echo $GLOB_SRC >> $TARGET || echoErr "ERROR: Failed to append global env source file to '$TARGET'" )
+        [[ $LINE_NR -lt 0 ]] && ( echo $GLOB_SRC >> $TARGET || echoErr "ERROR: Failed to append global env source file to '$TARGET'" )
     fi
 
     TARGET="/root/.bashrc"
-    if [ -f $TARGET ] && [ -f $TARGET ] ; then
+    if [ -f $TARGET ] ; then
         local LINE_NR=$(getLastLineByPrefix "$GLOB_SRC" "$TARGET" 2> /dev/null || echo "-1")
-        [ $LINE_NR -lt 0 ] && ( echo $GLOB_SRC >> $TARGET || echoErr "ERROR: Failed to append global env source file to '$TARGET'" )
+        [[ $LINE_NR -lt 0 ]] && ( echo $GLOB_SRC >> $TARGET || echoErr "ERROR: Failed to append global env source file to '$TARGET'" )
+    fi
+
+    TARGET="~/.zshrc"
+    if [ -f $TARGET ] ; then
+        local LINE_NR=$(getLastLineByPrefix "$GLOB_SRC" "$TARGET" 2> /dev/null || echo "-1")
+        [[ $LINE_NR -lt 0 ]] && ( echo $GLOB_SRC >> $TARGET || echoErr "ERROR: Failed to append global env source file to '$TARGET'" )
+    fi
+
+    TARGET="~/.bashrc"
+    if [ -f $TARGET ] ; then
+        local LINE_NR=$(getLastLineByPrefix "$GLOB_SRC" "$TARGET" 2> /dev/null || echo "-1")
+        [[ $LINE_NR -lt 0 ]] && ( echo $GLOB_SRC >> $TARGET || echoErr "ERROR: Failed to append global env source file to '$TARGET'" )
     fi
 
     setEnv "$ENV_NAME" "$ENV_VALUE" "/etc/profile"
@@ -690,16 +702,16 @@ function setGlobPath() {
     ($(isNullOrEmpty "$VAL")) && echoWarn "WARNING: Value is undefined, no need to append anything to PATH at '$GLOBENV_SRC"
     
     local LINE_NR=$(getLastLineByPrefix "PATH=" "$GLOBENV_SRC" 2> /dev/null || echo "-1")
-    [ $LINE_NR -lt 0 ] && LINE_NR=$(getLastLineByPrefix "export PATH=" "$GLOBENV_SRC" 2> /dev/null || echo "-1")
+    [[ $LINE_NR -lt 0 ]] && LINE_NR=$(getLastLineByPrefix "export PATH=" "$GLOBENV_SRC" 2> /dev/null || echo "-1")
 
-    if [ $LINE_NR -lt 0 ] ; then
+    if [[ $LINE_NR -lt 0 ]] ; then
         echoInfo "INFO: Global PATH variable was NOT fount at '$GLOBENV_SRC', appending..."
         echo "export PATH=\"\$PATH\"" >> $GLOBENV_SRC
     fi
 
     LINE_NR=$(getLastLineByPrefix "PATH=" "$GLOBENV_SRC" 2> /dev/null || echo "-1")
-    [ $LINE_NR -lt 0 ] && LINE_NR=$(getLastLineByPrefix "export PATH=" "$GLOBENV_SRC" 2> /dev/null || echo "-1")
-    [ $LINE_NR -lt 0 ] && echoErr "ERROR: Failed to locate PATH variable at '$GLOBENV_SRC'" && return 1
+    [[ $LINE_NR -lt 0 ]] && LINE_NR=$(getLastLineByPrefix "export PATH=" "$GLOBENV_SRC" 2> /dev/null || echo "-1")
+    [[ $LINE_NR -lt 0 ]] && echoErr "ERROR: Failed to locate PATH variable at '$GLOBENV_SRC'" && return 1
 
     PATH_CONTENT=$(sed "${LINE_NR}q;d" "$GLOBENV_SRC")
     # remove quotes and variable key prefix
@@ -724,7 +736,7 @@ function setGlobLine() {
     ($(isNullOrEmpty "$PREFIX")) && echoErr "ERROR: Prefix was undefined, there is nothing to append to '$GLOBENV_SRC" && return 1
     
     local LINE_NR=$(getLastLineByPrefix "$PREFIX" "$GLOBENV_SRC" 2> /dev/null || echo "-1")
-    if [ $LINE_NR -lt 0 ] ; then
+    if [[ $LINE_NR -lt 0 ]] ; then
         echoWarn "WARNING: Global line was NOT fount at '$GLOBENV_SRC'"
         echoInfo "INFO: Appending '$VALUE' to the file '$GLOBENV_SRC'"
         echo "$VALUE" >> $GLOBENV_SRC
