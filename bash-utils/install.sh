@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -e
 touch /etc/profile 
 chmod 777 /etc/profile

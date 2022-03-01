@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # QUICK EDIT: FILE="/usr/local/bin/kira-utils.sh" && rm $FILE && nano $FILE && chmod 555 $FILE
 # NOTE: For this script to work properly the KIRA_GLOBS_DIR env variable should be set to "/var/kiraglob" or equivalent & the directory should exist
 REGEX_DNS="^(([a-zA-Z](-?[a-zA-Z0-9])*)\.)+[a-zA-Z]{2,}$"
@@ -11,7 +11,7 @@ REGEX_PUBLIC_IP='^([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?<!172\.(16|1
 REGEX_KIRA="^(kira)[a-zA-Z0-9]{39}$"
 
 function utilsVersion() {
-    echo "v0.0.9"
+    echo "v0.0.10"
 }
 
 function isNullOrEmpty() {
