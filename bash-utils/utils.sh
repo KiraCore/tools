@@ -11,11 +11,24 @@ REGEX_PUBLIC_IP='^([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?<!172\.(16|1
 REGEX_KIRA="^(kira)[a-zA-Z0-9]{39}$"
 
 function utilsVersion() {
-    echo "v0.0.11"
+    echo "v0.0.12"
+}
+
+# bash 3 (MAC) compatybility
+# "$(toLower "$1")"
+function toLower() {
+    echo $(echo "$1" |  tr '[:upper:]' '[:lower:]' )
+}
+
+# bash 3 (MAC) compatybility
+# "$(toUpper "$1")"
+function toUpper() {
+    echo $(echo "$1" |  tr '[:lower:]' '[:upper:]' )
 }
 
 function isNullOrEmpty() {
-    if [ -z "$1" ] || [ "${1,,}" == "null" ] ; then echo "true" ; else echo "false" ; fi
+    local val=$(toLower "$1")
+    if [ -z "$val" ] || [ "$val" == "null" ] || [ "$val" == "nil" ] ; then echo "true" ; else echo "false" ; fi
 }
 
 function delWhitespaces() {
@@ -60,7 +73,8 @@ function isInteger() {
 
 function isBoolean() {
     if ($(isNullOrEmpty "$1")) ; then echo "false" ; else
-        if [ "${1,,}" == "false" ] || [ "${1,,}" == "true" ] ; then echo "true"
+        local val=$(toLower "$1")
+        if [ "$val" == "false" ] || [ "$val" == "true" ] ; then echo "true"
         else echo "false" ; fi
     fi
 }
@@ -165,10 +179,10 @@ function tryMkDir {
     for kg_var in "$@" ; do
         kg_var=$(echo "$kg_var" | tr -d '\011\012\013\014\015\040' 2>/dev/null || echo -n "")
         [ -z "$kg_var" ] && continue
-        [ "${kg_var,,}" == "-v" ] && continue
+        [ "$(toLower "$kg_var")" == "-v" ] && continue
         
         if [ -f "$kg_var" ] ; then
-            if [ "${1,,}" == "-v" ] ; then
+            if [ "$(toLower "$1")" == "-v" ] ; then
                 rm -f "$kg_var" 2> /dev/null || : 
                 [ ! -f "$kg_var" ] && echo "removed file '$kg_var'" || echo "failed to remove file '$kg_var'"
             else
@@ -176,7 +190,7 @@ function tryMkDir {
             fi
         fi
 
-        if [ "${1,,}" == "-v" ]  ; then
+        if [ "$(toLower "$1")"== "-v" ]  ; then
             [ ! -d "$kg_var" ] && mkdir -p "$var" 2> /dev/null || :
             [ -d "$kg_var" ] && echo "created directory '$kg_var'" || echo "failed to create direcotry '$kg_var'"
         elif [ ! -d "$kg_var" ] ; then
@@ -276,9 +290,9 @@ function jsonEdit() {
     local VALUE="$2"
     [ ! -z "$3" ] && FIN=$(realpath $3 2> /dev/null || echo -n "")
     [ ! -z "$4" ] && FOUT=$(realpath $4 2> /dev/null || echo -n "")
-    [ "${VALUE,,}" == "null" ] && VALUE="None"
-    [ "${VALUE,,}" == "true" ] && VALUE="True"
-    [ "${VALUE,,}" == "false" ] && VALUE="False"
+    [ "$(toLower "$VALUE")" == "null" ] && VALUE="None"
+    [ "$(toLower "$VALUE")" == "true" ] && VALUE="True"
+    [ "$(toLower "$VALUE")" == "false" ] && VALUE="False"
     if [ ! -z "$INPUT" ] ; then
         for k in ${INPUT//./ } ; do
             k=$(echo $k | xargs 2> /dev/null || echo -n "") && [ -z "$k" ] && continue
@@ -307,9 +321,9 @@ function jsonObjEdit() {
     [ ! -z "$2" ] && FVAL=$(realpath $2 2> /dev/null || echo -n "")
     [ ! -z "$3" ] && FIN=$(realpath $3 2> /dev/null || echo -n "")
     [ ! -z "$4" ] && FOUT=$(realpath $4 2> /dev/null || echo -n "")
-    [ "${VALUE,,}" == "null" ] && VALUE="None"
-    [ "${VALUE,,}" == "true" ] && VALUE="True"
-    [ "${VALUE,,}" == "false" ] && VALUE="False"
+    [ "$(toLower "$VALUE")" == "null" ] && VALUE="None"
+    [ "$(toLower "$VALUE")" == "true" ] && VALUE="True"
+    [ "$(toLower "$VALUE")" == "false" ] && VALUE="False"
     if [ ! -z "$INPUT" ] ; then
         for k in ${INPUT//./ } ; do
             k=$(echo $k | xargs 2> /dev/null || echo -n "") && [ -z "$k" ] && continue
@@ -347,7 +361,7 @@ function urlContentLength() {
 }
 
 function globName() {
-    echo $(echo "${1,,}" | tr -d '\011\012\013\014\015\040' | md5sum | awk '{ print $1 }')
+    echo $(echo "$(toLower "$1")" | tr -d '\011\012\013\014\015\040' | md5sum | awk '{ print $1 }')
     return 0
 }
 
@@ -525,7 +539,7 @@ function isCommand {
 
 function isServiceActive {
     local ISACT=$(systemctl is-active "$1" 2> /dev/null || echo "inactive")
-    [ "${ISACT,,}" == "active" ] && echo "true" || echo "false"
+    [ "$(toLower "$ISACT")" == "active" ] && echo "true" || echo "false"
 }
 
 # returns 0 if failure, otherwise natural number in microseconds
@@ -549,10 +563,10 @@ function pressToContinue {
             local kg_OPTION=""
             local FOUND=false
             read -n 1 -s kg_OPTION
-            kg_OPTION="${kg_OPTION,,}"
+            kg_OPTION=$(toLower "$kg_OPTION")
             for kg_var in "$@" ; do
                 kg_var=$(echo "$kg_var" | tr -d '\011\012\013\014\015\040' 2>/dev/null || echo -n "")
-                [ "${kg_var,,}" == "$kg_OPTION" ] && globSet OPTION "$kg_OPTION" && FOUND=true && break
+                [ "$(toLower "$kg_var")" == "$kg_OPTION" ] && globSet OPTION "$kg_OPTION" && FOUND=true && break
             done
             [ "$FOUND" == "true" ] && break
         done
