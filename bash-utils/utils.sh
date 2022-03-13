@@ -667,7 +667,7 @@ function setEnv() {
 
         if [[ $LINE_NR -ge 0 ]] ; then
             echoWarn "WARNING: Wiped old env '$ENV_NAME' at line '$LINE_NR' in the file '$ENV_FILE'"
-            sed -i '' "${LINE_NR}d" $ENV_FILE
+            sed -i="" "${LINE_NR}d" $ENV_FILE
         fi
         return 0
     else
@@ -780,7 +780,7 @@ function setGlobLine() {
     fi
 
     echoWarn "WARNING: Wiped old line '$LINE_NR' in the file '$GLOBENV_SRC'"
-    sed -i '' "${LINE_NR}d" $GLOBENV_SRC
+    sed -i="" "${LINE_NR}d" $GLOBENV_SRC
     
     if ($(isNullOrEmpty "$VALUE")) ; then
         echoInfo "INFO: There was nothing defined to append to the file '$GLOBENV_SRC'"
