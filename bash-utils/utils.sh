@@ -11,7 +11,7 @@ REGEX_PUBLIC_IP='^([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?<!172\.(16|1
 REGEX_KIRA="^(kira)[a-zA-Z0-9]{39}$"
 
 function utilsVersion() {
-    echo "v0.0.13"
+    echo "v0.0.14"
 }
 
 # bash 3 (MAC) compatybility
@@ -662,7 +662,7 @@ function setLineByNumber() {
     local INDEX=$1
     local TEXT=$2
     local FILE=$3
-    sed -i="" "$INDEX c\
+    sed -i"" "$INDEX c\
 $TEXT" $FILE
 }
 
@@ -685,7 +685,7 @@ function setEnv() {
 
         if [[ $LINE_NR -ge 0 ]] ; then
             echoWarn "WARNING: Wiped old env '$ENV_NAME' at line '$LINE_NR' in the file '$ENV_FILE'"
-            sed -i="" "${LINE_NR}d" $ENV_FILE
+            sed -i"" "${LINE_NR}d" $ENV_FILE
         fi
         return 0
     else
@@ -798,7 +798,7 @@ function setGlobLine() {
     fi
 
     echoWarn "WARNING: Wiped old line '$LINE_NR' in the file '$GLOBENV_SRC'"
-    sed -i="" "${LINE_NR}d" $GLOBENV_SRC
+    sed -i"" "${LINE_NR}d" $GLOBENV_SRC
     
     if ($(isNullOrEmpty "$VALUE")) ; then
         echoInfo "INFO: There was nothing defined to append to the file '$GLOBENV_SRC'"
