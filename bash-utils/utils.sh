@@ -11,7 +11,7 @@ REGEX_PUBLIC_IP='^([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?<!172\.(16|1
 REGEX_KIRA="^(kira)[a-zA-Z0-9]{39}$"
 
 function utilsVersion() {
-    echo "v0.0.12"
+    echo "v0.0.13"
 }
 
 # bash 3 (MAC) compatybility
@@ -632,9 +632,11 @@ function echol() {
 }
 
 # for now this funciton is only intended for env variables discovery
-function getLastLineByPrefix() {
-    local PREFIX=$1
-    local FILE=$2
+function getNLineByPrefix() {
+    local INDEX=$1
+    local PREFIX=$2
+    local FILE=$3
+    INDEX="$((INDEX-1))"
     if ($(isNullOrWhitespaces "$PREFIX")) || ($(isNullOrWhitespaces "$FILE")) || [ ! -f $FILE ] ; then echo "-1" ; else
         PREFIX=${PREFIX//"="/"\="}
         PREFIX=${PREFIX//"/"/"\/"}
@@ -642,10 +644,26 @@ function getLastLineByPrefix() {
         local lines=$(sed -n "/^${PREFIX}/=" $FILE)
         if ($(isNullOrWhitespaces "$lines")) ; then echo "-1" ; else
             local lineArr=($(echo $lines))
-            local lineNr=${lineArr[-1]}
+            local lineNr=${lineArr[$INDEX]}
             ($(isNaturalNumber "$lineNr")) && echo "$lineNr" || echo "-1"
         fi
     fi
+}
+
+function getLastLineByPrefix() {
+    getNLineByPrefix "0" "$1" "$2"
+}
+
+function getFirstLineByPrefix() {
+    getNLineByPrefix "1" "$1" "$2"
+}
+
+function setLineByNumber() {
+    local INDEX=$1
+    local TEXT=$2
+    local FILE=$3
+    sed -i="" "$INDEX c\
+$TEXT" $FILE
 }
 
 function setEnv() {
