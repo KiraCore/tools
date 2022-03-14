@@ -11,7 +11,7 @@ REGEX_PUBLIC_IP='^([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?<!172\.(16|1
 REGEX_KIRA="^(kira)[a-zA-Z0-9]{39}$"
 
 function utilsVersion() {
-    echo "v0.0.14"
+    echo "v0.0.15"
 }
 
 # bash 3 (MAC) compatybility
@@ -641,7 +641,8 @@ function getNLineByPrefix() {
         PREFIX=${PREFIX//"="/"\="}
         PREFIX=${PREFIX//"/"/"\/"}
         PREFIX=${PREFIX//"["/"\["}
-        local lines=$(sed -n "/^${PREFIX}/=" $FILE)
+        PREFIX=${PREFIX//"*"/"\*"}
+        local lines=$(sed -n "/^[[:blank:]]*${PREFIX}/=" $FILE)
         if ($(isNullOrWhitespaces "$lines")) ; then echo "-1" ; else
             local lineArr=($(echo $lines))
             local lineNr=${lineArr[$INDEX]}
