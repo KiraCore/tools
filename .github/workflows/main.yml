@@ -123,7 +123,7 @@ jobs:
               echo "(current dir): $PWD" && ls -l ./
               tar xvf ./deb.tar.gz
               chmod -Rv 777 ./
-              echo "RELEASE_VER=$(grep -Fn -m 1 'Release: ' ./bin/RELEASE.md | rev | cut -d ":" -f1 | rev | xargs | tr -dc '[:alnum:]\-\.' || echo '')" >> $GITHUB_ENV
+              echo "RELEASE_VER=$(grep -Fn -m 1 'Release: ' ./RELEASE.md | rev | cut -d ":" -f1 | rev | xargs | tr -dc '[:alnum:]\-\.' || echo '')" >> $GITHUB_ENV
           # Branch name is also a version of the release
           # ref: https://stackoverflow.com/questions/58033366/how-to-get-the-current-branch-within-github-actions
           - name: Extract branch name on push
@@ -148,7 +148,7 @@ jobs:
               echo "   Event name: ${{ github.event_name }}"
               echo " Release ver.: ${{ env.RELEASE_VER }}"
               echo " Release file:"
-              cat ./bin/RELEASE.md
+              cat ./RELEASE.md
           - name: Reject on error
             # ref.: https://github.com/andrewslotin/rummelsnuff, v1.1.0
             uses: andrewslotin/rummelsnuff@a0c9c1929f44eefff922aced1ee4dd64eddf12d6

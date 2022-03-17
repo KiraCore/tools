@@ -26,6 +26,9 @@ if  ($(isVersion "$BRANCH")) ; then
         RELEASE_LINE_NR=$(getFirstLineByPrefix "Release:" $RELEASE_FILE)
         setLineByNumber $RELEASE_LINE_NR "Release: \`$VERSION\`" $RELEASE_FILE
     fi
+
+    RELEASE_VERSION=$(grep -Fn -m 1 'Release: ' $RELEASE_FILE | rev | cut -d ":" -f1 | rev | xargs | tr -dc '[:alnum:]\-\.' || echo '')
+    [ "${RELEASE_VERSION}" != "$VERSION" ] && echoErr "ERROR: Failed to update release file" && exit 1
 else
     echoWarn "WARNING: Branch '$BRANCH' is not versioned, release file will NOT be updated"
 fi

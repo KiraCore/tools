@@ -1,4 +1,4 @@
-Release: `v0.0.4`
+Release: `undefined`
 
 Features:
 * Added version command to `tmconnect`
