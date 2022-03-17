@@ -49,11 +49,11 @@ function pcgRelease() {
         ./scripts/build.sh "${PLATFORM}" "${ARCH}" "$BIN_PATH/tmconnect"
         pcgConfigure "$ARCH" "$VERSION" "$PLATFORM" "$BIN_PATH" $TMP_PKG_CONFIG_FILE
         nfpm pkg --packager deb --target "$RELEASE_PATH" -f $TMP_PKG_CONFIG_FILE
-        cp -fv "$RELEASE_PATH" ./bin/sekai-${PLATFORM}-${ARCH}.deb
+        cp -fv "$RELEASE_PATH" ./bin/tmconnect-${PLATFORM}-${ARCH}.deb
     else
         ./scripts/build.sh "${PLATFORM}" "${ARCH}" "$BIN_PATH/tmconnect.exe"
         # deb is not supported on windows, simply copy the executables
-        cp -fv $BIN_PATH/tmconnect.exe ./bin/sekai-${PLATFORM}-${ARCH}.exe
+        cp -fv $BIN_PATH/tmconnect.exe ./bin/tmconnect-${PLATFORM}-${ARCH}.exe
     fi
 }
 
