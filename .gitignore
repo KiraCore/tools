@@ -1,0 +1,6 @@
+bin/
+*/bin
+nfpm_*
+*/nfpm_*
+*-tmp
+*/*-tmp
