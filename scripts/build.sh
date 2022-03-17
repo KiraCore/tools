@@ -2,25 +2,16 @@
 set -e
 set -x
 . /etc/profile
+. ./bash-utils/utils.sh
 
-UTILS_VER=$(utilsVersion 2> /dev/null || echo "")
-
-# Installing utils is essential to simplify the setup steps
-if [[ $(versionToNumber "$UTILS_VER" || echo "0") -lt $(versionToNumber "v0.0.15" || echo "1") ]] ; then
-    echo "INFO: KIRA utils were NOT installed on the system, setting up..." && sleep 2
-    KIRA_UTILS_BRANCH="v0.0.3" && cd /tmp && rm -fv ./i.sh && \
-    wget https://raw.githubusercontent.com/KiraCore/tools/$KIRA_UTILS_BRANCH/bash-utils/install.sh -O ./i.sh && \
-    chmod 777 ./i.sh && ./i.sh "$KIRA_UTILS_BRANCH" "/var/kiraglob" && . /etc/profile && loadGlobEnvs
-else
-    echoInfo "INFO: KIRA utils are up to date, latest version $UTILS_VER" && sleep 2
-fi
+echoInfo "INFO: KIRA utils, latest version $(utilsVersion)"
 
 BRANCH=$(git rev-parse --symbolic-full-name --abbrev-ref HEAD || echo "")
 ( [ -z "$BRANCH" ] || [ "${BRANCH,,}" == "head" ] ) && BRANCH="${SOURCE_BRANCH}"
 
 # check if banch is a version branch 
 # TODO: add isVersion func to utils
-if [[ $(versionToNumber "$BRANCH" || echo "0") -gt 0 ]] ; then
+if  ($(isVersion "$BRANCH")) ; then
     VERSION=$BRANCH
     RELEASE_FILE=./RELEASE.md
     RELEASE_VERSION=$(grep -Fn -m 1 'Release: ' $RELEASE_FILE | rev | cut -d ":" -f1 | rev | xargs | tr -dc '[:alnum:]\-\.' || echo '')

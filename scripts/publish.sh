@@ -2,6 +2,7 @@
 set -e
 set -x
 . /etc/profile
+. ./bash-utils/utils.sh
 
 WORKDIR=$PWD
 

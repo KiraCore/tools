@@ -2,6 +2,7 @@
 set -e
 set -x
 . /etc/profile
+. ../bash-utils/utils.sh
 
 go mod tidy
 GO111MODULE=on go mod verify
