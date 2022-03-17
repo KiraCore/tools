@@ -80,6 +80,7 @@ jobs:
               chmod -Rv 555 ./scripts
               chmod -Rv 555 ./tmconnect/scripts
               chmod -Rv 555 ./bash-utils
+              chmod -Rv 666 ./RELEASE.md 
               export SOURCE_BRANCH=${{ env.SOURCE_BRANCH }}
               make build
               tmconnect version
