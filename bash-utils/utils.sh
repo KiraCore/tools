@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # QUICK EDIT: FILE="/usr/local/bin/kira-utils.sh" && rm $FILE && nano $FILE && chmod 555 $FILE
 # NOTE: For this script to work properly the KIRA_GLOBS_DIR env variable should be set to "/var/kiraglob" or equivalent & the directory should exist
 REGEX_DNS="^(([a-zA-Z](-?[a-zA-Z0-9])*)\.)+[a-zA-Z]{2,}$"
@@ -11,11 +11,24 @@ REGEX_PUBLIC_IP='^([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?<!172\.(16|1
 REGEX_KIRA="^(kira)[a-zA-Z0-9]{39}$"
 
 function utilsVersion() {
-    echo "v0.0.5"
+    echo "v0.0.15"
+}
+
+# bash 3 (MAC) compatybility
+# "$(toLower "$1")"
+function toLower() {
+    echo $(echo "$1" |  tr '[:upper:]' '[:lower:]' )
+}
+
+# bash 3 (MAC) compatybility
+# "$(toUpper "$1")"
+function toUpper() {
+    echo $(echo "$1" |  tr '[:lower:]' '[:upper:]' )
 }
 
 function isNullOrEmpty() {
-    if [ -z "$1" ] || [ "${1,,}" == "null" ] ; then echo "true" ; else echo "false" ; fi
+    local val=$(toLower "$1")
+    if [ -z "$val" ] || [ "$val" == "null" ] || [ "$val" == "nil" ] ; then echo "true" ; else echo "false" ; fi
 }
 
 function delWhitespaces() {
@@ -60,7 +73,8 @@ function isInteger() {
 
 function isBoolean() {
     if ($(isNullOrEmpty "$1")) ; then echo "false" ; else
-        if [ "${1,,}" == "false" ] || [ "${1,,}" == "true" ] ; then echo "true"
+        local val=$(toLower "$1")
+        if [ "$val" == "false" ] || [ "$val" == "true" ] ; then echo "true"
         else echo "false" ; fi
     fi
 }
@@ -93,7 +107,7 @@ function isMnemonic() {
     kg_mnem=$(echo "$1" | xargs 2> /dev/null || echo -n "")
     kg_count=$(echo "$kg_mnem" | wc -w 2> /dev/null || echo -n "")
     (! $(isNaturalNumber $kg_count)) && kg_count=0
-    if (( $kg_count % 3 == 0 )) && [ $kg_count -ge 12 ] ; then echo "true" ; else echo "false" ; fi
+    if (( $kg_count % 3 == 0 )) && [[ $kg_count -ge 12 ]] ; then echo "true" ; else echo "false" ; fi
 }
 
 function date2unix() {
@@ -130,6 +144,21 @@ function isFileEmpty() {
     fi
 }
 
+# Example use case: [[ $(versionToNumber "v0.0.0.3") -lt $(versionToNumber "v1.0.0.2") ]] && echo true || echo false
+function versionToNumber() {
+    local version=$(echo "$1" | grep -o '[^-]*$' 2> /dev/null || echo "v0.0.0.0")
+    local major=$(echo $version | cut -d. -f1 | sed 's/[^0-9]*//g' 2> /dev/null || echo "0") && (! $(isNaturalNumber "$major")) && major=0
+    local minor=$(echo $version | cut -d. -f2 | sed 's/[^0-9]*//g' 2> /dev/null || echo "0") && (! $(isNaturalNumber "$minor")) && minor=0
+    local micro=$(echo $version | cut -d. -f3 | sed 's/[^0-9]*//g' 2> /dev/null || echo "0") && (! $(isNaturalNumber "$micro")) && micro=0
+    local build=$(echo $version | cut -d. -f4 | sed 's/[^0-9]*//g' 2> /dev/null || echo "0") && (! $(isNaturalNumber "$build")) && build=0
+    local sum=0
+    sum=$(( sum + ( 1 * build ) )) && [[ $build -le 0 ]] && build=0
+    sum=$(( sum + ( 10000 * micro  ) )) && [[ $micro -le 0 ]] && micro=10000
+    sum=$(( sum + ( 100000000 * minor ) )) && [[ $minor -le 0 ]] && minor=100000000
+    sum=$(( sum + ( 1000000000000 * major) )) && [[ $major -le 0 ]] && major=1000000000000
+    echo $sum
+}
+
 function sha256() {
     if [ -z "$1" ] ; then
         echo $(cat | sha256sum | awk '{ print $1 }' | xargs || echo -n "") || echo -n ""
@@ -150,10 +179,10 @@ function tryMkDir {
     for kg_var in "$@" ; do
         kg_var=$(echo "$kg_var" | tr -d '\011\012\013\014\015\040' 2>/dev/null || echo -n "")
         [ -z "$kg_var" ] && continue
-        [ "${kg_var,,}" == "-v" ] && continue
+        [ "$(toLower "$kg_var")" == "-v" ] && continue
         
         if [ -f "$kg_var" ] ; then
-            if [ "${1,,}" == "-v" ] ; then
+            if [ "$(toLower "$1")" == "-v" ] ; then
                 rm -f "$kg_var" 2> /dev/null || : 
                 [ ! -f "$kg_var" ] && echo "removed file '$kg_var'" || echo "failed to remove file '$kg_var'"
             else
@@ -161,7 +190,7 @@ function tryMkDir {
             fi
         fi
 
-        if [ "${1,,}" == "-v" ]  ; then
+        if [ "$(toLower "$1")"== "-v" ]  ; then
             [ ! -d "$kg_var" ] && mkdir -p "$var" 2> /dev/null || :
             [ -d "$kg_var" ] && echo "created directory '$kg_var'" || echo "failed to create direcotry '$kg_var'"
         elif [ ! -d "$kg_var" ] ; then
@@ -261,9 +290,9 @@ function jsonEdit() {
     local VALUE="$2"
     [ ! -z "$3" ] && FIN=$(realpath $3 2> /dev/null || echo -n "")
     [ ! -z "$4" ] && FOUT=$(realpath $4 2> /dev/null || echo -n "")
-    [ "${VALUE,,}" == "null" ] && VALUE="None"
-    [ "${VALUE,,}" == "true" ] && VALUE="True"
-    [ "${VALUE,,}" == "false" ] && VALUE="False"
+    [ "$(toLower "$VALUE")" == "null" ] && VALUE="None"
+    [ "$(toLower "$VALUE")" == "true" ] && VALUE="True"
+    [ "$(toLower "$VALUE")" == "false" ] && VALUE="False"
     if [ ! -z "$INPUT" ] ; then
         for k in ${INPUT//./ } ; do
             k=$(echo $k | xargs 2> /dev/null || echo -n "") && [ -z "$k" ] && continue
@@ -292,9 +321,9 @@ function jsonObjEdit() {
     [ ! -z "$2" ] && FVAL=$(realpath $2 2> /dev/null || echo -n "")
     [ ! -z "$3" ] && FIN=$(realpath $3 2> /dev/null || echo -n "")
     [ ! -z "$4" ] && FOUT=$(realpath $4 2> /dev/null || echo -n "")
-    [ "${VALUE,,}" == "null" ] && VALUE="None"
-    [ "${VALUE,,}" == "true" ] && VALUE="True"
-    [ "${VALUE,,}" == "false" ] && VALUE="False"
+    [ "$(toLower "$VALUE")" == "null" ] && VALUE="None"
+    [ "$(toLower "$VALUE")" == "true" ] && VALUE="True"
+    [ "$(toLower "$VALUE")" == "false" ] && VALUE="False"
     if [ ! -z "$INPUT" ] ; then
         for k in ${INPUT//./ } ; do
             k=$(echo $k | xargs 2> /dev/null || echo -n "") && [ -z "$k" ] && continue
@@ -332,7 +361,7 @@ function urlContentLength() {
 }
 
 function globName() {
-    echo $(echo "${1,,}" | tr -d '\011\012\013\014\015\040' | md5sum | awk '{ print $1 }')
+    echo $(echo "$(toLower "$1")" | tr -d '\011\012\013\014\015\040' | md5sum | awk '{ print $1 }')
     return 0
 }
 
@@ -510,7 +539,7 @@ function isCommand {
 
 function isServiceActive {
     local ISACT=$(systemctl is-active "$1" 2> /dev/null || echo "inactive")
-    [ "${ISACT,,}" == "active" ] && echo "true" || echo "false"
+    [ "$(toLower "$ISACT")" == "active" ] && echo "true" || echo "false"
 }
 
 # returns 0 if failure, otherwise natural number in microseconds
@@ -534,10 +563,10 @@ function pressToContinue {
             local kg_OPTION=""
             local FOUND=false
             read -n 1 -s kg_OPTION
-            kg_OPTION="${kg_OPTION,,}"
+            kg_OPTION=$(toLower "$kg_OPTION")
             for kg_var in "$@" ; do
                 kg_var=$(echo "$kg_var" | tr -d '\011\012\013\014\015\040' 2>/dev/null || echo -n "")
-                [ "${kg_var,,}" == "$kg_OPTION" ] && globSet OPTION "$kg_OPTION" && FOUND=true && break
+                [ "$(toLower "$kg_var")" == "$kg_OPTION" ] && globSet OPTION "$kg_OPTION" && FOUND=true && break
             done
             [ "$FOUND" == "true" ] && break
         done
@@ -602,21 +631,40 @@ function echol() {
     grep -n "$1" $0 |  sed "s/echo_line_no//" 
 }
 
-
 # for now this funciton is only intended for env variables discovery
-function getLastLineByPrefix() {
-    local PREFIX=$1
-    local FILE=$2
-    if [ -z "$PREFIX" ] || [ -z "$FILE" ] || [ ! -f $FILE ] ; then echo "-1" ; else
+function getNLineByPrefix() {
+    local INDEX=$1
+    local PREFIX=$2
+    local FILE=$3
+    INDEX="$((INDEX-1))"
+    if ($(isNullOrWhitespaces "$PREFIX")) || ($(isNullOrWhitespaces "$FILE")) || [ ! -f $FILE ] ; then echo "-1" ; else
         PREFIX=${PREFIX//"="/"\="}
         PREFIX=${PREFIX//"/"/"\/"}
         PREFIX=${PREFIX//"["/"\["}
-        local lines=$(sed -n "/^${PREFIX}/=" $FILE)
-        if [ -z "$lines" ] ; then echo "-1" ; else
+        PREFIX=${PREFIX//"*"/"\*"}
+        local lines=$(sed -n "/^[[:blank:]]*${PREFIX}/=" $FILE)
+        if ($(isNullOrWhitespaces "$lines")) ; then echo "-1" ; else
             local lineArr=($(echo $lines))
-            echo ${lineArr[-1]}
+            local lineNr=${lineArr[$INDEX]}
+            ($(isNaturalNumber "$lineNr")) && echo "$lineNr" || echo "-1"
         fi
     fi
+}
+
+function getLastLineByPrefix() {
+    getNLineByPrefix "0" "$1" "$2"
+}
+
+function getFirstLineByPrefix() {
+    getNLineByPrefix "1" "$1" "$2"
+}
+
+function setLineByNumber() {
+    local INDEX=$1
+    local TEXT=$2
+    local FILE=$3
+    sed -i"" "$INDEX c\
+$TEXT" $FILE
 }
 
 function setEnv() {
@@ -626,7 +674,7 @@ function setEnv() {
     
     if [ ! -z "$ENV_NAME" ] && [ -f $ENV_FILE ] ; then
         local LINE_NR=$(getLastLineByPrefix "${ENV_NAME}=" "$ENV_FILE" 2> /dev/null || echo "-1")
-        [ $LINE_NR -lt 0 ] && LINE_NR=$(getLastLineByPrefix "export ${ENV_NAME}=" "$ENV_FILE" 2> /dev/null || echo "-1")
+        [[ $LINE_NR -lt 0 ]] && LINE_NR=$(getLastLineByPrefix "export ${ENV_NAME}=" "$ENV_FILE" 2> /dev/null || echo "-1")
 
         # add quotes if string has any whitespaces
         echoInfo "INFO: Appending env '$ENV_NAME' with value '$ENV_VALUE' to file '$ENV_FILE'"
@@ -636,9 +684,9 @@ function setEnv() {
             echo "export ${ENV_NAME}=${ENV_VALUE}" >> $ENV_FILE
         fi
 
-        if [ $LINE_NR -ge 0 ] ; then
+        if [[ $LINE_NR -ge 0 ]] ; then
             echoWarn "WARNING: Wiped old env '$ENV_NAME' at line '$LINE_NR' in the file '$ENV_FILE'"
-            sed -i "${LINE_NR}d" $ENV_FILE
+            sed -i"" "${LINE_NR}d" $ENV_FILE
         fi
         return 0
     else
@@ -659,25 +707,43 @@ function setGlobEnv() {
     local TARGET="/$LOGNAME/.bashrc"
     if [ ! -z "$LOGNAME" ] && [ -f  $TARGET ] ; then
         local LINE_NR=$(getLastLineByPrefix "$GLOB_SRC" "$TARGET" 2> /dev/null || echo "-1")
-        [ $LINE_NR -lt 0 ] && ( echo $GLOB_SRC >> $TARGET || echoErr "ERROR: Failed to append global env source file to '$TARGET'" )
+        [[ $LINE_NR -lt 0 ]] && ( echo $GLOB_SRC >> $TARGET || echoErr "ERROR: Failed to append global env source file to '$TARGET'" )
     fi
 
     TARGET="/$USERNAME/.bashrc"
     if [ ! -z "$USERNAME" ] && [ -f $TARGET ] ; then
         local LINE_NR=$(getLastLineByPrefix "$GLOB_SRC" "$TARGET" 2> /dev/null || echo "-1")
-        [ $LINE_NR -lt 0 ] && ( echo $GLOB_SRC >> $TARGET || echoErr "ERROR: Failed to append global env source file to '$TARGET'" )
+        [[ $LINE_NR -lt 0 ]] && ( echo $GLOB_SRC >> $TARGET || echoErr "ERROR: Failed to append global env source file to '$TARGET'" )
     fi
 
     TARGET="/$SUDOUSER/.bashrc"
     if [ ! -z "$SUDOUSER" ] && [ -f $TARGET ] ; then
         local LINE_NR=$(getLastLineByPrefix "$GLOB_SRC" "$TARGET" 2> /dev/null || echo "-1")
-        [ $LINE_NR -lt 0 ] && ( echo $GLOB_SRC >> $TARGET || echoErr "ERROR: Failed to append global env source file to '$TARGET'" )
+        [[ $LINE_NR -lt 0 ]] && ( echo $GLOB_SRC >> $TARGET || echoErr "ERROR: Failed to append global env source file to '$TARGET'" )
     fi
 
     TARGET="/root/.bashrc"
-    if [ -f $TARGET ] && [ -f $TARGET ] ; then
+    if [ -f $TARGET ] ; then
         local LINE_NR=$(getLastLineByPrefix "$GLOB_SRC" "$TARGET" 2> /dev/null || echo "-1")
-        [ $LINE_NR -lt 0 ] && ( echo $GLOB_SRC >> $TARGET || echoErr "ERROR: Failed to append global env source file to '$TARGET'" )
+        [[ $LINE_NR -lt 0 ]] && ( echo $GLOB_SRC >> $TARGET || echoErr "ERROR: Failed to append global env source file to '$TARGET'" )
+    fi
+
+    TARGET="~/.zshrc"
+    if [ -f $TARGET ] ; then
+        local LINE_NR=$(getLastLineByPrefix "$GLOB_SRC" "$TARGET" 2> /dev/null || echo "-1")
+        [[ $LINE_NR -lt 0 ]] && ( echo $GLOB_SRC >> $TARGET || echoErr "ERROR: Failed to append global env source file to '$TARGET'" )
+    fi
+
+    TARGET="~/.bashrc"
+    if [ -f $TARGET ] ; then
+        local LINE_NR=$(getLastLineByPrefix "$GLOB_SRC" "$TARGET" 2> /dev/null || echo "-1")
+        [[ $LINE_NR -lt 0 ]] && ( echo $GLOB_SRC >> $TARGET || echoErr "ERROR: Failed to append global env source file to '$TARGET'" )
+    fi
+
+    TARGET="~/.profile"
+    if [ -f $TARGET ] ; then
+        local LINE_NR=$(getLastLineByPrefix "$GLOB_SRC" "$TARGET" 2> /dev/null || echo "-1")
+        [[ $LINE_NR -lt 0 ]] && ( echo $GLOB_SRC >> $TARGET || echoErr "ERROR: Failed to append global env source file to '$TARGET'" )
     fi
 
     setEnv "$ENV_NAME" "$ENV_VALUE" "/etc/profile"
@@ -690,20 +756,21 @@ function setGlobPath() {
     ($(isNullOrEmpty "$VAL")) && echoWarn "WARNING: Value is undefined, no need to append anything to PATH at '$GLOBENV_SRC"
     
     local LINE_NR=$(getLastLineByPrefix "PATH=" "$GLOBENV_SRC" 2> /dev/null || echo "-1")
-    [ $LINE_NR -lt 0 ] && LINE_NR=$(getLastLineByPrefix "export PATH=" "$GLOBENV_SRC" 2> /dev/null || echo "-1")
+    [[ $LINE_NR -lt 0 ]] && LINE_NR=$(getLastLineByPrefix "export PATH=" "$GLOBENV_SRC" 2> /dev/null || echo "-1")
 
-    if [ $LINE_NR -lt 0 ] ; then
+    if [[ $LINE_NR -lt 0 ]] ; then
         echoInfo "INFO: Global PATH variable was NOT fount at '$GLOBENV_SRC', appending..."
         echo "export PATH=\"\$PATH\"" >> $GLOBENV_SRC
     fi
 
-    LINE_NR=$(getLastLineByPrefix "PATH=" "$GLOBENV_SRC" 2> /dev/null || echo "-1")
-    [ $LINE_NR -lt 0 ] && LINE_NR=$(getLastLineByPrefix "export PATH=" "$GLOBENV_SRC" 2> /dev/null || echo "-1")
-    [ $LINE_NR -lt 0 ] && echoErr "ERROR: Failed to locate PATH variable at '$GLOBENV_SRC'" && return 1
+    local EXPORT_PREFIX="false" && LINE_NR=$(getLastLineByPrefix "PATH=" "$GLOBENV_SRC" 2> /dev/null || echo "-1")
+    [[ $LINE_NR -lt 0 ]] && LINE_NR=$(getLastLineByPrefix "export PATH=" "$GLOBENV_SRC" 2> /dev/null || echo "-1") && EXPORT_PREFIX="true"
+    [[ $LINE_NR -lt 0 ]] && echoErr "ERROR: Failed to locate PATH variable at '$GLOBENV_SRC'" && return 1
 
     PATH_CONTENT=$(sed "${LINE_NR}q;d" "$GLOBENV_SRC")
     # remove quotes and variable key prefix
-    PATH_CONTENT=$(echo ${PATH_CONTENT#"PATH="} | tr -d '"')
+    [ "${EXPORT_PREFIX}" == "false" ] && PATH_CONTENT=$(echo ${PATH_CONTENT#"PATH="} | tr -d '"')
+    [ "${EXPORT_PREFIX}" == "true" ] && PATH_CONTENT=$(echo ${PATH_CONTENT#"export PATH="} | tr -d '"')
 
     if ($(isSubStr "$PATH_CONTENT" "$VAL")); then
         echoWarn "WARNING: PATH already contains value '$VAL', nothing to append"
@@ -724,7 +791,7 @@ function setGlobLine() {
     ($(isNullOrEmpty "$PREFIX")) && echoErr "ERROR: Prefix was undefined, there is nothing to append to '$GLOBENV_SRC" && return 1
     
     local LINE_NR=$(getLastLineByPrefix "$PREFIX" "$GLOBENV_SRC" 2> /dev/null || echo "-1")
-    if [ $LINE_NR -lt 0 ] ; then
+    if [[ $LINE_NR -lt 0 ]] ; then
         echoWarn "WARNING: Global line was NOT fount at '$GLOBENV_SRC'"
         echoInfo "INFO: Appending '$VALUE' to the file '$GLOBENV_SRC'"
         echo "$VALUE" >> $GLOBENV_SRC
@@ -732,7 +799,7 @@ function setGlobLine() {
     fi
 
     echoWarn "WARNING: Wiped old line '$LINE_NR' in the file '$GLOBENV_SRC'"
-    sed -i "${LINE_NR}d" $GLOBENV_SRC
+    sed -i"" "${LINE_NR}d" $GLOBENV_SRC
     
     if ($(isNullOrEmpty "$VALUE")) ; then
         echoInfo "INFO: There was nothing defined to append to the file '$GLOBENV_SRC'"
