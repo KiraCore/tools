@@ -6,8 +6,7 @@ set -x
 
 echoInfo "INFO: KIRA utils, latest version $(utilsVersion)"
 
-BRANCH=$(git rev-parse --symbolic-full-name --abbrev-ref HEAD || echo "")
-( [ -z "$BRANCH" ] || [ "${BRANCH,,}" == "head" ] ) && BRANCH="${SOURCE_BRANCH}"
+[ -z "$SOURCE_BRANCH" ] && BRANCH=$(git rev-parse --symbolic-full-name --abbrev-ref HEAD || echo "") || BRANCH=$SOURCE_BRANCH
 
 # check if banch is a version branch 
 # TODO: add isVersion func to utils
