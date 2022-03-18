@@ -4,3 +4,7 @@ nfpm_*
 */nfpm_*
 *-tmp
 */*-tmp
+*/.build
+*/dist
+*/spec
+*/__pycache__

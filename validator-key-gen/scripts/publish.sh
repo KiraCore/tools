@@ -26,8 +26,8 @@ BRANCH=$(git rev-parse --symbolic-full-name --abbrev-ref HEAD || echo "")
 ( [ -z "$BRANCH" ] || [ "${BRANCH,,}" == "head" ] ) && BRANCH="${SOURCE_BRANCH}"
 
 CONSTANS_FILE=./main.go
-VERSION=$(grep -Fn -m 1 'TmConnectVersion ' $CONSTANS_FILE | rev | cut -d "=" -f1 | rev | xargs | tr -dc '[:alnum:]\-\.' || echo '')
-($(isNullOrEmpty "$VERSION")) && ( echoErr "ERROR: TmConnectVersion was NOT found in '$CONSTANS_FILE' !" && sleep 5 && exit 1 )
+VERSION=$(grep -Fn -m 1 'PrivValidatorKeyGenVersion ' $CONSTANS_FILE | rev | cut -d "=" -f1 | rev | xargs | tr -dc '[:alnum:]\-\.' || echo '')
+($(isNullOrEmpty "$VERSION")) && ( echoErr "ERROR: PrivValidatorKeyGenVersion was NOT found in '$CONSTANS_FILE' !" && sleep 5 && exit 1 )
 
 function pcgRelease() {
     local ARCH="$1" && ARCH=$(echo "$ARCH" |  tr '[:upper:]' '[:lower:]' )
@@ -45,15 +45,15 @@ function pcgRelease() {
     rm -rfv $TMP_PKG_CONFIG_FILE && cp -v $PKG_CONFIG_FILE $TMP_PKG_CONFIG_FILE
 
     if [ "$PLATFORM" != "windows" ] ; then
-        local RELEASE_PATH="${RELEASE_DIR}/tmconnect_${VERSION}_${ARCH}.deb"
-        ./scripts/build.sh "${PLATFORM}" "${ARCH}" "$BIN_PATH/tmconnect"
+        local RELEASE_PATH="${RELEASE_DIR}/validator-key-gen_${VERSION}_${ARCH}.deb"
+        ./scripts/build.sh "${PLATFORM}" "${ARCH}" "$BIN_PATH/validator-key-gen"
         pcgConfigure "$ARCH" "$VERSION" "$PLATFORM" "$BIN_PATH" $TMP_PKG_CONFIG_FILE
         nfpm pkg --packager deb --target "$RELEASE_PATH" -f $TMP_PKG_CONFIG_FILE
-        cp -fv "$RELEASE_PATH" ./bin/tmconnect-${PLATFORM}-${ARCH}.deb
+        cp -fv "$RELEASE_PATH" ./bin/validator-key-gen-${PLATFORM}-${ARCH}.deb
     else
-        ./scripts/build.sh "${PLATFORM}" "${ARCH}" "$BIN_PATH/tmconnect.exe"
+        ./scripts/build.sh "${PLATFORM}" "${ARCH}" "$BIN_PATH/validator-key-gen.exe"
         # deb is not supported on windows, simply copy the executables
-        cp -fv $BIN_PATH/tmconnect.exe ./bin/tmconnect-${PLATFORM}-${ARCH}.exe
+        cp -fv $BIN_PATH/validator-key-gen.exe ./bin/validator-key-gen-${PLATFORM}-${ARCH}.exe
     fi
 }
 
@@ -68,4 +68,4 @@ pcgRelease "arm64" "$VERSION" "darwin"
 pcgRelease "arm64" "$VERSION" "windows"
 
 rm -rfv ./bin/amd64 ./bin/arm64 ./bin/deb
-echoInfo "INFO: Sucessfully published tmconnect deb packages into ./bin"
+echoInfo "INFO: Sucessfully published validator-key-gen deb packages into ./bin"

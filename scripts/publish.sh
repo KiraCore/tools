@@ -15,9 +15,25 @@ rm -rfv ./bin
 # Publish tmconnect
 cd ./tmconnect
 make publish
+cd $WORKDIR
+
+# Publish tmkms-key-import
+cd ./tmkms-key-import
+make publish
+cd $WORKDIR
+
+# Publish validator-key-gen
+cd ./validator-key-gen
+make publish
+cd $WORKDIR
 
 # Copy all binaries to bin directory
-cd $WORKDIR
 mkdir -p ./bin
+
 cp -rfv ./tmconnect/bin/* ./bin
+cp -rfv ./tmkms-key-import/bin/* ./bin
+cp -rfv ./validator-key-gen/bin/* ./bin
+
 rm -rfv ./tmconnect/bin/*
+rm -rfv ./tmkms-key-import/bin/*
+rm -rfv ./validator-key-gen/bin/*
