@@ -22,8 +22,8 @@ cd ./tmkms-key-import
 make publish
 cd $WORKDIR
 
-# Publish priv-validator-key-gen
-cd ./priv-validator-key-gen
+# Publish validator-key-gen
+cd ./validator-key-gen
 make publish
 cd $WORKDIR
 
@@ -32,8 +32,8 @@ mkdir -p ./bin
 
 cp -rfv ./tmconnect/bin/* ./bin
 cp -rfv ./tmkms-key-import/bin/* ./bin
-cp -rfv ./priv-validator-key-gen/bin/* ./bin
+cp -rfv ./validator-key-gen/bin/* ./bin
 
 rm -rfv ./tmconnect/bin/*
 rm -rfv ./tmkms-key-import/bin/*
-rm -rfv ./priv-validator-key-gen/bin/*
+rm -rfv ./validator-key-gen/bin/*

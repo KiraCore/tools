@@ -13,9 +13,9 @@ cd ./tmconnect
 make build
 cd $WORKDIR
 
-cd ./priv-validator-key-gen
+cd ./validator-key-gen
 make build
 cd $WORKDIR
 
 
-echoInfo "SUCCESS: Build finished, tmkms $(tmconnect version), priv-validator-key-gen $(priv-validator-key-gen --version)"
+echoInfo "SUCCESS: Build finished, tmkms $(tmconnect version), validator-key-gen $(validator-key-gen --version)"

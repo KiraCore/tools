@@ -1,15 +1,15 @@
-name: "priv-validator-key-gen"
+name: "validator-key-gen"
 arch: "${ARCH}"
 platform: "${PLATFORM}"
 version: "${VERSION}"
 section: "default"
 priority: "extra"
 replaces:
-- priv-validator-key-gen
+- validator-key-gen
 provides:
-- priv-validator-key-gen
+- validator-key-gen
 maintainer: "KIRA <partners@kira.global>"
-description: "PRIV-VALIDATOR-KEY-GEN is KIRA a tool enabling generation of the validator keys from mnemonic"
+description: "VALIDATOR-KEY-GEN is KIRA a tool enabling generation of the validator keys from mnemonic"
 homepage: "https://github.com/KiraCore/tools"
 license: "AGPL-3.0 license"
 contents:
