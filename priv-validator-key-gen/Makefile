@@ -3,3 +3,9 @@ install: go.sum
 
 start:
 	go run main.go
+
+build:
+	./scripts/build.sh
+
+publish:
+	./scripts/publish.sh

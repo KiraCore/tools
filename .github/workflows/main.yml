@@ -78,7 +78,7 @@ jobs:
               echo "(current dir): $PWD" && ls -l ./
               tar xvf ./src.tar.gz
               chmod -Rv 555 ./scripts
-              chmod -Rv 555 ./tmconnect/scripts
+              chmod -Rv 555 ./tmconnect/scripts ./tmkms-key-import/scripts ./priv-validator-key-gen/scripts
               chmod -Rv 555 ./bash-utils
               chmod -Rv 666 ./RELEASE.md 
               export SOURCE_BRANCH=${{ env.SOURCE_BRANCH }}
@@ -92,14 +92,20 @@ jobs:
               cp -fv ./RELEASE.md ./bin/RELEASE.md
               chmod -Rv 777 ./bin
               echo -e "\n\r\n\r\`\`\`" >> ./bin/RELEASE.md
-              echo "  tmconnect-darwin-amd64.deb: sha256:$(sha256sum ./bin/tmconnect-darwin-amd64.deb  | awk '{ print $1 }')" >> ./bin/RELEASE.md
-              echo "  tmconnect-darwin-arm64.deb: sha256:$(sha256sum ./bin/tmconnect-darwin-arm64.deb  | awk '{ print $1 }')" >> ./bin/RELEASE.md
-              echo "   tmconnect-linux-amd64.deb: sha256:$(sha256sum ./bin/tmconnect-linux-amd64.deb   | awk '{ print $1 }')" >> ./bin/RELEASE.md
-              echo "   tmconnect-linux-arm64.deb: sha256:$(sha256sum ./bin/tmconnect-linux-arm64.deb   | awk '{ print $1 }')" >> ./bin/RELEASE.md
-              echo " tmconnect-windows-amd64.exe: sha256:$(sha256sum ./bin/tmconnect-windows-amd64.exe | awk '{ print $1 }')" >> ./bin/RELEASE.md
-              echo " tmconnect-windows-arm64.exe: sha256:$(sha256sum ./bin/tmconnect-windows-arm64.exe | awk '{ print $1 }')" >> ./bin/RELEASE.md
-              echo "tmkms-key-import-linux-amd64: sha256:$(sha256sum ./bin/tmkms-key-import-linux-amd64 | awk '{ print $1 }')" >> ./bin/RELEASE.md
-              echo "tmkms-key-import-linux-arm64: sha256:$(sha256sum ./bin/tmkms-key-import-linux-arm64 | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "          tmconnect-darwin-amd64.deb: sha256:$(sha256sum ./bin/tmconnect-darwin-amd64.deb  | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "          tmconnect-darwin-arm64.deb: sha256:$(sha256sum ./bin/tmconnect-darwin-arm64.deb  | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "           tmconnect-linux-amd64.deb: sha256:$(sha256sum ./bin/tmconnect-linux-amd64.deb   | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "           tmconnect-linux-arm64.deb: sha256:$(sha256sum ./bin/tmconnect-linux-arm64.deb   | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "         tmconnect-windows-amd64.exe: sha256:$(sha256sum ./bin/tmconnect-windows-amd64.exe | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "         tmconnect-windows-arm64.exe: sha256:$(sha256sum ./bin/tmconnect-windows-arm64.exe | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "        tmkms-key-import-linux-amd64: sha256:$(sha256sum ./bin/tmkms-key-import-linux-amd64 | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "        tmkms-key-import-linux-arm64: sha256:$(sha256sum ./bin/tmkms-key-import-linux-arm64 | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "  priv-validator-key-gen-linux-arm64: sha256:$(sha256sum ./bin/priv-validator-key-gen-linux-arm64 | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "  priv-validator-key-gen-linux-amd64: sha256:$(sha256sum ./bin/priv-validator-key-gen-linux-amd64 | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "priv-validator-key-gen-windows-arm64: sha256:$(sha256sum ./bin/priv-validator-key-gen-windows-arm64 | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "priv-validator-key-gen-windows-amd64: sha256:$(sha256sum ./bin/priv-validator-key-gen-windows-amd64 | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo " priv-validator-key-gen-darwin-arm64: sha256:$(sha256sum ./bin/priv-validator-key-gen-darwin-arm64 | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo " priv-validator-key-gen-darwin-amd64: sha256:$(sha256sum ./bin/priv-validator-key-gen-darwin-amd64 | awk '{ print $1 }')" >> ./bin/RELEASE.md
               echo -e "\`\`\`"   >> ./bin/RELEASE.md
               tar -czvf deb.tar.gz -C ./bin .
           - name: Uploading artifacts
@@ -183,6 +189,12 @@ jobs:
                 ./tmconnect-windows-arm64.exe
                 ./tmkms-key-import-linux-amd64
                 ./tmkms-key-import-linux-arm64
+                ./priv-validator-key-gen-linux-arm64
+                ./priv-validator-key-gen-linux-amd64
+                ./priv-validator-key-gen-windows-arm64
+                ./priv-validator-key-gen-windows-amd64
+                ./priv-validator-key-gen-darwin-arm64
+                ./priv-validator-key-gen-darwin-amd64
           # ref: https://github.com/softprops/action-gh-release, v0.1.14
           # Release on merge only (push action) - this should run only once
           - name: Publish pre-release
@@ -206,6 +218,12 @@ jobs:
                 ./tmconnect-windows-arm64.exe
                 ./tmkms-key-import-linux-amd64
                 ./tmkms-key-import-linux-arm64
+                ./priv-validator-key-gen-linux-arm64
+                ./priv-validator-key-gen-linux-amd64
+                ./priv-validator-key-gen-windows-arm64
+                ./priv-validator-key-gen-windows-amd64
+                ./priv-validator-key-gen-darwin-arm64
+                ./priv-validator-key-gen-darwin-amd64
           # ref.: https://github.com/hmarr/auto-approve-action, v2.1.0
           - name: Approve pull request on success
             uses: hmarr/auto-approve-action@5d04a5ca6da9aeb8ca9f31a5239b96fc3e003029

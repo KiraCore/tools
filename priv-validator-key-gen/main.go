@@ -12,12 +12,23 @@ import (
 	"github.com/tendermint/tendermint/privval"
 )
 
+const PrivValidatorKeyGenVersion = "v0.0.1.0"
+
 func main() {
 	mnemonic := flag.String("mnemonic", "", "a string")
 	valkey := flag.String("valkey", "", "a string")
 	nodekey := flag.String("nodekey", "", "a string")
 	keyid := flag.String("keyid", "", "a string")
+
+	var version bool
+	flag.BoolVar(&version, "version", false, "prints current version and exits")
+
 	flag.Parse()
+
+	if version {
+		fmt.Print(PrivValidatorKeyGenVersion)
+		return
+	}
 
 	if len(*mnemonic) == 0 {
 		fmt.Println("mnemonic not set!")
