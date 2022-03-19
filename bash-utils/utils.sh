@@ -12,7 +12,7 @@ REGEX_KIRA="^(kira)[a-zA-Z0-9]{39}$"
 REGEX_VERSION="^(v?)([0-9]+)\.([0-9]+)\.([0-9]+)(-?)([a-zA-Z]+)?(\.?([0-9]+)?)$"
 
 function utilsVersion() {
-    echo "v0.0.16"
+    echo "v0.0.17"
 }
 
 # bash 3 (MAC) compatybility
@@ -177,6 +177,24 @@ function md5() {
         echo $(cat | md5sum | awk '{ print $1 }' | xargs || echo -n "") || echo -n ""
     else
         [ -f $1 ] && echo $(md5sum $1 | awk '{ print $1 }' | xargs || echo -n "") || echo -n ""
+    fi
+}
+
+function safeWget() {
+    local OUT_PATH=$1
+    local FILE_URL=$2
+    local EXPECTED_HASH=$3
+    rm -fv $OUT_PATH
+
+    wget "$FILE_URL" -O $OUT_PATH
+    FILE_HASH=$(sha256 $OUT_PATH)
+    if [ "$FILE_HASH" != "$EXPECTED_HASH" ]; then
+        rm -fv $OUT_PATH || echoErr "ERROR: Failed to delete '$OUT_PATH'"
+        echoErr "ERROR: Safe download filed: '$FILE_URL' -x-> '$OUT_PATH'"
+        echoErr "ERROR: Expected hash: '$EXPECTED_HASH', but got '$FILE_HASH'"
+        return 1
+    else
+        echoInfo "INFO: Safe download suceeded: '$FILE_URL' ---> '$OUT_PATH'"
     fi
 }
 

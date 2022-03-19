@@ -92,14 +92,14 @@ jobs:
               cp -fv ./RELEASE.md ./bin/RELEASE.md
               chmod -Rv 777 ./bin
               echo -e "\n\r\n\r\`\`\`" >> ./bin/RELEASE.md
-              echo "              tmconnect-darwin-amd64.deb: sha256:$(sha256sum ./bin/tmconnect-darwin-amd64.deb  | awk '{ print $1 }')" >> ./bin/RELEASE.md
-              echo "              tmconnect-darwin-arm64.deb: sha256:$(sha256sum ./bin/tmconnect-darwin-arm64.deb  | awk '{ print $1 }')" >> ./bin/RELEASE.md
-              echo "               tmconnect-linux-amd64.deb: sha256:$(sha256sum ./bin/tmconnect-linux-amd64.deb   | awk '{ print $1 }')" >> ./bin/RELEASE.md
-              echo "               tmconnect-linux-arm64.deb: sha256:$(sha256sum ./bin/tmconnect-linux-arm64.deb   | awk '{ print $1 }')" >> ./bin/RELEASE.md
-              echo "             tmconnect-windows-amd64.exe: sha256:$(sha256sum ./bin/tmconnect-windows-amd64.exe | awk '{ print $1 }')" >> ./bin/RELEASE.md
-              echo "             tmconnect-windows-arm64.exe: sha256:$(sha256sum ./bin/tmconnect-windows-arm64.exe | awk '{ print $1 }')" >> ./bin/RELEASE.md
-              echo "            tmkms-key-import-linux-amd64: sha256:$(sha256sum ./bin/tmkms-key-import-linux-amd64 | awk '{ print $1 }')" >> ./bin/RELEASE.md
-              echo "            tmkms-key-import-linux-arm64: sha256:$(sha256sum ./bin/tmkms-key-import-linux-arm64 | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "         tmconnect-darwin-amd64.deb: sha256:$(sha256sum ./bin/tmconnect-darwin-amd64.deb  | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "         tmconnect-darwin-arm64.deb: sha256:$(sha256sum ./bin/tmconnect-darwin-arm64.deb  | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "          tmconnect-linux-amd64.deb: sha256:$(sha256sum ./bin/tmconnect-linux-amd64.deb   | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "          tmconnect-linux-arm64.deb: sha256:$(sha256sum ./bin/tmconnect-linux-arm64.deb   | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "        tmconnect-windows-amd64.exe: sha256:$(sha256sum ./bin/tmconnect-windows-amd64.exe | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "        tmconnect-windows-arm64.exe: sha256:$(sha256sum ./bin/tmconnect-windows-arm64.exe | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "       tmkms-key-import-linux-amd64: sha256:$(sha256sum ./bin/tmkms-key-import-linux-amd64 | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "       tmkms-key-import-linux-arm64: sha256:$(sha256sum ./bin/tmkms-key-import-linux-arm64 | awk '{ print $1 }')" >> ./bin/RELEASE.md
               echo " validator-key-gen-darwin-arm64.deb: sha256:$(sha256sum ./bin/validator-key-gen-darwin-arm64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
               echo " validator-key-gen-darwin-amd64.deb: sha256:$(sha256sum ./bin/validator-key-gen-darwin-amd64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
               echo "  validator-key-gen-linux-arm64.deb: sha256:$(sha256sum ./bin/validator-key-gen-linux-arm64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
