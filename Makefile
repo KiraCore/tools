@@ -1,4 +1,4 @@
-build:
+test:
 	./scripts/test.sh
 
 build:

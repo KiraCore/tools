@@ -69,6 +69,8 @@ jobs:
               echo "ENVS: $(env)"
               echo "HOME: $HOME"
               echo " PWD: $PWD"
+              echo "Ref.: ${{ env.REF_BRANCH }}"
+              echo "Base: ${{ env.BASE_REF_BRANCH }}"
           - name: Download artifacts
             uses: actions/download-artifact@v3.0.0
             with:
