@@ -37,7 +37,7 @@ jobs:
           # ref.: https://github.com/peterjgrainger/action-create-branch, v2.0.1
           - name: Create version branch from master
             uses: peterjgrainger/action-create-branch@40d33f921267ca130cbacc770f41fc7c501a420f
-            if: env.TARGET_BRANCH_EXISTS == 'true' && startsWith(env.RELEASE_VER, 'v') && contains(env.RELEASE_VER, '.')
+            if: env.TARGET_BRANCH_EXISTS == 'false' && startsWith(env.RELEASE_VER, 'v') && contains(env.RELEASE_VER, '.')
             env:
               GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             with:
