@@ -33,6 +33,7 @@ mkdir -p ./bin
 cp -rfv ./tmconnect/bin/* ./bin
 cp -rfv ./tmkms-key-import/bin/* ./bin
 cp -rfv ./validator-key-gen/bin/* ./bin
+cp -rfv ./bash-utils/utils.sh ./bin/kira-utils.sh
 
 rm -rfv ./tmconnect/bin/*
 rm -rfv ./tmkms-key-import/bin/*

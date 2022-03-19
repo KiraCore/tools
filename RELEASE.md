@@ -1,5 +1,5 @@
-Release: `v0.0.5.0`
+Release: `v0.0.6.0`
 
 Features:
-* Added version command to `tmconnect`
-* Build packages for `tmconnect`
+* Added `safeWget`,`getCpuCores`, `getCpuCores`, `getRamTotal`, `getArch`, `crossenvLink`
+* Added auto PR to version branch workflow

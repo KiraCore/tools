@@ -12,7 +12,57 @@ REGEX_KIRA="^(kira)[a-zA-Z0-9]{39}$"
 REGEX_VERSION="^(v?)([0-9]+)\.([0-9]+)\.([0-9]+)(-?)([a-zA-Z]+)?(\.?([0-9]+)?)$"
 
 function utilsVersion() {
-    echo "v0.0.16"
+    echo "v0.0.18"
+}
+
+# this is default installation script for utils
+# . ./utils.sh && utilsSetup "/usr/local/bin" "/var/kiraglob"
+function utilsSetup() {
+    local UTILS_DEST="$1"
+    local GLOBS_DIR="$2"
+    local UTILS_SOURCE="${BASH_SOURCE}"
+
+    echoInfo "INFO: Starting utils setup from '$UTILS_SOURCE'"
+
+    [ -z "$GLOBS_DIR" ] && KIRA_GLOBS_DIR="/var/kiraglob" || KIRA_GLOBS_DIR=$GLOBS_DIR
+
+    if [ "$KIRA_TOOLS_SRC" != "$UTILS_DEST/kira-utils.sh" ] ; then
+        mkdir -p $UTILS_DEST
+        mv -fv $KIRA_TOOLS_SRC "$UTILS_DEST/kira-utils.sh"
+        chmod -v 555 $UTILS_DEST/kira-utils.sh
+    fi
+
+    if [ ! -f $KIRA_TOOLS_SRC ] ; then
+        echoErr "ERROR: kira-utils.sh MUST be located in '$KIRA_TOOLS_SRC', update your KIRA_TOOLS_SRC env"
+        return 1
+    else
+        local SUDOUSER="${SUDO_USER}" && [ "$SUDOUSER" == "root" ] && SUDOUSER=""
+        local USERNAME="${USER}" && [ "$USERNAME" == "root" ] && USERNAME=""
+        local LOGNAME=$(logname 2> /dev/null echo "") && [ "$LOGNAME" == "root" ] && LOGNAME=""
+
+        local TARGET="/$LOGNAME/.bashrc" && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
+        TARGET="/$USERNAME/.bashrc" && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
+        TARGET="/$SUDOUSER/.bashrc" && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
+        TARGET="/root/.bashrc" && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
+        TARGET=~/.bashrc && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
+        TARGET=~/.zshrc && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
+        TARGET=~/.profile && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
+
+        mkdir -p $KIRA_GLOBS_DIR
+
+        setGlobEnv KIRA_GLOBS_DIR "$KIRA_GLOBS_DIR"
+        setGlobEnv KIRA_TOOLS_SRC "$KIRA_TOOLS_SRC"
+
+        local AUTOLOAD_SET=$(getLastLineByPrefix "source $KIRA_TOOLS_SRC" /etc/profile 2> /dev/null || echo "-1")
+
+        if [[ $AUTOLOAD_SET -lt 0 ]] ; then
+            echo "source $KIRA_TOOLS_SRC || echo \"ERROR: Failed to load kira utils from $KIRA_TOOLS_SRC\"" >> /etc/profile
+        fi
+
+        loadGlobEnvs
+
+        echoInfo "INFO: SUCCESS!, Installed kira bash-utils $(utilsVersion)"
+    fi
 }
 
 # bash 3 (MAC) compatybility
@@ -178,6 +228,39 @@ function md5() {
     else
         [ -f $1 ] && echo $(md5sum $1 | awk '{ print $1 }' | xargs || echo -n "") || echo -n ""
     fi
+}
+
+function safeWget() {
+    local OUT_PATH=$1
+    local FILE_URL=$2
+    local EXPECTED_HASH=$3
+    rm -fv $OUT_PATH
+
+    wget "$FILE_URL" -O $OUT_PATH
+    FILE_HASH=$(sha256 $OUT_PATH)
+    if [ "$FILE_HASH" != "$EXPECTED_HASH" ]; then
+        rm -fv $OUT_PATH || echoErr "ERROR: Failed to delete '$OUT_PATH'"
+        echoErr "ERROR: Safe download filed: '$FILE_URL' -x-> '$OUT_PATH'"
+        echoErr "ERROR: Expected hash: '$EXPECTED_HASH', but got '$FILE_HASH'"
+        return 1
+    else
+        echoInfo "INFO: Safe download suceeded: '$FILE_URL' ---> '$(realpath $OUT_PATH)'"
+    fi
+}
+
+function getCpuCores() {
+    local CORES=$(cat /proc/cpuinfo | grep processor | wc -l 2> /dev/null || echo "0")
+    ($(isNaturalNumber "$CORES")) && echo $CORES || echo "0"
+}
+
+function getRamTotal() {
+    local MEMORY=$(grep MemTotal /proc/meminfo | awk '{print $2}' || echo "0")
+    ($(isNaturalNumber "$MEMORY")) && echo $MEMORY || echo "0"
+}
+
+function getArch() {
+    local ARCH=$(uname -m)
+    echo $(([[ "$ARCH" == *"arm"* ]] || [[ "$ARCH" == *"aarch"* ]]) && echo "arm64" || echo "amd64")
 }
 
 function tryMkDir {
@@ -382,14 +465,14 @@ function globFile() {
 
 function globGet() {
     local FILE=$(globFile "$1" "$2")
-    [[ -s FILE ]] && cat $FILE || echo ""
+    [[ -s "$FILE" ]] && cat $FILE || echo ""
     return 0
 }
 
 # threadsafe global get
 function globGetTS() {
     local FILE=$(globFile "$1" "$2")
-    [[ -s "$FILE" ]] && sem --id "$1" "cat $FILE" || echo ""
+    [ -s "$FILE" ] && sem --id "$1" "cat $FILE" || echo ""
     return 0
 }
 
@@ -816,4 +899,40 @@ function setGlobLine() {
 
 function loadGlobEnvs() {
     . /etc/profile
+}
+
+# crossenvLink "$KIRA_BIN/CDHelper-<arch>/CDHelper" "/usr/local/bin/CDhelper"
+# NOTE: the <arch> tag will be replaced by arm64 & amd64
+function crossenvLink() {
+    local SOURCE_PATH=$1
+    local DESTINATION_PATH=$2
+
+    local FULL_SRC_PATH_ARM64="${SOURCE_PATH/<arch>/arm64}"
+    local FULL_SRC_PATH_AMD64="${SOURCE_PATH/<arch>/amd64}"
+
+    if [ -f $FULL_SRC_PATH_ARM64 ] && [ -f $FULL_SRC_PATH_AMD64 ] ; then
+        cat > $DESTINATION_PATH << EOL
+#!/usr/bin/env bash
+set -e
+
+if [[ "\$(uname -m)" == *"arm"* ]] || [[ "\$(uname -m)" == *"aarch"* ]] ; then
+    if [ -z "$@" ] ; then
+        $FULL_SRC_PATH_ARM64
+    else
+        $FULL_SRC_PATH_ARM64 "\$@"
+    fi
+else
+    if [ -z "$@" ] ; then
+        $FULL_SRC_PATH_AMD64
+    else
+        $FULL_SRC_PATH_AMD64 "\$@"
+    fi
+fi
+EOL
+        chmod -v 555 "$DESTINATION_PATH" "$FULL_SRC_PATH_AMD64" "$FULL_SRC_PATH_ARM64"
+    else
+        [ ! -f $FULL_SRC_PATH_ARM64 ] && echoErr "ERROR: Could NOT find arm64 relese: '$FULL_SRC_PATH_ARM64'" 
+        [ ! -f $FULL_SRC_PATH_AMD64 ] && echoErr "ERROR: Could NOT find amd64 relese: '$FULL_SRC_PATH_AMD64'"
+        return 1
+    fi
 }
