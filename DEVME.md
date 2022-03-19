@@ -4,17 +4,13 @@ KIRA Tools
 ## Dependencies
 
 ```
-UTILS_VER=$(utilsVersion 2> /dev/null || echo "")
-
-# Installing utils is essential to simplify the setup steps
-if [[ $(versionToNumber "$UTILS_VER" || echo "0") -lt $(versionToNumber "v0.0.15" || echo "1") ]] ; then
-    echo "INFO: KIRA utils were NOT installed on the system, setting up..." && sleep 2
-    KIRA_UTILS_BRANCH="v0.0.3" && cd /tmp && rm -fv ./i.sh && \
-    wget https://raw.githubusercontent.com/KiraCore/tools/$KIRA_UTILS_BRANCH/bash-utils/install.sh -O ./i.sh && \
-    chmod 777 ./i.sh && ./i.sh "$KIRA_UTILS_BRANCH" "/var/kiraglob" && . /etc/profile && loadGlobEnvs
-else
-    echoInfo "INFO: KIRA utils are up to date, latest version $UTILS_VER"
-fi
+VERSION="v0.0.6.0" && cd /tmp && rm -fv ./kira-utils.sh && \
+CHECKSUM="7bdf4da2165fa1828f399622594af68e83e764ba1ddeb472094d882d85dcdd71" && \
+wget https://github.com/KiraCore/tools/releases/download/$VERSION/kira-utils.sh && \
+    FILE_HASH=$(sha256sum $1 | awk '{ print $1 }' | xargs || echo -n "") && \
+    [ "$FILE_HASH" == "$CHECKSUM" ] && . ./utils.sh utilsSetup "/usr/local/bin" "/var/kiraglob" && \
+    loadGlobEnvs && echoInfo "SUCCESS: kira-utils $(utilsVersion) were installed!" || \
+    echo "ERROR: Invalid checksum '$FILE_HASH' or utilsSetup failed"
 ```
 
 ## Build
