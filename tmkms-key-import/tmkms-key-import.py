@@ -12,6 +12,8 @@ import unicodedata
 import base64
 import json
 
+TMKMS_KEY_IMPORT_VERSION="v0.0.1.0"
+
 TRACE=False
 def trace(x):
     if (TRACE):
@@ -171,60 +173,65 @@ class BIP32Ed25519:
         return self.derive_seed(path, seed)
 
 if __name__ == "__main__":
-    mnem = sys.argv[1]
-    priv_json_path = sys.argv[2]
-    priv_key_path = sys.argv[3]
-    node_key_path = sys.argv[4]
-    node_id_path = sys.argv[5]
-    
-    path_arr = [ 
-        0x80000000 | 44, 
-        0x80000000 | 118, 
-        0x80000000 | 0,
-        0,
-        0]
+    arg1=sys.argv[1]
+    if arg1 == "version":
+        print(TMKMS_KEY_IMPORT_VERSION, end = '')
+    elif arg1 == "--help":
+        print("tmkms-key-import <mnemonic> <priv_validator_key.json-output> <signing.key-output> <node_key.json-output> <node_id.key-output>")
+    else:
+        mnem = arg1
+        priv_json_path = sys.argv[2]
+        priv_key_path = sys.argv[3]
+        node_key_path = sys.argv[4]
+        node_id_path = sys.argv[5]
+        
+        path_arr = [ 
+            0x80000000 | 44, 
+            0x80000000 | 118, 
+            0x80000000 | 0,
+            0,
+            0]
 
-    # Private validator key generator
-    priv = BIP32Ed25519().derive_mnemonic(path_arr, mnem)
-    ((kL, kR), A, c) = priv
+        # Private validator key generator
+        priv = BIP32Ed25519().derive_mnemonic(path_arr, mnem)
+        ((kL, kR), A, c) = priv
 
-    priv_key = str(base64.b64encode(kL + kR), "utf-8")
-    pub_key = str(base64.b64encode(kR), "utf-8")
-    address = _h256(kR)[:20].hex()
+        priv_key = str(base64.b64encode(kL + kR), "utf-8")
+        pub_key = str(base64.b64encode(kR), "utf-8")
+        address = _h256(kR)[:20].hex()
 
-    priv_validator_key = {
-        "address": address.upper(),
-        "pub_key": {
-            "type": "tendermint/PubKeyEd25519",
-            "value": pub_key
-        },
-        "priv_key": {
-            "type": "tendermint/PrivKeyEd25519",
-            "value": priv_key
+        priv_validator_key = {
+            "address": address.upper(),
+            "pub_key": {
+                "type": "tendermint/PubKeyEd25519",
+                "value": pub_key
+            },
+            "priv_key": {
+                "type": "tendermint/PrivKeyEd25519",
+                "value": priv_key
+            }
         }
-    }
 
-    with open(priv_json_path, 'w') as f:
-        json.dump(priv_validator_key, f, ensure_ascii=False, indent=2)
-        f.close()
+        with open(priv_json_path, 'w') as f:
+            json.dump(priv_validator_key, f, ensure_ascii=False, indent=2)
+            f.close()
 
-    # base64.b64encode(kL) is the 32B key that can be placed raw inside the key file without need for tmkms import
-    with open(priv_key_path, 'w') as f:
-        f.write(str(base64.b64encode(kL), "utf-8"))
-        f.close()
+        # base64.b64encode(kL) is the 32B key that can be placed raw inside the key file without need for tmkms import
+        with open(priv_key_path, 'w') as f:
+            f.write(str(base64.b64encode(kL), "utf-8"))
+            f.close()
 
-    node_key = {
-        "priv_key": {
-            "type": "tendermint/PrivKeyEd25519",
-            "value": priv_key
+        node_key = {
+            "priv_key": {
+                "type": "tendermint/PrivKeyEd25519",
+                "value": priv_key
+            }
         }
-    }
 
-    with open(node_key_path, 'w') as f:
-        json.dump(node_key, f, ensure_ascii=False, indent=2)
-        f.close()
+        with open(node_key_path, 'w') as f:
+            json.dump(node_key, f, ensure_ascii=False, indent=2)
+            f.close()
 
-    with open(node_id_path, 'w') as f:
-        f.write(address)
-        f.close()
-
+        with open(node_id_path, 'w') as f:
+            f.write(address)
+            f.close()
