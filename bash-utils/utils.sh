@@ -12,7 +12,7 @@ REGEX_KIRA="^(kira)[a-zA-Z0-9]{39}$"
 REGEX_VERSION="^(v?)([0-9]+)\.([0-9]+)\.([0-9]+)(-?)([a-zA-Z]+)?(\.?([0-9]+)?)$"
 
 function utilsVersion() {
-    echo "v0.1.0.0"
+    echo "v0.1.0.1"
 }
 
 # this is default installation script for utils
@@ -184,19 +184,17 @@ function isPortOpen() {
 }
 
 function fileSize() {
-    kg_bytes=$(stat -c%s $1 2> /dev/null || echo -n "")
-    ($(isNaturalNumber "$kg_bytes")) && echo "$kg_bytes" || echo -n "0"
+    local BYTES=$(stat -c%s $1 2> /dev/null || echo -n "")
+    ($(isNaturalNumber "$BYTES")) && echo "$BYTES" || echo -n "0"
 }
 
 function isFileEmpty() {
-    if [ -z "$1" ] || [ ! -f $1 ] || [ ! -s $1 ] ; then echo "true" ; else
-        kg_PREFIX_AND_SUFFIX=$(echo "$(head -c 64 $1 2>/dev/null || echo '')$(tail -c 64 $1 2>/dev/null || echo '')" | tr -d '\011\012\013\014\015\040' 2>/dev/null || echo -n "")
-        if [ ! -z "$kg_PREFIX_AND_SUFFIX" ] ; then
-            echo "false"
-        else
-            kg_TEXT=$(cat $1 | tr -d '\011\012\013\014\015\040' 2>/dev/null || echo -n "")
-            [ -z "$kg_TEXT" ] && echo "true" || echo "false"
-        fi
+    local FILE="$1"
+    if [ -z "$FILE" ] || [ ! -f "$FILE" ] || [ ! -s "$FILE" ] ; then echo "true" ; else
+        local TEXT=$(head -c 64 "$FILE" 2>/dev/null | tr -d '\0\011\012\013\014\015\040' 2>/dev/null || echo '')
+        [ -z "$TEXT" ] && TEXT=$(tail -c 64 "$FILE" 2>/dev/null | tr -d '\0\011\012\013\014\015\040' 2>/dev/null || echo '')
+        [ -z "$TEXT" ] && TEXT=$(cat $FILE | tr -d '\0\011\012\013\014\015\040' 2>/dev/null || echo -n "")
+        [ ! -z "$TEXT" ] && echo "false" || echo "true"
     fi
 }
 
@@ -239,7 +237,11 @@ function safeWget() {
 
     wget "$FILE_URL" -O $OUT_PATH
     FILE_HASH=$(sha256 $OUT_PATH)
-    if [ "$FILE_HASH" != "$EXPECTED_HASH" ]; then
+
+    if ($(isFileEmpty $OUT_PATH)) ; then
+        echoErr "ERROR: Failed download from '$FILE_URL'"
+        return 1
+    elif [ "$FILE_HASH" != "$EXPECTED_HASH" ]; then
         rm -fv $OUT_PATH || echoErr "ERROR: Failed to delete '$OUT_PATH'"
         echoErr "ERROR: Safe download filed: '$FILE_URL' -x-> '$OUT_PATH'"
         echoErr "ERROR: Expected hash: '$EXPECTED_HASH', but got '$FILE_HASH'"

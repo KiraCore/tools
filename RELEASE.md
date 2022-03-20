@@ -1,5 +1,5 @@
-Release: `v0.0.8.0`
+Release: `v0.0.9-rc.1`
 
 Features:
-* Bugfix kira utils setup
-* Bugfix getArch output
+* Improved safeWget output
+* File empty check fix
