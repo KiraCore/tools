@@ -1,5 +1,4 @@
-Release: `v0.0.6.0`
+Release: `v0.0.7.0`
 
 Features:
-* Added `safeWget`,`getCpuCores`, `getCpuCores`, `getRamTotal`, `getArch`, `crossenvLink`
-* Added auto PR to version branch workflow
+* Added `kira-utils` as `utils` binary accessible globally
