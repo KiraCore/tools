@@ -12,30 +12,31 @@ REGEX_KIRA="^(kira)[a-zA-Z0-9]{39}$"
 REGEX_VERSION="^(v?)([0-9]+)\.([0-9]+)\.([0-9]+)(-?)([a-zA-Z]+)?(\.?([0-9]+)?)$"
 
 function utilsVersion() {
-    echo "v0.0.18"
+    echo "v0.0.1.2"
 }
 
 # this is default installation script for utils
-# . ./utils.sh && utilsSetup "/usr/local/bin" "/var/kiraglob"
+# ./utils.sh utilsSetup ./utils.sh "/var/kiraglob"
 function utilsSetup() {
-    local UTILS_DEST="$1"
+    local UTILS_SOURCE="$1"
     local GLOBS_DIR="$2"
-    local UTILS_SOURCE="${BASH_SOURCE}"
+    local UTILS_DESTINATION="/usr/local/bin/kira-utils.sh"
 
-    echoInfo "INFO: Starting utils setup from '$UTILS_SOURCE'"
-
-    [ -z "$GLOBS_DIR" ] && KIRA_GLOBS_DIR="/var/kiraglob" || KIRA_GLOBS_DIR=$GLOBS_DIR
-
-    if [ "$KIRA_TOOLS_SRC" != "$UTILS_DEST/kira-utils.sh" ] ; then
-        mkdir -p $UTILS_DEST
-        mv -fv $KIRA_TOOLS_SRC "$UTILS_DEST/kira-utils.sh"
-        chmod -v 555 $UTILS_DEST/kira-utils.sh
+    if [ -z "$GLOBS_DIR" ] ; then
+        [ -z "$KIRA_GLOBS_DIR" ] && KIRA_GLOBS_DIR="/var/kiraglob"
+    else
+        KIRA_GLOBS_DIR=$GLOBS_DIR
     fi
 
-    if [ ! -f $KIRA_TOOLS_SRC ] ; then
-        echoErr "ERROR: kira-utils.sh MUST be located in '$KIRA_TOOLS_SRC', update your KIRA_TOOLS_SRC env"
+    if [ ! -f $UTILS_SOURCE ] ; then
+        echoErr "ERROR: utils source was NOT found"
         return 1
     else
+        mkdir -p "/usr/local/bin"
+        mv -fv "$UTILS_SOURCE" "$UTILS_DESTINATION"
+        mv -fv "$UTILS_SOURCE" "/usr/local/bin/utils"
+        chmod -v 555 $UTILS_DESTINATION "/usr/local/bin/utils"
+        
         local SUDOUSER="${SUDO_USER}" && [ "$SUDOUSER" == "root" ] && SUDOUSER=""
         local USERNAME="${USER}" && [ "$USERNAME" == "root" ] && USERNAME=""
         local LOGNAME=$(logname 2> /dev/null echo "") && [ "$LOGNAME" == "root" ] && LOGNAME=""
@@ -50,16 +51,16 @@ function utilsSetup() {
 
         mkdir -p $KIRA_GLOBS_DIR
 
-        setGlobEnv KIRA_GLOBS_DIR "$KIRA_GLOBS_DIR"
-        setGlobEnv KIRA_TOOLS_SRC "$KIRA_TOOLS_SRC"
+        utils setGlobEnv KIRA_GLOBS_DIR "$KIRA_GLOBS_DIR"
+        utils setGlobEnv KIRA_TOOLS_SRC "$UTILS_DESTINATION"
 
-        local AUTOLOAD_SET=$(getLastLineByPrefix "source $KIRA_TOOLS_SRC" /etc/profile 2> /dev/null || echo "-1")
+        local AUTOLOAD_SET=$(utils getLastLineByPrefix "source $UTILS_DESTINATION" /etc/profile 2> /dev/null || echo "-1")
 
         if [[ $AUTOLOAD_SET -lt 0 ]] ; then
-            echo "source $KIRA_TOOLS_SRC || echo \"ERROR: Failed to load kira utils from $KIRA_TOOLS_SRC\"" >> /etc/profile
+            echo "source $UTILS_DESTINATION || echo \"ERROR: Failed to load kira utils from '$UTILS_DESTINATION'\"" >> /etc/profile
         fi
 
-        loadGlobEnvs
+        utils loadGlobEnvs
 
         echoInfo "INFO: SUCCESS!, Installed kira bash-utils $(utilsVersion)"
     fi
@@ -936,3 +937,9 @@ EOL
         return 1
     fi
 }
+
+# allow to execute finctions directly from file
+if declare -f "$1" > /dev/null ; then
+  # call arguments verbatim
+  "$@"
+fi
