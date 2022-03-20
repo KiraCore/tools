@@ -12,7 +12,7 @@ REGEX_KIRA="^(kira)[a-zA-Z0-9]{39}$"
 REGEX_VERSION="^(v?)([0-9]+)\.([0-9]+)\.([0-9]+)(-?)([a-zA-Z]+)?(\.?([0-9]+)?)$"
 
 function utilsVersion() {
-    echo "v0.0.1.2"
+    echo "v0.1.0.0"
 }
 
 # this is default installation script for utils
@@ -33,8 +33,8 @@ function utilsSetup() {
         return 1
     else
         mkdir -p "/usr/local/bin"
-        mv -fv "$UTILS_SOURCE" "$UTILS_DESTINATION"
-        mv -fv "$UTILS_SOURCE" "/usr/local/bin/utils"
+        cp -fv "$UTILS_SOURCE" "$UTILS_DESTINATION"
+        cp -fv "$UTILS_SOURCE" "/usr/local/bin/utils"
         chmod -v 555 $UTILS_DESTINATION "/usr/local/bin/utils"
         
         local SUDOUSER="${SUDO_USER}" && [ "$SUDOUSER" == "root" ] && SUDOUSER=""
@@ -261,7 +261,13 @@ function getRamTotal() {
 
 function getArch() {
     local ARCH=$(uname -m)
-    echo $(([[ "$ARCH" == *"arm"* ]] || [[ "$ARCH" == *"aarch"* ]]) && echo "arm64" || echo "amd64")
+    if [[ "$ARCH" == *"arm"* ]] || [[ "$ARCH" == *"aarch"* ]] ; then
+        echo "arm64"
+    elif [[ "$ARCH" == *"x64"* ]] || [[ "$ARCH" == *"x86_64"* ]] || [[ "$ARCH" == *"amd64"* ]] || [[ "$ARCH" == *"amd"* ]] ; then
+        echo "amd64"
+    else
+        echo "$ARCH"
+    fi
 }
 
 function tryMkDir {

@@ -4,8 +4,8 @@ KIRA Tools
 ## Dependencies
 
 ```
-VERSION="v0.0.7.0" && cd /tmp && rm -fv ./utils.sh && \
-CHECKSUM="5f47b6f6e302b9c582c68894b1dfb231ec81c593ca7bc0d21471f440aca1d9ac" && \
+VERSION="v0.0.8.0" && cd /tmp && rm -fv ./utils.sh && \
+CHECKSUM="1cfb806eec03956319668b0a4f02f2fcc956ed9800070cda1870decfe2e6206e" && \
 wget https://github.com/KiraCore/tools/releases/download/$VERSION/kira-utils.sh -O ./utils.sh && \
     FILE_HASH=$(sha256sum ./utils.sh | awk '{ print $1 }' | xargs || echo -n "") && \
     [ "$FILE_HASH" == "$CHECKSUM" ] && chmod -v 555 ./utils.sh && \

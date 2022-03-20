@@ -1,4 +1,5 @@
-Release: `v0.0.7.0`
+Release: `v0.0.8.0`
 
 Features:
-* Added `kira-utils` as `utils` binary accessible globally
+* Bugfix kira utils setup
+* Bugfix getArch output
