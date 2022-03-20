@@ -1,11 +1,16 @@
-# KIRA Bash Utils
+## KIRA Bash Utils
 
 The ultimate collection of various bash-shell function to make access to various system components fast and simple from the CLI level
 
 
-# Install
+### Local Setup
 ```
-cd /tmp && read -p "Input branch name: " BRANCH && \
- wget https://raw.githubusercontent.com/KiraCore/tools/$BRANCH/bash-utils/install.sh -O ./i.sh && \
- chmod 555 ./i.sh && ./i.sh "$BRANCH" "/var/kiraglob" && . /etc/profile || echo "ERROR: Failed kira bash-utils installation"
+./utils.sh utilsSetup ./utils.sh "/var/kiraglob"
+```
+
+### Remote Setup
+```
+cd /tmp && rm -fv ./utils.sh && \
+ wget https://raw.githubusercontent.com/KiraCore/tools/latest/bash-utils/utils.sh -O ./utils.sh && \
+ chmod -v 555 ./utils && ./utils.sh utilsSetup ./utils.sh "/var/kiraglob"
 ```

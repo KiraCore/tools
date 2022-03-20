@@ -1,8 +1,5 @@
-install: go.sum
-		go install .
-
-start:
-	go run main.go
+test:
+	./scripts/test.sh
 
 build:
 	./scripts/build.sh
