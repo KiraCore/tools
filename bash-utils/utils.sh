@@ -12,7 +12,7 @@ REGEX_KIRA="^(kira)[a-zA-Z0-9]{39}$"
 REGEX_VERSION="^(v?)([0-9]+)\.([0-9]+)\.([0-9]+)(-?)([a-zA-Z]+)?(\.?([0-9]+)?)$"
 
 function utilsVersion() {
-    echo "v0.1.0.1"
+    echo "v0.1.1.2"
 }
 
 # this is default installation script for utils
@@ -760,8 +760,45 @@ function setLineByNumber() {
     local INDEX=$1
     local TEXT=$2
     local FILE=$3
+    [ ! -f "$FILE" ] && echoErr "ERROR: File '$FILE' does NOT exist, nothing can be set!"
     sed -i"" "$INDEX c\
 $TEXT" $FILE
+}
+
+function setNLineByPrefix() {
+    local INDEX=$1
+    local PREFIX=$2
+    local TEXT=$3
+    local FILE=$4
+    local LINE=$(getNLineByPrefix "$INDEX" "$PREFIX" "$FILE")
+    if [[ $LINE -ge 0 ]] ; then
+        setLineByNumber "$LINE" "$TEXT" "$FILE"
+        echo "true"
+    else
+        echo "false"
+    fi
+}
+
+function setLastLineByPrefix() {
+    setNLineByPrefix "0" "$1" "$2" "$3"
+}
+
+function setFirstLineByPrefix() {
+    setNLineByPrefix "1" "$1" "$2" "$3"
+}
+
+function setLastLineByPrefixOrAppend() {
+    local PREFIX=$1
+    local TEXT=$2
+    local FILE=$3
+    [ ! -f "$FILE" ] && echoErr "ERROR: File '$FILE' does NOT exist, nothing can be set!"
+    local ADDED=$(setLastLineByPrefix "$PREFIX" "$TEXT" "$FILE")
+    if [ "$ADDED" == "false" ] ; then
+        echo "$TEXT" >> $FILE
+    elif [ "$ADDED" != "true" ] ; then
+        echoErr "ERROR: Failed to set line or apped to '$FILE'"
+        return 1
+    fi
 }
 
 function setEnv() {
