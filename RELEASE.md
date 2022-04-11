@@ -1,5 +1,9 @@
-Release: `v0.0.8.0`
+Release: `v0.0.10.2`
 
 Features:
-* Bugfix kira utils setup
-* Bugfix getArch output
+* Improved `safeWget` output in utils
+* File empty check fix in utils
+* Added `setLastLineByPrefixOrAppend` to utils
+* Added `setFirstLineByPrefix` to utils
+* Added `setLastLineByPrefix` to utils
+* Fixed branch exists check in workflows
