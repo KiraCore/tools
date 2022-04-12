@@ -40,9 +40,11 @@ jobs:
               echo "(current dir): $WORK_DIR" && ls -l ./
               cd ../ && tar -czvf src.tar.gz -C ./tools . && cp ./src.tar.gz ./tools/src.tar.gz
               cd $WORK_DIR
-              chmod -Rv 555 ./scripts ./bash-utils/bash-utils.sh
+              chmod -Rv 555 ./scripts ./bash-utils
               set -x
-              . ./bash-utils/bash-utils.sh bashUtilsSetup
+              cd ./bash-utils
+              ./bash-utils.sh bashUtilsSetup
+              cd $WORK_DIR
               set +x
               RELEASE_VER="$(./scripts/version.sh)" && echo "RELEASE_VER=$RELEASE_VER" >> $GITHUB_ENV
               REPOSITORY_NAME="${{ github.event.repository.name }}" && echo "REPOSITORY_NAME=$REPOSITORY_NAME" >> $GITHUB_ENV

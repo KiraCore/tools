@@ -35,6 +35,8 @@ function bashUtilsSetup() {
             KIRA_GLOBS_DIR=$GLOBS_DIR
         fi
 
+        echo "INFO: Loaded utils from '$UTILS_SOURCE', installing bash-utils & setting up glob dir in '$KIRA_GLOBS_DIR'..."
+
         if [ "$VERSION" != "$BASH_UTILS_VERSION" ] ; then
             bash-utils echoErr "ERROR: Self check version mismatch, expected '$BASH_UTILS_VERSION', but got '$VERSION'"
             return 1
