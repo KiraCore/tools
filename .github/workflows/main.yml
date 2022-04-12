@@ -41,13 +41,6 @@ jobs:
               cd ../ && tar -czvf src.tar.gz -C ./tools . && cp ./src.tar.gz ./tools/src.tar.gz
               cd $WORK_DIR
               chmod -Rv 555 ./scripts ./bash-utils
-              set -x
-              cd ./bash-utils
-              ./bash-utils.sh bashUtilsSetup
-              . /etc/profile
-              cat /etc/profile
-              echo "Bash Utils Version: " && $(bashUtilsVersion)
-              cd $WORK_DIR
               set +x
               RELEASE_VER="$(./scripts/version.sh)" && echo "RELEASE_VER=$RELEASE_VER" >> $GITHUB_ENV
               REPOSITORY_NAME="${{ github.event.repository.name }}" && echo "REPOSITORY_NAME=$REPOSITORY_NAME" >> $GITHUB_ENV
@@ -62,7 +55,6 @@ jobs:
             run: |
               . /etc/profile
               go version
-              echo "Bash Utils Version: " && $(bashUtilsVersion)
               echo "     Source branch: ${{ env.SOURCE_BRANCH }}"
               echo "Destination branch: ${{ env.DESTINATION_BRANCH }}"
               echo "        Event name: ${{ github.event_name }}"
