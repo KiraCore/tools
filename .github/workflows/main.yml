@@ -34,13 +34,14 @@ jobs:
             run: |
               echo "SOURCE_BRANCH=$(echo ${{ env.REF_BRANCH }} | tr / -)" >> $GITHUB_ENV
               echo "DESTINATION_BRANCH=$(echo ${{ env.BASE_REF_BRANCH }} | tr / -)" >> $GITHUB_ENV
-          - name: Archive src and setup envs
+          - name: Archive src, install latest bash-utils and setup envs
             run: |
               WORK_DIR=$PWD
               echo "(current dir): $WORK_DIR" && ls -l ./
               cd ../ && tar -czvf src.tar.gz -C ./tools . && cp ./src.tar.gz ./tools/src.tar.gz
               cd $WORK_DIR
               chmod -Rv 555 ./scripts
+              ./bash-utils/bash-utils.sh bashUtilsSetup
               RELEASE_VER="$(./scripts/version.sh)" && echo "RELEASE_VER=$RELEASE_VER" >> $GITHUB_ENV
               REPOSITORY_NAME="${{ github.event.repository.name }}" && echo "REPOSITORY_NAME=$REPOSITORY_NAME" >> $GITHUB_ENV
               git ls-remote https://github.com/kiracore/$REPOSITORY_NAME | egrep -q "refs/tags/${RELEASE_VER}$" && echo "RELEASE_EXISTS=true" >> $GITHUB_ENV || echo "RELEASE_EXISTS=false" >> $GITHUB_ENV
@@ -54,7 +55,7 @@ jobs:
             run: |
               . /etc/profile
               go version
-              echo "Bash Utils Version: " && $(utilsVersion)
+              echo "Bash Utils Version: " && $(bashUtilsVersion)
               echo "     Source branch: ${{ env.SOURCE_BRANCH }}"
               echo "Destination branch: ${{ env.DESTINATION_BRANCH }}"
               echo "        Event name: ${{ github.event_name }}"
