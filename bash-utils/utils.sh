@@ -9,9 +9,61 @@ REGEX_INTEGER="^-?[0-9]+$"
 REGEX_NUMBER="^[+-]?([0-9]*[.])?([0-9]+)?$"
 REGEX_PUBLIC_IP='^([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?<!172\.(16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31))(?<!127)(?<!^10)(?<!^0)\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?<!192\.168)(?<!172\.(16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31))\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?<!\.255$)(?<!\b255.255.255.0\b)(?<!\b255.255.255.242\b)$'
 REGEX_KIRA="^(kira)[a-zA-Z0-9]{39}$"
+REGEX_VERSION="^(v?)([0-9]+)\.([0-9]+)\.([0-9]+)(-?)([a-zA-Z]+)?(\.?([0-9]+)?)$"
 
 function utilsVersion() {
-    echo "v0.0.15"
+    echo "v0.1.1.2"
+}
+
+# this is default installation script for utils
+# ./utils.sh utilsSetup ./utils.sh "/var/kiraglob"
+function utilsSetup() {
+    local UTILS_SOURCE="$1"
+    local GLOBS_DIR="$2"
+    local UTILS_DESTINATION="/usr/local/bin/kira-utils.sh"
+
+    if [ -z "$GLOBS_DIR" ] ; then
+        [ -z "$KIRA_GLOBS_DIR" ] && KIRA_GLOBS_DIR="/var/kiraglob"
+    else
+        KIRA_GLOBS_DIR=$GLOBS_DIR
+    fi
+
+    if [ ! -f $UTILS_SOURCE ] ; then
+        echoErr "ERROR: utils source was NOT found"
+        return 1
+    else
+        mkdir -p "/usr/local/bin"
+        cp -fv "$UTILS_SOURCE" "$UTILS_DESTINATION"
+        cp -fv "$UTILS_SOURCE" "/usr/local/bin/utils"
+        chmod -v 555 $UTILS_DESTINATION "/usr/local/bin/utils"
+        
+        local SUDOUSER="${SUDO_USER}" && [ "$SUDOUSER" == "root" ] && SUDOUSER=""
+        local USERNAME="${USER}" && [ "$USERNAME" == "root" ] && USERNAME=""
+        local LOGNAME=$(logname 2> /dev/null echo "") && [ "$LOGNAME" == "root" ] && LOGNAME=""
+
+        local TARGET="/$LOGNAME/.bashrc" && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
+        TARGET="/$USERNAME/.bashrc" && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
+        TARGET="/$SUDOUSER/.bashrc" && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
+        TARGET="/root/.bashrc" && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
+        TARGET=~/.bashrc && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
+        TARGET=~/.zshrc && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
+        TARGET=~/.profile && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
+
+        mkdir -p $KIRA_GLOBS_DIR
+
+        utils setGlobEnv KIRA_GLOBS_DIR "$KIRA_GLOBS_DIR"
+        utils setGlobEnv KIRA_TOOLS_SRC "$UTILS_DESTINATION"
+
+        local AUTOLOAD_SET=$(utils getLastLineByPrefix "source $UTILS_DESTINATION" /etc/profile 2> /dev/null || echo "-1")
+
+        if [[ $AUTOLOAD_SET -lt 0 ]] ; then
+            echo "source $UTILS_DESTINATION || echo \"ERROR: Failed to load kira utils from '$UTILS_DESTINATION'\"" >> /etc/profile
+        fi
+
+        utils loadGlobEnvs
+
+        echoInfo "INFO: SUCCESS!, Installed kira bash-utils $(utilsVersion)"
+    fi
 }
 
 # bash 3 (MAC) compatybility
@@ -110,6 +162,10 @@ function isMnemonic() {
     if (( $kg_count % 3 == 0 )) && [[ $kg_count -ge 12 ]] ; then echo "true" ; else echo "false" ; fi
 }
 
+function isVersion {
+  [[ "$1" =~ $REGEX_VERSION ]] && echo "true" || echo "false"
+}
+
 function date2unix() {
     kg_date_tmp="$*" && kg_date_tmp=$(echo "$kg_date_tmp" | xargs 2> /dev/null || echo -n "")
     if (! $(isNullOrWhitespaces "$kg_date_tmp")) && (! $(isNaturalNumber $kg_date_tmp)) ; then
@@ -128,19 +184,17 @@ function isPortOpen() {
 }
 
 function fileSize() {
-    kg_bytes=$(stat -c%s $1 2> /dev/null || echo -n "")
-    ($(isNaturalNumber "$kg_bytes")) && echo "$kg_bytes" || echo -n "0"
+    local BYTES=$(stat -c%s $1 2> /dev/null || echo -n "")
+    ($(isNaturalNumber "$BYTES")) && echo "$BYTES" || echo -n "0"
 }
 
 function isFileEmpty() {
-    if [ -z "$1" ] || [ ! -f $1 ] || [ ! -s $1 ] ; then echo "true" ; else
-        kg_PREFIX_AND_SUFFIX=$(echo "$(head -c 64 $1 2>/dev/null || echo '')$(tail -c 64 $1 2>/dev/null || echo '')" | tr -d '\011\012\013\014\015\040' 2>/dev/null || echo -n "")
-        if [ ! -z "$kg_PREFIX_AND_SUFFIX" ] ; then
-            echo "false"
-        else
-            kg_TEXT=$(cat $1 | tr -d '\011\012\013\014\015\040' 2>/dev/null || echo -n "")
-            [ -z "$kg_TEXT" ] && echo "true" || echo "false"
-        fi
+    local FILE="$1"
+    if [ -z "$FILE" ] || [ ! -f "$FILE" ] || [ ! -s "$FILE" ] ; then echo "true" ; else
+        local TEXT=$(head -c 64 "$FILE" 2>/dev/null | tr -d '\0\011\012\013\014\015\040' 2>/dev/null || echo '')
+        [ -z "$TEXT" ] && TEXT=$(tail -c 64 "$FILE" 2>/dev/null | tr -d '\0\011\012\013\014\015\040' 2>/dev/null || echo '')
+        [ -z "$TEXT" ] && TEXT=$(cat $FILE | tr -d '\0\011\012\013\014\015\040' 2>/dev/null || echo -n "")
+        [ ! -z "$TEXT" ] && echo "false" || echo "true"
     fi
 }
 
@@ -172,6 +226,49 @@ function md5() {
         echo $(cat | md5sum | awk '{ print $1 }' | xargs || echo -n "") || echo -n ""
     else
         [ -f $1 ] && echo $(md5sum $1 | awk '{ print $1 }' | xargs || echo -n "") || echo -n ""
+    fi
+}
+
+function safeWget() {
+    local OUT_PATH=$1
+    local FILE_URL=$2
+    local EXPECTED_HASH=$3
+    rm -fv $OUT_PATH
+
+    wget "$FILE_URL" -O $OUT_PATH
+    FILE_HASH=$(sha256 $OUT_PATH)
+
+    if ($(isFileEmpty $OUT_PATH)) ; then
+        echoErr "ERROR: Failed download from '$FILE_URL'"
+        return 1
+    elif [ "$FILE_HASH" != "$EXPECTED_HASH" ]; then
+        rm -fv $OUT_PATH || echoErr "ERROR: Failed to delete '$OUT_PATH'"
+        echoErr "ERROR: Safe download filed: '$FILE_URL' -x-> '$OUT_PATH'"
+        echoErr "ERROR: Expected hash: '$EXPECTED_HASH', but got '$FILE_HASH'"
+        return 1
+    else
+        echoInfo "INFO: Safe download suceeded: '$FILE_URL' ---> '$(realpath $OUT_PATH)'"
+    fi
+}
+
+function getCpuCores() {
+    local CORES=$(cat /proc/cpuinfo | grep processor | wc -l 2> /dev/null || echo "0")
+    ($(isNaturalNumber "$CORES")) && echo $CORES || echo "0"
+}
+
+function getRamTotal() {
+    local MEMORY=$(grep MemTotal /proc/meminfo | awk '{print $2}' || echo "0")
+    ($(isNaturalNumber "$MEMORY")) && echo $MEMORY || echo "0"
+}
+
+function getArch() {
+    local ARCH=$(uname -m)
+    if [[ "$ARCH" == *"arm"* ]] || [[ "$ARCH" == *"aarch"* ]] ; then
+        echo "arm64"
+    elif [[ "$ARCH" == *"x64"* ]] || [[ "$ARCH" == *"x86_64"* ]] || [[ "$ARCH" == *"amd64"* ]] || [[ "$ARCH" == *"amd"* ]] ; then
+        echo "amd64"
+    else
+        echo "$ARCH"
     fi
 }
 
@@ -377,14 +474,14 @@ function globFile() {
 
 function globGet() {
     local FILE=$(globFile "$1" "$2")
-    [[ -s FILE ]] && cat $FILE || echo ""
+    [[ -s "$FILE" ]] && cat $FILE || echo ""
     return 0
 }
 
 # threadsafe global get
 function globGetTS() {
     local FILE=$(globFile "$1" "$2")
-    [[ -s "$FILE" ]] && sem --id "$1" "cat $FILE" || echo ""
+    [ -s "$FILE" ] && sem --id "$1" "cat $FILE" || echo ""
     return 0
 }
 
@@ -663,8 +760,45 @@ function setLineByNumber() {
     local INDEX=$1
     local TEXT=$2
     local FILE=$3
+    [ ! -f "$FILE" ] && echoErr "ERROR: File '$FILE' does NOT exist, nothing can be set!"
     sed -i"" "$INDEX c\
 $TEXT" $FILE
+}
+
+function setNLineByPrefix() {
+    local INDEX=$1
+    local PREFIX=$2
+    local TEXT=$3
+    local FILE=$4
+    local LINE=$(getNLineByPrefix "$INDEX" "$PREFIX" "$FILE")
+    if [[ $LINE -ge 0 ]] ; then
+        setLineByNumber "$LINE" "$TEXT" "$FILE"
+        echo "true"
+    else
+        echo "false"
+    fi
+}
+
+function setLastLineByPrefix() {
+    setNLineByPrefix "0" "$1" "$2" "$3"
+}
+
+function setFirstLineByPrefix() {
+    setNLineByPrefix "1" "$1" "$2" "$3"
+}
+
+function setLastLineByPrefixOrAppend() {
+    local PREFIX=$1
+    local TEXT=$2
+    local FILE=$3
+    [ ! -f "$FILE" ] && echoErr "ERROR: File '$FILE' does NOT exist, nothing can be set!"
+    local ADDED=$(setLastLineByPrefix "$PREFIX" "$TEXT" "$FILE")
+    if [ "$ADDED" == "false" ] ; then
+        echo "$TEXT" >> $FILE
+    elif [ "$ADDED" != "true" ] ; then
+        echoErr "ERROR: Failed to set line or apped to '$FILE'"
+        return 1
+    fi
 }
 
 function setEnv() {
@@ -812,3 +946,45 @@ function setGlobLine() {
 function loadGlobEnvs() {
     . /etc/profile
 }
+
+# crossenvLink "$KIRA_BIN/CDHelper-<arch>/CDHelper" "/usr/local/bin/CDhelper"
+# NOTE: the <arch> tag will be replaced by arm64 & amd64
+function crossenvLink() {
+    local SOURCE_PATH=$1
+    local DESTINATION_PATH=$2
+
+    local FULL_SRC_PATH_ARM64="${SOURCE_PATH/<arch>/arm64}"
+    local FULL_SRC_PATH_AMD64="${SOURCE_PATH/<arch>/amd64}"
+
+    if [ -f $FULL_SRC_PATH_ARM64 ] && [ -f $FULL_SRC_PATH_AMD64 ] ; then
+        cat > $DESTINATION_PATH << EOL
+#!/usr/bin/env bash
+set -e
+
+if [[ "\$(uname -m)" == *"arm"* ]] || [[ "\$(uname -m)" == *"aarch"* ]] ; then
+    if [ -z "$@" ] ; then
+        $FULL_SRC_PATH_ARM64
+    else
+        $FULL_SRC_PATH_ARM64 "\$@"
+    fi
+else
+    if [ -z "$@" ] ; then
+        $FULL_SRC_PATH_AMD64
+    else
+        $FULL_SRC_PATH_AMD64 "\$@"
+    fi
+fi
+EOL
+        chmod -v 555 "$DESTINATION_PATH" "$FULL_SRC_PATH_AMD64" "$FULL_SRC_PATH_ARM64"
+    else
+        [ ! -f $FULL_SRC_PATH_ARM64 ] && echoErr "ERROR: Could NOT find arm64 relese: '$FULL_SRC_PATH_ARM64'" 
+        [ ! -f $FULL_SRC_PATH_AMD64 ] && echoErr "ERROR: Could NOT find amd64 relese: '$FULL_SRC_PATH_AMD64'"
+        return 1
+    fi
+}
+
+# allow to execute finctions directly from file
+if declare -f "$1" > /dev/null ; then
+  # call arguments verbatim
+  "$@"
+fi
