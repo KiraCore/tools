@@ -26,6 +26,7 @@ jobs:
           - name: Extract branch name & release version
             shell: bash
             run: |
+              chmod -Rv 555 ./scripts
               VERSION_REGEX="^(v?)([0-9]+)\.([0-9]+)\.([0-9]+)(-?)([a-zA-Z]+)?(\.?([0-9]+)?)$"
               REPOSITORY_NAME=${{ github.event.repository.name }}
               RELEASE_VER=$(./scripts/version.sh) && echo "RELEASE_VER=$RELEASE_VER" >> $GITHUB_ENV
