@@ -1,3 +1,5 @@
+.PHONY: install start build publish
+
 install: go.sum
 		go install .
 

@@ -1,9 +1,10 @@
 .PHONY: test build publish
 
 test:
-	./scripts/test.sh
+	./bip39/scripts/test.sh
 
 build:
+	./bip39/scripts/build.sh
 	./scripts/build.sh
 
 publish:
