@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 set -e
+set +x
+. /etc/profile
+. ./bash-utils/bash-utils.sh
 set -x
-. ./utils.sh
+
 
 timerStart
-echoInfo "INFO: Starting bash-utils $(utilsVersion) testing..."
+echoInfo "INFO: Starting bash-utils $(bashUtilsVersion) testing..."
 
 sleep 2
 

@@ -52,9 +52,9 @@ jobs:
               fi
           - name: Print debug data before build
             run: |
-              . /etc/profile && echo "Utils Version: $(utilsVersion)"
+              . /etc/profile
               go version
-              echo "     Utils Version: $(utilsVersion)"
+              echo "Bash Utils Version: " && $(utilsVersion)
               echo "     Source branch: ${{ env.SOURCE_BRANCH }}"
               echo "Destination branch: ${{ env.DESTINATION_BRANCH }}"
               echo "        Event name: ${{ github.event_name }}"
@@ -103,7 +103,7 @@ jobs:
               echo "           bip39gen-linux-amd64.deb: sha256:$(sha256sum ./bin/bip39gen-linux-amd64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
               echo "         bip39gen-windows-arm64.exe: sha256:$(sha256sum ./bin/bip39gen-windows-arm64.exe | awk '{ print $1 }')" >> ./bin/RELEASE.md
               echo "         bip39gen-windows-amd64.exe: sha256:$(sha256sum ./bin/bip39gen-windows-amd64.exe | awk '{ print $1 }')" >> ./bin/RELEASE.md
-              echo "                      kira-utils.sh: sha256:$(sha256sum ./bin/kira-utils.sh | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "                      bash-utils.sh: sha256:$(sha256sum ./bin/bash-utils.sh | awk '{ print $1 }')" >> ./bin/RELEASE.md
               echo -e "\`\`\`"   >> ./bin/RELEASE.md
               tar -czvf deb.tar.gz -C ./bin .
           - name: Uploading artifacts
@@ -208,7 +208,7 @@ jobs:
                 ./bip39gen-windows-amd64.exe
                 ./bip39gen-darwin-arm64.deb
                 ./bip39gen-darwin-amd64.deb
-                ./kira-utils.sh
+                ./bash-utils.sh
           # ref: https://github.com/softprops/action-gh-release, v0.1.14
           # Release on merge only (push action) - this should run only once
           - name: Publish pre-release
@@ -245,7 +245,7 @@ jobs:
                 ./bip39gen-windows-amd64.exe
                 ./bip39gen-darwin-arm64.deb
                 ./bip39gen-darwin-amd64.deb
-                ./kira-utils.sh
+                ./bash-utils.sh
           # ref.: https://github.com/hmarr/auto-approve-action, v2.1.0
           - name: Approve pull request on success
             uses: hmarr/auto-approve-action@5d04a5ca6da9aeb8ca9f31a5239b96fc3e003029

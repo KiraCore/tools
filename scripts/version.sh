@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 set -e
-set -x
+set +x
 
-echo "v0.0.11.3"
-
+echo "v0.0.12.4"
