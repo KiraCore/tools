@@ -180,7 +180,7 @@ jobs:
             if: |
               github.event_name == 'push' &&
               ( env.RELEASE_EXISTS == false || env.RELEASE_EXISTS == 'false' ) &&
-              ( startsWith(env.SOURCE_BRANCH, 'v') && contains(env.SOURCE_BRANCH, '.')
+              ( startsWith(env.SOURCE_BRANCH, 'v') && contains(env.SOURCE_BRANCH, '.') )
             shell: bash
             env:
               KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
