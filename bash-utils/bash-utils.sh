@@ -25,7 +25,6 @@ function bashUtilsSetup() {
         return 0
     else
         local GLOBS_DIR="$1"
-
         local UTILS_SOURCE=$(realpath "$0")
         local VERSION=$($UTILS_SOURCE bashUtilsVersion || echo '')
         local UTILS_DESTINATION="/usr/local/bin/bash-utils.sh"
@@ -42,7 +41,7 @@ function bashUtilsSetup() {
         elif [ "$UTILS_SOURCE" == "$UTILS_DESTINATION" ] ; then
             bash-utils echoErr "ERROR: Installation source script and destination can't be the same"
             return 1
-        elif [ ! -f $UTILS_SOURCE ] ; then
+        elif [ ! -f "$UTILS_SOURCE" ] ; then
             bash-utils echoErr "ERROR: utils source was NOT found"
             return 1
         else
@@ -63,7 +62,7 @@ function bashUtilsSetup() {
             TARGET=~/.zshrc && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
             TARGET=~/.profile && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
 
-            mkdir -p $KIRA_GLOBS_DIR
+            mkdir -p "$KIRA_GLOBS_DIR"
 
             bash-utils setGlobEnv KIRA_GLOBS_DIR "$KIRA_GLOBS_DIR"
             bash-utils setGlobEnv KIRA_TOOLS_SRC "$UTILS_DESTINATION"
@@ -128,9 +127,9 @@ function isPublicIp() {
 
 function isDnsOrIp() {
     if ($(isNullOrEmpty "$1")) ; then echo "false" ; else
-        kg_var="false" && ($(isDns "$1")) && kg_var="true"
-        [ "$kg_var" != "true" ] && ($(isIp "$1")) && kg_var="true"
-        echo $kg_var
+        local VAR="false" && ($(isDns "$1")) && VAR="true"
+        [ "$VAR" != "true" ] && ($(isIp "$1")) && VAR="true"
+        echo $VAR
     fi
 }
 
@@ -171,10 +170,10 @@ function isPort() {
 }
 
 function isMnemonic() {
-    kg_mnem=$(echo "$1" | xargs 2> /dev/null || echo -n "")
-    kg_count=$(echo "$kg_mnem" | wc -w 2> /dev/null || echo -n "")
-    (! $(isNaturalNumber $kg_count)) && kg_count=0
-    if (( $kg_count % 3 == 0 )) && [[ $kg_count -ge 12 ]] ; then echo "true" ; else echo "false" ; fi
+    local MNEMONIC=$(echo "$1" | xargs 2> /dev/null || echo -n "")
+    local COUNT=$(echo "$MNEMONIC" | wc -w 2> /dev/null || echo -n "")
+    (! $(isNaturalNumber $COUNT)) && COUNT=0
+    if (( $COUNT % 3 == 0 )) && [[ $COUNT -ge 12 ]] ; then echo "true" ; else echo "false" ; fi
 }
 
 function isVersion {
@@ -182,19 +181,21 @@ function isVersion {
 }
 
 function date2unix() {
-    kg_date_tmp="$*" && kg_date_tmp=$(echo "$kg_date_tmp" | xargs 2> /dev/null || echo -n "")
-    if (! $(isNullOrWhitespaces "$kg_date_tmp")) && (! $(isNaturalNumber $kg_date_tmp)) ; then
-        kg_date_tmp=$(date -d "$kg_date_tmp" +"%s" 2> /dev/null || echo "0")
+    local DATE_TMP="$*" && DATE_TMP=$(echo "$DATE_TMP" | xargs 2> /dev/null || echo -n "")
+    if (! $(isNullOrWhitespaces "$DATE_TMP")) && (! $(isNaturalNumber $DATE_TMP)) ; then
+        DATE_TMP=$(date -d "$DATE_TMP" +"%s" 2> /dev/null || echo "0")
     fi
 
-    ($(isNaturalNumber "$kg_date_tmp")) && echo "$kg_date_tmp" || echo "0"
+    ($(isNaturalNumber "$DATE_TMP")) && echo "$DATE_TMP" || echo "0"
 }
 
 function isPortOpen() {
-    kg_addr=$1 && kg_port=$2 && kg_timeout=$3
-    (! $(isNaturalNumber $kg_timeout)) && kg_timeout=1
-    if (! $(isDnsOrIp $kg_addr)) || (! $(isPort $kg_port)) ; then echo "false"
-    elif timeout $kg_timeout nc -z $kg_addr $kg_port ; then echo "true"
+    local ADDRESS=$1
+    local PORT=$2
+    local TIMEOUT=$3
+    (! $(isNaturalNumber $TIMEOUT)) && TIMEOUT=1
+    if (! $(isDnsOrIp $ADDRESS)) || (! $(isPort $PORT)) ; then echo "false"
+    elif timeout $TIMEOUT nc -z $ADDRESS $PORT ; then echo "true"
     else echo "false" ; fi
 }
 
@@ -314,7 +315,7 @@ function tryMkDir {
             fi
         fi
 
-        if [ "$(toLower "$1")"== "-v" ]  ; then
+        if [ "$(toLower "$1")" == "-v" ]  ; then
             [ ! -d "$kg_var" ] && mkdir -p "$var" 2> /dev/null || :
             [ -d "$kg_var" ] && echo "created directory '$kg_var'" || echo "failed to create direcotry '$kg_var'"
         elif [ ! -d "$kg_var" ] ; then
