@@ -20,12 +20,12 @@ jobs:
           - name: Extract branch name on pull request
             shell: bash
             run: |
-              RELEASE_VER="$(grep -Fn -m 1 'Release: ' ./RELEASE.md | rev | cut -d ":" -f1 | rev | xargs | tr -dc '[:alnum:]\-\.' || echo '' | xargs)"
+              RELEASE_VER="$(./scripts/version.sh)" && echo "RELEASE_VER=$RELEASE_VER" >> $GITHUB_ENV
               SOURCE_BRANCH="$(echo ${GITHUB_REF#refs/heads/} | xargs)"
               MASTER_REF="$(git ls-remote https://github.com/kiracore/${{ github.event.repository.name }} | head -1 | sed 's/HEAD//')"
-              echo "RELEASE_VER=$RELEASE_VER" >> $GITHUB_ENV
               echo "SOURCE_BRANCH=$SOURCE_BRANCH" >> $GITHUB_ENV
               echo "MASTER_REF=$MASTER_REF" >> $GITHUB_ENV
+              git ls-remote https://github.com/kiracore/$REPOSITORY_NAME | egrep -q "refs/tags/${RELEASE_VER}$" && echo "RELEASE_EXISTS=true" >> $GITHUB_ENV || echo "RELEASE_EXISTS=false" >> $GITHUB_ENV
               git show-branch "remotes/origin/$RELEASE_VER" && echo "TARGET_BRANCH_EXISTS=true" >> $GITHUB_ENV || echo "TARGET_BRANCH_EXISTS=false" >> $GITHUB_ENV
           - name: Print debug data before publishing
             run: |
@@ -39,7 +39,8 @@ jobs:
           - name: Create version branch from master
             uses: peterjgrainger/action-create-branch@40d33f921267ca130cbacc770f41fc7c501a420f
             if: |
-               ( env.TARGET_BRANCH_EXISTS == false || env.TARGET_BRANCH_EXISTS == 'false' ) && 
+               ( env.TARGET_BRANCH_EXISTS == false || env.TARGET_BRANCH_EXISTS == 'false' ) &&
+               ( env.RELEASE_EXISTS == false || env.RELEASE_EXISTS == 'false' ) && 
                ( startsWith(env.RELEASE_VER, 'v') && contains(env.RELEASE_VER, '.') )
             env:
               GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -48,7 +49,8 @@ jobs:
               sha: ${{ env.MASTER_REF }}
           - name: Create PR from feature to version branch
             if: |
-               ( env.TARGET_BRANCH_EXISTS == false || env.TARGET_BRANCH_EXISTS == 'false' ) && 
+               ( env.TARGET_BRANCH_EXISTS == false || env.TARGET_BRANCH_EXISTS == 'false' ) &&
+               ( env.RELEASE_EXISTS == false || env.RELEASE_EXISTS == 'false' ) && 
                ( startsWith(env.RELEASE_VER, 'v') && contains(env.RELEASE_VER, '.') )
             uses: repo-sync/pull-request@5ba2c80b97c87b9174c1548141b7acd80f6376e1
             with:

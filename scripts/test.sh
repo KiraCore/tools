@@ -13,4 +13,9 @@ cd ./bash-utils
 make test
 cd $WORKDIR
 
+# Test utils
+cd ./bip39gen
+make test
+cd $WORKDIR
+
 echoInfo "SUCCESS: Testing finished"

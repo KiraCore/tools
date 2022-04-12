@@ -26,9 +26,14 @@ jobs:
           - name: Extract branch name & release version
             shell: bash
             run: |
-              echo "RELEASE_VER=$(grep -Fn -m 1 'Release: ' ./RELEASE.md | rev | cut -d ":" -f1 | rev | xargs | tr -dc '[:alnum:]\-\.' || echo '')" >> $GITHUB_ENV
-              echo "SOURCE_BRANCH=$(echo ${{ env.REF_BRANCH }} | tr / -)" >> $GITHUB_ENV
-              echo "DESTINATION_BRANCH=$(echo ${{ env.BASE_REF_BRANCH }} | tr / -)" >> $GITHUB_ENV
+              VERSION_REGEX="^(v?)([0-9]+)\.([0-9]+)\.([0-9]+)(-?)([a-zA-Z]+)?(\.?([0-9]+)?)$"
+              REPOSITORY_NAME=${{ github.event.repository.name }}
+              RELEASE_VER=$(./scripts/version.sh) && echo "RELEASE_VER=$RELEASE_VER" >> $GITHUB_ENV
+              SOURCE_BRANCH="$(echo ${{ env.REF_BRANCH }})" && echo "SOURCE_BRANCH=$SOURCE_BRANCH" >> $GITHUB_ENV
+              DESTINATION_BRANCH="$(echo ${{ env.BASE_REF_BRANCH }})" && echo "DESTINATION_BRANCH=$DESTINATION_BRANCH" >> $GITHUB_ENV
+              git ls-remote https://github.com/kiracore/$REPOSITORY_NAME | egrep -q "refs/tags/${RELEASE_VER}$" && echo "RELEASE_EXISTS=true" >> $GITHUB_ENV || echo "RELEASE_EXISTS=false" >> $GITHUB_ENV
+              [[ "$SOURCE_BRANCH" =~ $VERSION_REGEX ]] && echo "SOURCE_VERSIONED=true" >> $GITHUB_ENV || echo "SOURCE_VERSIONED=false" >> $GITHUB_ENV
+              [[ "$DESTINATION_BRANCH" =~ $VERSION_REGEX ]] && echo "DESTINATION_VERSIONED=true" >> $GITHUB_ENV || echo "DESTINATION_VERSIONED=false" >> $GITHUB_ENV
           - name: Print debug data before publishing
             run: |
               echo "Source branch name: ${{ env.SOURCE_BRANCH }}"
@@ -43,7 +48,11 @@ jobs:
               pr-labels: 'invalid'
               pr-comment: >
                 This repository does not accept pull requests from non version branches
-              close-pr: true
+
+                --- Please CLOSE this PR after acknowledging the issue ---
+              close-pr: false
+              lock-pr: true
+              pr-lock-reason: 'spam'
           - name: Reject invalid PRs to version branches that do NOT originate from feature/* or debug/*
             # ref.: https://github.com/dessant/repo-lockdown
             uses: dessant/repo-lockdown@0b093279a77b44bbc38e85089b5463dd06b4aea4
@@ -54,7 +63,11 @@ jobs:
               pr-labels: 'invalid'
               pr-comment: >
                 This repository does not accept pull requests from feature/* & bugfix/* branches
-              close-pr: true
+
+                --- Please CLOSE this PR after acknowledging the issue ---
+              close-pr: false
+              lock-pr: true
+              pr-lock-reason: 'spam'
           - name: Reject invalid PRs to version branches with invalid RELEASE files
             # ref.: https://github.com/dessant/repo-lockdown
             uses: dessant/repo-lockdown@0b093279a77b44bbc38e85089b5463dd06b4aea4
@@ -64,5 +77,9 @@ jobs:
             with:
               pr-labels: 'invalid'
               pr-comment: >
-                The release version (${{ env.RELEASE_VER }}) in the ./RELEASE.md file does NOT match the branch name (${{ env.DESTINATION_BRANCH }})
+                The release version (${{ env.RELEASE_VER }}) does NOT match the branch name (${{ env.DESTINATION_BRANCH }})
+
+                --- Please CLOSE this PR after acknowledging the issue ---
               close-pr: false
+              lock-pr: true
+              pr-lock-reason: 'spam'
