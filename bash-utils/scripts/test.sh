@@ -46,4 +46,4 @@ if [[ $(timerSpan) -lt 3 ]] ; then
     exit 1
 fi
 
-echoInfo "INFO: Successsfully executed all kira-utils test cases, elapsed $(prettyTime $(timerSpan))"
+echoInfo "INFO: Successsfully executed all bash-utils test cases, elapsed $(prettyTime $(timerSpan))"

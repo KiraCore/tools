@@ -41,7 +41,9 @@ jobs:
               cd ../ && tar -czvf src.tar.gz -C ./tools . && cp ./src.tar.gz ./tools/src.tar.gz
               cd $WORK_DIR
               chmod -Rv 555 ./scripts ./bash-utils/bash-utils.sh
-              ./bash-utils/bash-utils.sh bashUtilsSetup
+              set -x
+              . ./bash-utils/bash-utils.sh bashUtilsSetup
+              set +x
               RELEASE_VER="$(./scripts/version.sh)" && echo "RELEASE_VER=$RELEASE_VER" >> $GITHUB_ENV
               REPOSITORY_NAME="${{ github.event.repository.name }}" && echo "REPOSITORY_NAME=$REPOSITORY_NAME" >> $GITHUB_ENV
               git ls-remote https://github.com/kiracore/$REPOSITORY_NAME | egrep -q "refs/tags/${RELEASE_VER}$" && echo "RELEASE_EXISTS=true" >> $GITHUB_ENV || echo "RELEASE_EXISTS=false" >> $GITHUB_ENV
