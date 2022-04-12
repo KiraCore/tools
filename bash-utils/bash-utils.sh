@@ -50,7 +50,7 @@ function bashUtilsSetup() {
             mkdir -p "/usr/local/bin"
             cp -fv "$UTILS_SOURCE" "$UTILS_DESTINATION"
             cp -fv "$UTILS_SOURCE" "/usr/local/bin/bash-utils"
-            chmod -v 555 $UTILS_DESTINATION "/usr/local/bin/bash-utils"
+            chmod -v 555 "$UTILS_DESTINATION" "/usr/local/bin/bash-utils"
 
             local SUDOUSER="${SUDO_USER}" && [ "$SUDOUSER" == "root" ] && SUDOUSER=""
             local USERNAME="${USER}" && [ "$USERNAME" == "root" ] && USERNAME=""
@@ -68,6 +68,7 @@ function bashUtilsSetup() {
 
             bash-utils setGlobEnv KIRA_GLOBS_DIR "$KIRA_GLOBS_DIR"
             bash-utils setGlobEnv KIRA_TOOLS_SRC "$UTILS_DESTINATION"
+            bash-utils setGlobPath "/usr/local/bin"
 
             local AUTOLOAD_SET=$(bash-utils getLastLineByPrefix "source $UTILS_DESTINATION" /etc/profile 2> /dev/null || echo "-1")
 

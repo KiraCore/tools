@@ -44,6 +44,9 @@ jobs:
               set -x
               cd ./bash-utils
               ./bash-utils.sh bashUtilsSetup
+              . /etc/profile
+              cat /etc/profile
+              echo "Bash Utils Version: " && $(bashUtilsVersion)
               cd $WORK_DIR
               set +x
               RELEASE_VER="$(./scripts/version.sh)" && echo "RELEASE_VER=$RELEASE_VER" >> $GITHUB_ENV
