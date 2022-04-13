@@ -2,9 +2,9 @@
 set -e
 set +x
 . /etc/profile
-. ./bash-utils/bash-utils.sh
 set -x
 
+. ./bash-utils.sh
 
 timerStart
 echoInfo "INFO: Starting bash-utils $(bashUtilsVersion) testing..."
