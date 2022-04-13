@@ -276,11 +276,11 @@ jobs:
               set -x
               git config --global --add safe.directory /github/workspace
           - name: Create PR from a version branch to latest
-            # ref: https://github.com/repo-sync/pull-request
+            # ref. repo-sync/pull-request is broken, using cea2aj/pull-request instead
+            uses: cea2aj/pull-request@84eb0c3478f13651e5649367941b867ca02d7926
             if: |
               github.event_name == 'push' &&
               ( startsWith(env.SOURCE_BRANCH, 'v') && contains(env.SOURCE_BRANCH, '.') )
-            uses: repo-sync/pull-request@5ba2c80b97c87b9174c1548141b7acd80f6376e1
             with:
               github_token: ${{ secrets.REPO_ACCESS }}
               source_branch: ${{ env.SOURCE_BRANCH }}

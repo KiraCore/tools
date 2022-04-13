@@ -36,8 +36,9 @@ jobs:
               echo "    Event name: ${{ github.event_name }}"
               echo "    Repo. name: ${{ github.event.repository.name }}"
           - name: Create PR from a version branch to master after version branch push
+            # ref. repo-sync/pull-request is broken, using cea2aj/pull-request instead
+            uses: cea2aj/pull-request@84eb0c3478f13651e5649367941b867ca02d7926
             if: startsWith(env.SOURCE_BRANCH, 'v') && contains(env.SOURCE_BRANCH, '.') && !contains(env.SOURCE_BRANCH, '-') && !contains(env.SOURCE_BRANCH, 'rc')
-            uses: repo-sync/pull-request@5ba2c80b97c87b9174c1548141b7acd80f6376e1
             with:
               github_token: ${{ secrets.REPO_ACCESS }}
               source_branch: ${{ env.SOURCE_BRANCH }}

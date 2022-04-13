@@ -44,9 +44,9 @@ jobs:
               echo " Release exists: ${{ env.RELEASE_EXISTS }}"
               echo "     Event name: ${{ github.event_name }}"
               echo "  Target Exists: ${{ env.TARGET_BRANCH_EXISTS }}"
-          # ref.: https://github.com/peterjgrainger/action-create-branch, v2.0.1
+          # ref.: https://github.com/peterjgrainger/action-create-branch, v2.2.0
           - name: Create version branch from master
-            uses: peterjgrainger/action-create-branch@40d33f921267ca130cbacc770f41fc7c501a420f
+            uses: peterjgrainger/action-create-branch@c2800a3a9edbba2218da6861fa46496cf8f3195a
             if: |
                ( env.TARGET_BRANCH_EXISTS == false || env.TARGET_BRANCH_EXISTS == 'false' ) &&
                ( env.RELEASE_EXISTS == false || env.RELEASE_EXISTS == 'false' ) && 
@@ -57,11 +57,12 @@ jobs:
               branch: ${{ env.RELEASE_VER }}
               sha: ${{ env.MASTER_REF }}
           - name: Create PR from feature to version branch
+            # ref. repo-sync/pull-request is broken, using cea2aj/pull-request instead
+            uses: cea2aj/pull-request@84eb0c3478f13651e5649367941b867ca02d7926
             if: |
                ( env.TARGET_BRANCH_EXISTS == false || env.TARGET_BRANCH_EXISTS == 'false' ) &&
                ( env.RELEASE_EXISTS == false || env.RELEASE_EXISTS == 'false' ) && 
                ( startsWith(env.RELEASE_VER, 'v') && contains(env.RELEASE_VER, '.') )
-            uses: repo-sync/pull-request@5ba2c80b97c87b9174c1548141b7acd80f6376e1
             with:
               github_token: ${{ secrets.REPO_ACCESS }}
               source_branch: ${{ env.SOURCE_BRANCH }}
