@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-echo "v0.0.12.4"
+echo "v0.1.0.5"

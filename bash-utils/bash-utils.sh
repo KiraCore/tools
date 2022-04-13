@@ -5,6 +5,8 @@ REGEX_DNS="^(([a-zA-Z](-?[a-zA-Z0-9])*)\.)+[a-zA-Z]{2,}$"
 REGEX_IP="^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$"
 REGEX_NODE_ID="^[a-f0-9]{40}$"
 REGEX_TXHASH="^[a-fA-F0-9]{64}$"
+REGEX_SHA256="^[a-fA-F0-9]{64}$"
+REGEX_MD5="^[a-fA-F0-9]{32}$"
 REGEX_INTEGER="^-?[0-9]+$"
 REGEX_NUMBER="^[+-]?([0-9]*[.])?([0-9]+)?$"
 REGEX_PUBLIC_IP='^([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?<!172\.(16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31))(?<!127)(?<!^10)(?<!^0)\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?<!192\.168)(?<!172\.(16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31))\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?<!\.255$)(?<!\b255.255.255.0\b)(?<!\b255.255.255.242\b)$'
@@ -19,7 +21,7 @@ function bashUtilsVersion() {
 # this is default installation script for utils
 # ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
 function bashUtilsSetup() {
-    local BASH_UTILS_VERSION="v0.1.2.3"
+    local BASH_UTILS_VERSION="v0.1.2.4"
     if [ "$1" == "version" ] ; then
         echo "$BASH_UTILS_VERSION"
         return 0
@@ -114,6 +116,14 @@ function isKiraAddress() {
 
 function isTxHash() {
     if ($(isNullOrEmpty "$1")) ; then echo "false" ; else [[ "$1" =~ $REGEX_TXHASH ]] && echo "true" || echo "false" ; fi
+}
+
+function isSHA256() {
+    if ($(isNullOrEmpty "$1")) ; then echo "false" ; else [[ "$1" =~ $REGEX_SHA256 ]] && echo "true" || echo "false" ; fi
+}
+
+function isMD5() {
+    if ($(isNullOrEmpty "$1")) ; then echo "false" ; else [[ "$1" =~ $REGEX_MD5 ]] && echo "true" || echo "false" ; fi
 }
 
 function isDns() {
@@ -248,18 +258,56 @@ function md5() {
     fi
 }
 
+# Allows to safely download file from external resources by hash verification or cosign file signature
+# In the case where cosign verification is used the "<url>.sig" URL must exist
+# safeWget <file> <url> <hash>
+# safeWget <file> <url> <pubkey-path>
 function safeWget() {
     local OUT_PATH=$1
     local FILE_URL=$2
     local EXPECTED_HASH=$3
+
     local OUT_NAME=$(basename $OUT_PATH)
     local TMP_DIR=/tmp/downloads
     local TMP_PATH="$TMP_DIR/$OUT_NAME"
 
-    mkdir -p $TMP_DIR
+    local SIG_URL="${FILE_URL}.sig"
+    local TMP_PATH_SIG="$TMP_DIR/${OUT_NAME}.sig"
+
+    mkdir -p "$TMP_DIR"
+    rm -fv "$TMP_PATH_SIG"
+
     local FILE_HASH=$(sha256 $TMP_PATH)
+
+    local COSIGN_PUB_KEY=""
+    if (! $(isSHA256 "$EXPECTED_HASH")) ; then
+        COSIGN_PUB_KEY="$EXPECTED_HASH" && EXPECTED_HASH=""
+        if ($(isCommand cosign)) && (! $(isFileEmpty $COSIGN_PUB_KEY)) ; then
+            echoWarn "WARNING: Checksum was not provided, checking if a signature file is available..."
+            # assume pubkey was provided instead of checksum
+            wget "$SIG_URL" -O $TMP_PATH_SIG
+        else
+            echoErr "ERROR: Cosign tool is not installed or public key was not found in '$COSIGN_PUB_KEY'"
+            return 1
+        fi
+    fi
+
+    local COSIGN_VERIFIED="false"
+    if (! $(isFileEmpty $COSIGN_PUB_KEY)) && (! $(isFileEmpty $TMP_PATH)) ; then
+        echoInfo "INFO: Using cosign to verify temporary file integrity..."
+        COSIGN_VERIFIED="true"  
+        cosign verify-blob --key="$COSIGN_PUB_KEY" --signature="$TMP_PATH_SIG" "$TMP_PATH" || COSIGN_VERIFIED="false"
+
+        if [ "$COSIGN_VERIFIED" == "true" ] ; then
+            echoInfo "INFO: Cosign successfully verified integrity of an already existing temporary file"
+            EXPECTED_HASH="$FILE_HASH"
+        else
+            echoInfo "INFO: Cosign failed to verify temporary file integrity"
+            EXPECTED_HASH=""
+        fi
+    fi
     
-    if [ "$FILE_HASH" == "$EXPECTED_HASH" ] && [ ! -z "$EXPECTED_HASH" ]; then
+    if [ "$FILE_HASH" == "$EXPECTED_HASH" ] && ($(isSHA256 "$EXPECTED_HASH")); then
         echoInfo "INFO: No need to download, file with the hash '$FILE_HASH' was already found in the '$TMP_DIR' directory"
         [ "$TMP_PATH" != "$OUT_PATH" ] && cp -fv $TMP_PATH $OUT_PATH
     else
@@ -269,10 +317,25 @@ function safeWget() {
         FILE_HASH=$(sha256 $OUT_PATH)
     fi
 
+    COSIGN_VERIFIED="false"
+    if (! $(isFileEmpty $COSIGN_PUB_KEY)) && (! $(isFileEmpty $OUT_PATH)) ; then
+        echoInfo "INFO: Using cosign to verify final file integrity..."
+        COSIGN_VERIFIED="true"
+        cosign verify-blob --key="$COSIGN_PUB_KEY" --signature="$TMP_PATH_SIG" "$OUT_PATH" || COSIGN_VERIFIED="false"
+
+        if [ "$COSIGN_VERIFIED" == "true" ] ; then
+            echoInfo "INFO: Cosign successfully verified integrity of downloaded file"
+            EXPECTED_HASH="$FILE_HASH"
+        else
+            echoInfo "INFO: Cosign failed to verify integrity of downloaded file"
+            EXPECTED_HASH="cosign"
+        fi
+    fi
+
     if ($(isFileEmpty $OUT_PATH)) ; then
         echoErr "ERROR: Failed download from '$FILE_URL', file is exmpty or was NOT found!"
         return 1
-    elif [ "$FILE_HASH" != "$EXPECTED_HASH" ]; then
+    elif [ "$FILE_HASH" != "$EXPECTED_HASH" ] || (! $(isSHA256 "$EXPECTED_HASH")) ; then
         rm -fv $OUT_PATH || echoErr "ERROR: Failed to delete '$OUT_PATH'"
         echoErr "ERROR: Safe download filed: '$FILE_URL' -x-> '$OUT_PATH'"
         echoErr "ERROR: Expected hash: '$EXPECTED_HASH', but got '$FILE_HASH'"

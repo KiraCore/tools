@@ -189,7 +189,7 @@ jobs:
               COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
             run: |
               echo "$KEY" > ../cosign.key
-              for FILE in *; do FILE_NAME=$(basename $FILE); cosign sign-blob --key=../cosign.key --output=./${FILE_NAME}.sig ./$FILE_NAME; done
+              for FILE in *; do FILE_NAME=$(basename $FILE); cosign sign-blob --key=../cosign.key --output-signature=./${FILE_NAME}.sig ./$FILE_NAME; done
               rm -fv ../cosign.key
           # ref: https://github.com/softprops/action-gh-release, v0.1.14
           # Release on merge only (push action) - this should run only once
@@ -249,6 +249,14 @@ jobs:
                 ./bip39gen-darwin-arm64.deb.sig
                 ./bash-utils.sh
                 ./bash-utils.sh.sig
+          - name: Cleanup all resources
+            if: always()
+            shell: bash
+            run: |
+              shred -vzn 3 ../cosign.key || echo "WARNING: Failed to shred key file"
+              rm -fv ../cosign.key
+              rm -rfv ./*
+              echo "(current dir): $PWD" && ls -l ./
           # ref.: https://github.com/hmarr/auto-approve-action, v2.1.0
           - name: Approve pull request on success
             uses: hmarr/auto-approve-action@5d04a5ca6da9aeb8ca9f31a5239b96fc3e003029
@@ -257,17 +265,16 @@ jobs:
               ( env.SOURCE_BRANCH == env.RELEASE_VER || env.DESTINATION_BRANCH == env.RELEASE_VER )
             with:
               github-token: "${{ secrets.GITHUB_TOKEN }}"
-          - name: Cleanup all resources
-            shell: bash
-            run: |
-              rm -fv ../cosign.key
-              rm -rfv ./*
-              echo "(current dir): $PWD" && ls -l ./
           # ref.: https://github.com/actions/checkout, v2.4.0
           - name: Checkout repository & extract branch names 
             uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
             with:
               fetch-depth: 0
+          - name: Allow workspace interactions
+            shell: bash
+            run: |
+              set -x
+              git config --global --add safe.directory /github/workspace
           - name: Create PR from a version branch to latest
             # ref: https://github.com/repo-sync/pull-request
             if: |
