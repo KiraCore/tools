@@ -1,68 +1,87 @@
 #!/usr/bin/env bash
-# QUICK EDIT: FILE="/usr/local/bin/kira-utils.sh" && rm $FILE && nano $FILE && chmod 555 $FILE
+# QUICK EDIT: FILE="/usr/local/bin/bash-utils.sh" && rm $FILE && nano $FILE && chmod 555 $FILE
 # NOTE: For this script to work properly the KIRA_GLOBS_DIR env variable should be set to "/var/kiraglob" or equivalent & the directory should exist
 REGEX_DNS="^(([a-zA-Z](-?[a-zA-Z0-9])*)\.)+[a-zA-Z]{2,}$"
 REGEX_IP="^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$"
 REGEX_NODE_ID="^[a-f0-9]{40}$"
 REGEX_TXHASH="^[a-fA-F0-9]{64}$"
+REGEX_SHA256="^[a-fA-F0-9]{64}$"
+REGEX_MD5="^[a-fA-F0-9]{32}$"
 REGEX_INTEGER="^-?[0-9]+$"
 REGEX_NUMBER="^[+-]?([0-9]*[.])?([0-9]+)?$"
 REGEX_PUBLIC_IP='^([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?<!172\.(16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31))(?<!127)(?<!^10)(?<!^0)\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?<!192\.168)(?<!172\.(16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31))\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?<!\.255$)(?<!\b255.255.255.0\b)(?<!\b255.255.255.242\b)$'
 REGEX_KIRA="^(kira)[a-zA-Z0-9]{39}$"
 REGEX_VERSION="^(v?)([0-9]+)\.([0-9]+)\.([0-9]+)(-?)([a-zA-Z]+)?(\.?([0-9]+)?)$"
 
-function utilsVersion() {
-    echo "v0.1.1.2"
+
+function bashUtilsVersion() {
+    bashUtilsSetup "version" 2> /dev/null || bash-utils bashUtilsSetup "version"
 }
 
 # this is default installation script for utils
-# ./utils.sh utilsSetup ./utils.sh "/var/kiraglob"
-function utilsSetup() {
-    local UTILS_SOURCE="$1"
-    local GLOBS_DIR="$2"
-    local UTILS_DESTINATION="/usr/local/bin/kira-utils.sh"
-
-    if [ -z "$GLOBS_DIR" ] ; then
-        [ -z "$KIRA_GLOBS_DIR" ] && KIRA_GLOBS_DIR="/var/kiraglob"
+# ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
+function bashUtilsSetup() {
+    local BASH_UTILS_VERSION="v0.1.2.4"
+    if [ "$1" == "version" ] ; then
+        echo "$BASH_UTILS_VERSION"
+        return 0
     else
-        KIRA_GLOBS_DIR=$GLOBS_DIR
-    fi
+        local GLOBS_DIR="$1"
+        local UTILS_SOURCE=$(realpath "$0")
+        local VERSION=$($UTILS_SOURCE bashUtilsVersion || echo '')
+        local UTILS_DESTINATION="/usr/local/bin/bash-utils.sh"
 
-    if [ ! -f $UTILS_SOURCE ] ; then
-        echoErr "ERROR: utils source was NOT found"
-        return 1
-    else
-        mkdir -p "/usr/local/bin"
-        cp -fv "$UTILS_SOURCE" "$UTILS_DESTINATION"
-        cp -fv "$UTILS_SOURCE" "/usr/local/bin/utils"
-        chmod -v 555 $UTILS_DESTINATION "/usr/local/bin/utils"
-        
-        local SUDOUSER="${SUDO_USER}" && [ "$SUDOUSER" == "root" ] && SUDOUSER=""
-        local USERNAME="${USER}" && [ "$USERNAME" == "root" ] && USERNAME=""
-        local LOGNAME=$(logname 2> /dev/null echo "") && [ "$LOGNAME" == "root" ] && LOGNAME=""
-
-        local TARGET="/$LOGNAME/.bashrc" && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
-        TARGET="/$USERNAME/.bashrc" && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
-        TARGET="/$SUDOUSER/.bashrc" && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
-        TARGET="/root/.bashrc" && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
-        TARGET=~/.bashrc && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
-        TARGET=~/.zshrc && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
-        TARGET=~/.profile && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
-
-        mkdir -p $KIRA_GLOBS_DIR
-
-        utils setGlobEnv KIRA_GLOBS_DIR "$KIRA_GLOBS_DIR"
-        utils setGlobEnv KIRA_TOOLS_SRC "$UTILS_DESTINATION"
-
-        local AUTOLOAD_SET=$(utils getLastLineByPrefix "source $UTILS_DESTINATION" /etc/profile 2> /dev/null || echo "-1")
-
-        if [[ $AUTOLOAD_SET -lt 0 ]] ; then
-            echo "source $UTILS_DESTINATION || echo \"ERROR: Failed to load kira utils from '$UTILS_DESTINATION'\"" >> /etc/profile
+        if [ -z "$GLOBS_DIR" ] ; then
+            [ -z "$KIRA_GLOBS_DIR" ] && KIRA_GLOBS_DIR="/var/kiraglob"
+        else
+            KIRA_GLOBS_DIR=$GLOBS_DIR
         fi
 
-        utils loadGlobEnvs
+        echo "INFO: Loaded utils from '$UTILS_SOURCE', installing bash-utils & setting up glob dir in '$KIRA_GLOBS_DIR'..."
 
-        echoInfo "INFO: SUCCESS!, Installed kira bash-utils $(utilsVersion)"
+        if [ "$VERSION" != "$BASH_UTILS_VERSION" ] ; then
+            bash-utils echoErr "ERROR: Self check version mismatch, expected '$BASH_UTILS_VERSION', but got '$VERSION'"
+            return 1
+        elif [ "$UTILS_SOURCE" == "$UTILS_DESTINATION" ] ; then
+            bash-utils echoErr "ERROR: Installation source script and destination can't be the same"
+            return 1
+        elif [ ! -f "$UTILS_SOURCE" ] ; then
+            bash-utils echoErr "ERROR: utils source was NOT found"
+            return 1
+        else
+            mkdir -p "/usr/local/bin"
+            cp -fv "$UTILS_SOURCE" "$UTILS_DESTINATION"
+            cp -fv "$UTILS_SOURCE" "/usr/local/bin/bash-utils"
+            chmod -v 555 "$UTILS_DESTINATION" "/usr/local/bin/bash-utils"
+
+            local SUDOUSER="${SUDO_USER}" && [ "$SUDOUSER" == "root" ] && SUDOUSER=""
+            local USERNAME="${USER}" && [ "$USERNAME" == "root" ] && USERNAME=""
+            local LOGNAME=$(logname 2> /dev/null echo "") && [ "$LOGNAME" == "root" ] && LOGNAME=""
+
+            local TARGET="/$LOGNAME/.bashrc" && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
+            TARGET="/$USERNAME/.bashrc" && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
+            TARGET="/$SUDOUSER/.bashrc" && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
+            TARGET="/root/.bashrc" && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
+            TARGET=~/.bashrc && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
+            TARGET=~/.zshrc && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
+            TARGET=~/.profile && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
+
+            mkdir -p "$KIRA_GLOBS_DIR"
+
+            bash-utils setGlobEnv KIRA_GLOBS_DIR "$KIRA_GLOBS_DIR"
+            bash-utils setGlobEnv KIRA_TOOLS_SRC "$UTILS_DESTINATION"
+            bash-utils setGlobPath "/usr/local/bin"
+
+            local AUTOLOAD_SET=$(bash-utils getLastLineByPrefix "source $UTILS_DESTINATION" /etc/profile 2> /dev/null || echo "-1")
+
+            if [[ $AUTOLOAD_SET -lt 0 ]] ; then
+                echo "source $UTILS_DESTINATION || echo \"ERROR: Failed to load kira bash-utils from '$UTILS_DESTINATION'\"" >> /etc/profile
+            fi
+
+            bash-utils loadGlobEnvs
+
+            echoInfo "INFO: SUCCESS!, Installed kira bash-utils $(bashUtilsVersion)"
+        fi
     fi
 }
 
@@ -99,6 +118,14 @@ function isTxHash() {
     if ($(isNullOrEmpty "$1")) ; then echo "false" ; else [[ "$1" =~ $REGEX_TXHASH ]] && echo "true" || echo "false" ; fi
 }
 
+function isSHA256() {
+    if ($(isNullOrEmpty "$1")) ; then echo "false" ; else [[ "$1" =~ $REGEX_SHA256 ]] && echo "true" || echo "false" ; fi
+}
+
+function isMD5() {
+    if ($(isNullOrEmpty "$1")) ; then echo "false" ; else [[ "$1" =~ $REGEX_MD5 ]] && echo "true" || echo "false" ; fi
+}
+
 function isDns() {
     if ($(isNullOrEmpty "$1")) ; then echo "false" ; else [[ "$1" =~ $REGEX_DNS ]] && echo "true" || echo "false" ; fi
 }
@@ -113,9 +140,9 @@ function isPublicIp() {
 
 function isDnsOrIp() {
     if ($(isNullOrEmpty "$1")) ; then echo "false" ; else
-        kg_var="false" && ($(isDns "$1")) && kg_var="true"
-        [ "$kg_var" != "true" ] && ($(isIp "$1")) && kg_var="true"
-        echo $kg_var
+        local VAR="false" && ($(isDns "$1")) && VAR="true"
+        [ "$VAR" != "true" ] && ($(isIp "$1")) && VAR="true"
+        echo $VAR
     fi
 }
 
@@ -156,10 +183,10 @@ function isPort() {
 }
 
 function isMnemonic() {
-    kg_mnem=$(echo "$1" | xargs 2> /dev/null || echo -n "")
-    kg_count=$(echo "$kg_mnem" | wc -w 2> /dev/null || echo -n "")
-    (! $(isNaturalNumber $kg_count)) && kg_count=0
-    if (( $kg_count % 3 == 0 )) && [[ $kg_count -ge 12 ]] ; then echo "true" ; else echo "false" ; fi
+    local MNEMONIC=$(echo "$1" | xargs 2> /dev/null || echo -n "")
+    local COUNT=$(echo "$MNEMONIC" | wc -w 2> /dev/null || echo -n "")
+    (! $(isNaturalNumber $COUNT)) && COUNT=0
+    if (( $COUNT % 3 == 0 )) && [[ $COUNT -ge 12 ]] ; then echo "true" ; else echo "false" ; fi
 }
 
 function isVersion {
@@ -167,19 +194,21 @@ function isVersion {
 }
 
 function date2unix() {
-    kg_date_tmp="$*" && kg_date_tmp=$(echo "$kg_date_tmp" | xargs 2> /dev/null || echo -n "")
-    if (! $(isNullOrWhitespaces "$kg_date_tmp")) && (! $(isNaturalNumber $kg_date_tmp)) ; then
-        kg_date_tmp=$(date -d "$kg_date_tmp" +"%s" 2> /dev/null || echo "0")
+    local DATE_TMP="$*" && DATE_TMP=$(echo "$DATE_TMP" | xargs 2> /dev/null || echo -n "")
+    if (! $(isNullOrWhitespaces "$DATE_TMP")) && (! $(isNaturalNumber $DATE_TMP)) ; then
+        DATE_TMP=$(date -d "$DATE_TMP" +"%s" 2> /dev/null || echo "0")
     fi
 
-    ($(isNaturalNumber "$kg_date_tmp")) && echo "$kg_date_tmp" || echo "0"
+    ($(isNaturalNumber "$DATE_TMP")) && echo "$DATE_TMP" || echo "0"
 }
 
 function isPortOpen() {
-    kg_addr=$1 && kg_port=$2 && kg_timeout=$3
-    (! $(isNaturalNumber $kg_timeout)) && kg_timeout=1
-    if (! $(isDnsOrIp $kg_addr)) || (! $(isPort $kg_port)) ; then echo "false"
-    elif timeout $kg_timeout nc -z $kg_addr $kg_port ; then echo "true"
+    local ADDRESS=$1
+    local PORT=$2
+    local TIMEOUT=$3
+    (! $(isNaturalNumber $TIMEOUT)) && TIMEOUT=1
+    if (! $(isDnsOrIp $ADDRESS)) || (! $(isPort $PORT)) ; then echo "false"
+    elif timeout $TIMEOUT nc -z $ADDRESS $PORT ; then echo "true"
     else echo "false" ; fi
 }
 
@@ -229,19 +258,84 @@ function md5() {
     fi
 }
 
+# Allows to safely download file from external resources by hash verification or cosign file signature
+# In the case where cosign verification is used the "<url>.sig" URL must exist
+# safeWget <file> <url> <hash>
+# safeWget <file> <url> <pubkey-path>
 function safeWget() {
     local OUT_PATH=$1
     local FILE_URL=$2
     local EXPECTED_HASH=$3
-    rm -fv $OUT_PATH
 
-    wget "$FILE_URL" -O $OUT_PATH
-    FILE_HASH=$(sha256 $OUT_PATH)
+    local OUT_NAME=$(basename $OUT_PATH)
+    local TMP_DIR=/tmp/downloads
+    local TMP_PATH="$TMP_DIR/$OUT_NAME"
+
+    local SIG_URL="${FILE_URL}.sig"
+    local TMP_PATH_SIG="$TMP_DIR/${OUT_NAME}.sig"
+
+    mkdir -p "$TMP_DIR"
+    rm -fv "$TMP_PATH_SIG"
+
+    local FILE_HASH=$(sha256 $TMP_PATH)
+
+    local COSIGN_PUB_KEY=""
+    if (! $(isSHA256 "$EXPECTED_HASH")) ; then
+        COSIGN_PUB_KEY="$EXPECTED_HASH" && EXPECTED_HASH=""
+        if ($(isCommand cosign)) && (! $(isFileEmpty $COSIGN_PUB_KEY)) ; then
+            echoWarn "WARNING: Checksum was not provided, checking if a signature file is available..."
+            # assume pubkey was provided instead of checksum
+            wget "$SIG_URL" -O $TMP_PATH_SIG
+        else
+            echoErr "ERROR: Cosign tool is not installed or public key was not found in '$COSIGN_PUB_KEY'"
+            return 1
+        fi
+    fi
+
+    local COSIGN_VERIFIED="false"
+    if (! $(isFileEmpty $COSIGN_PUB_KEY)) && (! $(isFileEmpty $TMP_PATH)) ; then
+        echoInfo "INFO: Using cosign to verify temporary file integrity..."
+        COSIGN_VERIFIED="true"  
+        cosign verify-blob --key="$COSIGN_PUB_KEY" --signature="$TMP_PATH_SIG" "$TMP_PATH" || COSIGN_VERIFIED="false"
+
+        if [ "$COSIGN_VERIFIED" == "true" ] ; then
+            echoInfo "INFO: Cosign successfully verified integrity of an already existing temporary file"
+            EXPECTED_HASH="$FILE_HASH"
+        else
+            echoInfo "INFO: Cosign failed to verify temporary file integrity"
+            EXPECTED_HASH=""
+        fi
+    fi
+    
+    if [ "$FILE_HASH" == "$EXPECTED_HASH" ] && ($(isSHA256 "$EXPECTED_HASH")); then
+        echoInfo "INFO: No need to download, file with the hash '$FILE_HASH' was already found in the '$TMP_DIR' directory"
+        [ "$TMP_PATH" != "$OUT_PATH" ] && cp -fv $TMP_PATH $OUT_PATH
+    else
+        rm -fv $OUT_PATH
+        wget "$FILE_URL" -O $TMP_PATH
+        [ "$TMP_PATH" != "$OUT_PATH" ] && cp -fv $TMP_PATH $OUT_PATH
+        FILE_HASH=$(sha256 $OUT_PATH)
+    fi
+
+    COSIGN_VERIFIED="false"
+    if (! $(isFileEmpty $COSIGN_PUB_KEY)) && (! $(isFileEmpty $OUT_PATH)) ; then
+        echoInfo "INFO: Using cosign to verify final file integrity..."
+        COSIGN_VERIFIED="true"
+        cosign verify-blob --key="$COSIGN_PUB_KEY" --signature="$TMP_PATH_SIG" "$OUT_PATH" || COSIGN_VERIFIED="false"
+
+        if [ "$COSIGN_VERIFIED" == "true" ] ; then
+            echoInfo "INFO: Cosign successfully verified integrity of downloaded file"
+            EXPECTED_HASH="$FILE_HASH"
+        else
+            echoInfo "INFO: Cosign failed to verify integrity of downloaded file"
+            EXPECTED_HASH="cosign"
+        fi
+    fi
 
     if ($(isFileEmpty $OUT_PATH)) ; then
-        echoErr "ERROR: Failed download from '$FILE_URL'"
+        echoErr "ERROR: Failed download from '$FILE_URL', file is exmpty or was NOT found!"
         return 1
-    elif [ "$FILE_HASH" != "$EXPECTED_HASH" ]; then
+    elif [ "$FILE_HASH" != "$EXPECTED_HASH" ] || (! $(isSHA256 "$EXPECTED_HASH")) ; then
         rm -fv $OUT_PATH || echoErr "ERROR: Failed to delete '$OUT_PATH'"
         echoErr "ERROR: Safe download filed: '$FILE_URL' -x-> '$OUT_PATH'"
         echoErr "ERROR: Expected hash: '$EXPECTED_HASH', but got '$FILE_HASH'"
@@ -287,7 +381,7 @@ function tryMkDir {
             fi
         fi
 
-        if [ "$(toLower "$1")"== "-v" ]  ; then
+        if [ "$(toLower "$1")" == "-v" ]  ; then
             [ ! -d "$kg_var" ] && mkdir -p "$var" 2> /dev/null || :
             [ -d "$kg_var" ] && echo "created directory '$kg_var'" || echo "failed to create direcotry '$kg_var'"
         elif [ ! -d "$kg_var" ] ; then

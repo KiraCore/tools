@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 set -e
-set -x
+set +x
 . /etc/profile
+set -x
 
 cd ./bip39 || echo "Already in the root dir"
 
-. ../../bash-utils/utils.sh
+. ../../bash-utils/bash-utils.sh
 
 LOCAL_PLATFORM=$(toLower $(uname))
 LOCAL_ARCH=$(([[ "$(uname -m)" == *"arm"* ]] || [[ "$(uname -m)" == *"aarch"* ]]) && echo "arm64" || echo "amd64")

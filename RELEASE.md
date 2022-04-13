@@ -1,2 +1,3 @@
 Features:
-* Added `bip39gen` CLI tool
+* Improved `safeWget` to utilize cache & speed up downloads
+* renamed `utils` to `bash-utils`

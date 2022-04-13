@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 set -e
-set -x
+set +x
 . /etc/profile
-. ./bash-utils/utils.sh
+set -x
+
+. ./bash-utils/bash-utils.sh
 
 WORKDIR=$PWD
 
@@ -39,7 +41,7 @@ cp -rfv ./tmconnect/bin/* ./bin
 cp -rfv ./tmkms-key-import/bin/* ./bin
 cp -rfv ./validator-key-gen/bin/* ./bin
 cp -rfv ./bip39gen/bin/* ./bin
-cp -rfv ./bash-utils/utils.sh ./bin/kira-utils.sh
+cp -rfv ./bash-utils/bash-utils.sh ./bin/bash-utils.sh
 
 rm -rfv ./tmconnect/bin/*
 rm -rfv ./tmkms-key-import/bin/*

@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 set -e
-set -x
+set +x
 . /etc/profile
-. ../bash-utils/utils.sh
+set -x
+
+. ../bash-utils/bash-utils.sh
 
 LOCAL_PLATFORM="$(uname)" && LOCAL_PLATFORM="$(echo "$LOCAL_PLATFORM" |  tr '[:upper:]' '[:lower:]' )"
 LOCAL_ARCH=$(([[ "$(uname -m)" == *"arm"* ]] || [[ "$(uname -m)" == *"aarch"* ]]) && echo "arm64" || echo "amd64")

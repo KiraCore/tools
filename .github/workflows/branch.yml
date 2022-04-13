@@ -1,4 +1,4 @@
-name: Create version branch
+name: Create version branch & PR <working>/* -> version
 
 on:
   push:
@@ -14,12 +14,18 @@ jobs:
       id-token: write
       pull-requests: write
     steps:
-          # ref.: https://github.com/actions/checkout, v3.0.0
-          - name: Checkout repository
-            uses: actions/checkout@a12a3943b4bdde767164f792f33f40b04645d846
+          # ref.: https://github.com/actions/checkout, v2.4.0
+          - name: Checkout repository & extract branch names 
+            uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
+            with:
+              fetch-depth: 0
           - name: Extract branch name on pull request
             shell: bash
             run: |
+              set -x
+              git branch -r -l
+              git config --global --add safe.directory /github/workspace
+              echo "(current dir): $PWD" && ls -l ./
               chmod -Rv 555 ./scripts
               RELEASE_VER=$(./scripts/version.sh) && echo "RELEASE_VER=$RELEASE_VER" >> $GITHUB_ENV
               REPOSITORY_NAME="${{ github.event.repository.name }}" && echo "REPOSITORY_NAME=$REPOSITORY_NAME" >> $GITHUB_ENV
@@ -27,7 +33,7 @@ jobs:
               echo "DEFAULT_BRANCH=${{ github.event.repository.default_branch }}" >> $GITHUB_ENV
               echo "MASTER_REF=$(git ls-remote https://github.com/kiracore/$REPOSITORY_NAME | head -1 | sed 's/HEAD//')" >> $GITHUB_ENV
               git ls-remote https://github.com/kiracore/$REPOSITORY_NAME | egrep -q "refs/tags/${RELEASE_VER}$" && echo "RELEASE_EXISTS=true" >> $GITHUB_ENV || echo "RELEASE_EXISTS=false" >> $GITHUB_ENV
-              git show-branch "remotes/origin/$RELEASE_VER" && echo "TARGET_BRANCH_EXISTS=true" >> $GITHUB_ENV || echo "TARGET_BRANCH_EXISTS=false" >> $GITHUB_ENV
+              ( git show-branch "origin/$RELEASE_VER" || git show-branch "remotes/origin/$RELEASE_VER" ) && echo "TARGET_BRANCH_EXISTS=true" >> $GITHUB_ENV || echo "TARGET_BRANCH_EXISTS=false" >> $GITHUB_ENV
           - name: Print debug data before publishing
             run: |
               echo "Repository name: ${{ env.REPOSITORY_NAME }}"
@@ -38,9 +44,9 @@ jobs:
               echo " Release exists: ${{ env.RELEASE_EXISTS }}"
               echo "     Event name: ${{ github.event_name }}"
               echo "  Target Exists: ${{ env.TARGET_BRANCH_EXISTS }}"
-          # ref.: https://github.com/peterjgrainger/action-create-branch, v2.0.1
+          # ref.: https://github.com/peterjgrainger/action-create-branch, v2.2.0
           - name: Create version branch from master
-            uses: peterjgrainger/action-create-branch@40d33f921267ca130cbacc770f41fc7c501a420f
+            uses: peterjgrainger/action-create-branch@c2800a3a9edbba2218da6861fa46496cf8f3195a
             if: |
                ( env.TARGET_BRANCH_EXISTS == false || env.TARGET_BRANCH_EXISTS == 'false' ) &&
                ( env.RELEASE_EXISTS == false || env.RELEASE_EXISTS == 'false' ) && 
@@ -51,11 +57,12 @@ jobs:
               branch: ${{ env.RELEASE_VER }}
               sha: ${{ env.MASTER_REF }}
           - name: Create PR from feature to version branch
+            # ref. repo-sync/pull-request is broken, using cea2aj/pull-request instead
+            uses: cea2aj/pull-request@84eb0c3478f13651e5649367941b867ca02d7926
             if: |
                ( env.TARGET_BRANCH_EXISTS == false || env.TARGET_BRANCH_EXISTS == 'false' ) &&
                ( env.RELEASE_EXISTS == false || env.RELEASE_EXISTS == 'false' ) && 
                ( startsWith(env.RELEASE_VER, 'v') && contains(env.RELEASE_VER, '.') )
-            uses: repo-sync/pull-request@5ba2c80b97c87b9174c1548141b7acd80f6376e1
             with:
               github_token: ${{ secrets.REPO_ACCESS }}
               source_branch: ${{ env.SOURCE_BRANCH }}

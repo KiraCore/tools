@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 set -e
-set -x
+set +x
 . /etc/profile
-. ./bash-utils/utils.sh
+set -x
+
+. ./bash-utils/bash-utils.sh
 
 WORKDIR=$PWD
 
