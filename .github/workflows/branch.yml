@@ -1,4 +1,4 @@
-name: Create version branch
+name: Create version branch & PR <working>/* -> version
 
 on:
   push:
@@ -19,6 +19,7 @@ jobs:
             uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
             with:
               fetch-depth: 0
+          - name: Extract branch name on pull request
             shell: bash
             run: |
               set -x
