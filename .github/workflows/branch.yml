@@ -24,6 +24,7 @@ jobs:
             run: |
               set -x
               git branch -r -l
+              git config --global --add safe.directory /github/workspace
               echo "(current dir): $PWD" && ls -l ./
               chmod -Rv 555 ./scripts
               RELEASE_VER=$(./scripts/version.sh) && echo "RELEASE_VER=$RELEASE_VER" >> $GITHUB_ENV
