@@ -17,14 +17,17 @@ jobs:
     container: 
       image: ghcr.io/kiracore/docker/base-image:v0.9.0.0
     steps:
-          - name: Checkout repository
-            uses: actions/checkout@a12a3943b4bdde767164f792f33f40b04645d846
+          # ref.: https://github.com/actions/checkout, v2.4.0
+          - name: Checkout repository & extract branch names 
+            uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
+            with:
+              fetch-depth: 0
           - name: Extract branch name on push
             if: github.event_name == 'push'
             shell: bash
             run: |
-              echo "SOURCE_BRANCH=$(echo ${GITHUB_REF#refs/heads/} | tr / -)" >> $GITHUB_ENV
-              echo "DESTINATION_BRANCH=$(echo ${GITHUB_REF#refs/heads/} | tr / -)" >> $GITHUB_ENV
+              echo "SOURCE_BRANCH=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
+              echo "DESTINATION_BRANCH=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
           - name: Extract branch name on pull request
             if: github.event_name == 'pull_request'
             env:
@@ -32,8 +35,8 @@ jobs:
               BASE_REF_BRANCH: ${{ github.base_ref }}
             shell: bash
             run: |
-              echo "SOURCE_BRANCH=$(echo ${{ env.REF_BRANCH }} | tr / -)" >> $GITHUB_ENV
-              echo "DESTINATION_BRANCH=$(echo ${{ env.BASE_REF_BRANCH }} | tr / -)" >> $GITHUB_ENV
+              echo "SOURCE_BRANCH=$(echo ${{ env.REF_BRANCH }})" >> $GITHUB_ENV
+              echo "DESTINATION_BRANCH=$(echo ${{ env.BASE_REF_BRANCH }})" >> $GITHUB_ENV
           - name: Archive src, install latest bash-utils and setup envs
             run: |
               WORK_DIR=$PWD
@@ -260,9 +263,11 @@ jobs:
               rm -fv ../cosign.key
               rm -rfv ./*
               echo "(current dir): $PWD" && ls -l ./
-          # ref.: https://github.com/actions/checkout, v3.0.0
-          - name: Checkout repository
-            uses: actions/checkout@a12a3943b4bdde767164f792f33f40b04645d846
+          # ref.: https://github.com/actions/checkout, v2.4.0
+          - name: Checkout repository & extract branch names 
+            uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
+            with:
+              fetch-depth: 0
           - name: Create PR from a version branch to latest
             # ref: https://github.com/repo-sync/pull-request
             if: |
