@@ -170,7 +170,7 @@ jobs:
             shell: bash
             run: |
               make publish
-              cd ./bin && tar xvf ./tools-bin-amd64.tar.gz && cd ..
+              tar xvf ./tools-bin-amd64.tar.gz -C ./bin
               chmod -Rv 555 ./bin && chmod -v 666 ./bin/RELEASE.md
               echo -e "\n\r\n\r\`\`\`" >> ./bin/RELEASE.md
               echo -e "                   Release Versions: $RELEASE_VER | AMD64" >> ./bin/RELEASE.md
