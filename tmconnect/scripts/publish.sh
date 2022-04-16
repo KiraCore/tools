@@ -6,6 +6,8 @@ set -x
 
 . ../bash-utils/bash-utils.sh
 
+LOCAL_ARCH=$(([[ "$(uname -m)" == *"arm"* ]] || [[ "$(uname -m)" == *"aarch"* ]]) && echo "arm64" || echo "amd64")
+
 go mod tidy
 GO111MODULE=on go mod verify
 
@@ -62,12 +64,9 @@ function pcgRelease() {
 rm -rfv ./bin
 
 # NOTE: To see available build architectures, run: go tool dist list
-pcgRelease "amd64" "$VERSION" "linux"
-pcgRelease "amd64" "$VERSION" "darwin"
-pcgRelease "amd64" "$VERSION" "windows"
-pcgRelease "arm64" "$VERSION" "linux"
-pcgRelease "arm64" "$VERSION" "darwin"
-pcgRelease "arm64" "$VERSION" "windows"
+pcgRelease "$LOCAL_ARCH" "$VERSION" "linux"
+pcgRelease "$LOCAL_ARCH" "$VERSION" "darwin"
+pcgRelease "$LOCAL_ARCH" "$VERSION" "windows"
 
 rm -rfv ./bin/amd64 ./bin/arm64 ./bin/deb
 echoInfo "INFO: Sucessfully published tmconnect deb packages into ./bin"

@@ -55,13 +55,11 @@ function pcgRelease() {
     rm -rfv $WORKDIR $SPECDIR $DISTDIR __pycache__
 }
 
-pcgRelease "amd64" "$VERSION" "linux"
-pcgRelease "arm64" "$VERSION" "linux"
+# NOTE: Pyinstaller ONLY creates releases for the architecrutes it runs on, the binary will fail on the incompatible arch !!!
+pcgRelease "$LOCAL_ARCH" "$VERSION" "linux"
 
 LOCAL_BIN="tmkms-key-import-${LOCAL_PLATFORM}-${LOCAL_ARCH}"
 
 [ -f $LOCAL_BIN ] && ./bin/tmkms-key-import-${LOCAL_PLATFORM}-${LOCAL_ARCH} version
 
 cd $BASEDIR
-
- # cd ./tmkms-key-import

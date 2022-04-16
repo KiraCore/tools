@@ -1,3 +1,2 @@
 Features:
-* Improved `safeWget` to utilize cache & speed up downloads
-* renamed `utils` to `bash-utils`
+* Fixed ARM64 releases with dedicated workers

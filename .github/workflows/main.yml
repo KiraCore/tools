@@ -1,4 +1,4 @@
-name: Build, Release & Publish
+name: Build, Test & Publish
 
 on:
   push:
@@ -6,22 +6,25 @@ on:
   pull_request:
     branches: [ v*.*.*, bugfix/*, master, dev, latest, testnet-*, mainnet-*, kira-* ]
 jobs:
-  build:
-    name: Repo Test & Build
-    runs-on: ubuntu-20.04
+  build-amd64:
+    name: AMD64 - Repo Test & Build
+    runs-on: [ self-hosted, github-actions-amd64-runner-2 ]
     permissions:
       contents: read
       packages: write
       id-token: write
       pull-requests: write
     container: 
-      image: ghcr.io/kiracore/docker/base-image:v0.9.0.0
+      image: ghcr.io/kiracore/docker/base-image:v0.9.3-rc.3@sha256:ae4cbe04ad2befb265bc9696d001447a8453eb8cd5786bd439d66fa854b3e572
     steps:
-          # ref.: https://github.com/actions/checkout, v2.4.0
-          - name: Checkout repository & extract branch names 
-            uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
-            with:
-              fetch-depth: 0
+          # Work around https://github.com/actions/checkout/issues/760
+          - name: Add safe.directory
+            run: |
+              git config --global --add safe.directory /github/workspace
+              git config --global --add safe.directory $PWD
+          # ref.: https://github.com/actions/checkout, v3.0.0
+          - name: Checkout repository
+            uses: actions/checkout@a12a3943b4bdde767164f792f33f40b04645d846
           - name: Extract branch name on push
             if: github.event_name == 'push'
             shell: bash
@@ -82,7 +85,93 @@ jobs:
               make publish
               touch ./RELEASE.md
               cp -fv ./RELEASE.md ./bin/RELEASE.md
-              chmod -Rv 777 ./bin
+              cp -fv ./src.tar.gz ./bin/source-code.tar.gz
+              tar -czvf tools-bin-amd64.tar.gz -C ./bin .
+          - name: Uploading artifacts
+            uses: actions/upload-artifact@v3.0.0
+            with:
+              name: tools-bin-amd64
+              path: ./tools-bin-amd64.tar.gz
+  build-arm64:
+    name: ARM64 - Repo Test & Build
+    runs-on: [ self-hosted, github-actions-arm64-runner-1 ]
+    needs: [build-amd64]
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      pull-requests: write
+    container: 
+      image: ghcr.io/kiracore/docker/base-image:v0.9.3-rc.3@sha256:077c3d5e07c2766027af5e92338a25ffcf8688a2be79e3aa9eae9598650e716a
+    steps:
+          # Work around https://github.com/actions/checkout/issues/760
+          - name: Add safe.directory
+            run: |
+              git config --global --add safe.directory /github/workspace
+              git config --global --add safe.directory $PWD
+          # ref.: https://github.com/actions/checkout, v3.0.0
+          - name: Checkout repository
+            uses: actions/checkout@a12a3943b4bdde767164f792f33f40b04645d846
+          - name: Extract branch name on push
+            if: github.event_name == 'push'
+            shell: bash
+            run: |
+              echo "SOURCE_BRANCH=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
+              echo "DESTINATION_BRANCH=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
+          - name: Extract branch name on pull request
+            if: github.event_name == 'pull_request'
+            env:
+              REF_BRANCH: ${{ github.event.pull_request.head.ref }}
+              BASE_REF_BRANCH: ${{ github.base_ref }}
+            shell: bash
+            run: |
+              echo "SOURCE_BRANCH=$(echo ${{ env.REF_BRANCH }})" >> $GITHUB_ENV
+              echo "DESTINATION_BRANCH=$(echo ${{ env.BASE_REF_BRANCH }})" >> $GITHUB_ENV
+          - name: Setup ENV variables
+            run: |
+              WORK_DIR=$PWD
+              echo "(current dir): $WORK_DIR" && ls -l ./
+              cd $WORK_DIR
+              chmod -Rv 555 ./scripts ./bash-utils
+              set +x
+              RELEASE_VER="$(./scripts/version.sh)" && echo "RELEASE_VER=$RELEASE_VER" >> $GITHUB_ENV
+              REPOSITORY_NAME="${{ github.event.repository.name }}" && echo "REPOSITORY_NAME=$REPOSITORY_NAME" >> $GITHUB_ENV
+              git ls-remote https://github.com/kiracore/$REPOSITORY_NAME | egrep -q "refs/tags/${RELEASE_VER}$" && echo "RELEASE_EXISTS=true" >> $GITHUB_ENV || echo "RELEASE_EXISTS=false" >> $GITHUB_ENV
+              if [[ "$RELEASE_VER" =~ $VERSION_REGEX ]] && [[ "$SOURCE_BRANCH" =~ $VERSION_REGEX ]] && [ "$SOURCE_BRANCH" != "$RELEASE_VER" ] ; then 
+                echo "ERROR: Version branch name MUST be the same as the app version, run scripts/version.sh to check app version!" 
+                exit 1
+              else
+                echo "INFO: Variables setup succeeded"
+              fi
+          - name: Print debug data before build
+            run: |
+              . /etc/profile
+              go version
+              echo "     Source branch: ${{ env.SOURCE_BRANCH }}"
+              echo "Destination branch: ${{ env.DESTINATION_BRANCH }}"
+              echo "        Event name: ${{ github.event_name }}"
+              echo "   Repository name: ${{ env.REPOSITORY_NAME }}"
+              echo "   Release version: ${{ env.RELEASE_VER }}"
+              echo "    Release exists: ${{ env.RELEASE_EXISTS }}"
+          - name: Download AMD64 artifacts
+            # ref.: https://github.com/actions/download-artifact, v3.0.0
+            uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741
+            with:
+              name: tools-bin-amd64
+          - name: Testing & Building TOOLS
+            run: |
+              echo "(current dir): $PWD" && ls -l ./
+              chmod -Rv 555 ./scripts ./bash-utils ./tmconnect/scripts ./tmkms-key-import/scripts ./validator-key-gen/scripts ./bip39gen/scripts ./bip39gen/bip39/scripts
+              export SOURCE_BRANCH=${{ env.SOURCE_BRANCH }}
+              make test
+              make build
+              tmconnect version
+          - name: Publishing TOOLS binaries
+            shell: bash
+            run: |
+              make publish
+              tar xvf ./tools-bin-amd64.tar.gz -C ./bin
+              chmod -Rv 555 ./bin && chmod -v 666 ./bin/RELEASE.md
               echo -e "\n\r\n\r\`\`\`" >> ./bin/RELEASE.md
               echo -e "                   Release Versions: $RELEASE_VER" >> ./bin/RELEASE.md
               echo -e "                  Release Date Time: $(date --rfc-2822)" >> ./bin/RELEASE.md
@@ -100,24 +189,25 @@ jobs:
               echo "  validator-key-gen-linux-arm64.deb: sha256:$(sha256sum ./bin/validator-key-gen-linux-arm64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
               echo "validator-key-gen-windows-amd64.exe: sha256:$(sha256sum ./bin/validator-key-gen-windows-amd64.exe | awk '{ print $1 }')" >> ./bin/RELEASE.md
               echo "validator-key-gen-windows-arm64.exe: sha256:$(sha256sum ./bin/validator-key-gen-windows-arm64.exe | awk '{ print $1 }')" >> ./bin/RELEASE.md
-              echo "          bip39gen-darwin-arm64.deb: sha256:$(sha256sum ./bin/bip39gen-darwin-arm64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
               echo "          bip39gen-darwin-amd64.deb: sha256:$(sha256sum ./bin/bip39gen-darwin-amd64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "          bip39gen-darwin-arm64.deb: sha256:$(sha256sum ./bin/bip39gen-darwin-arm64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
               echo "           bip39gen-linux-amd64.deb: sha256:$(sha256sum ./bin/bip39gen-linux-amd64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
               echo "           bip39gen-linux-arm64.deb: sha256:$(sha256sum ./bin/bip39gen-linux-arm64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
               echo "         bip39gen-windows-amd64.exe: sha256:$(sha256sum ./bin/bip39gen-windows-amd64.exe | awk '{ print $1 }')" >> ./bin/RELEASE.md
               echo "         bip39gen-windows-arm64.exe: sha256:$(sha256sum ./bin/bip39gen-windows-arm64.exe | awk '{ print $1 }')" >> ./bin/RELEASE.md
               echo "                      bash-utils.sh: sha256:$(sha256sum ./bin/bash-utils.sh | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "                 source-code.tar.gz: sha256:$(sha256sum ./bin/source-code.tar.gz | awk '{ print $1 }')" >> ./bin/RELEASE.md
               echo -e "\`\`\`"   >> ./bin/RELEASE.md
-              tar -czvf deb.tar.gz -C ./bin .
+              tar -czvf tools-bin-arm64.tar.gz -C ./bin .
           - name: Uploading artifacts
             uses: actions/upload-artifact@v3.0.0
             with:
-              name: tools-bin-deb
-              path: ./deb.tar.gz
+              name: tools-bin-arm64
+              path: ./tools-bin-arm64.tar.gz
   release:
     name: Create Release
     runs-on: ubuntu-20.04
-    needs: [build]
+    needs: [build-arm64]
     permissions:
       contents: write
       packages: write
@@ -129,15 +219,21 @@ jobs:
             uses: sigstore/cosign-installer@d6a3abf1bdea83574e28d40543793018b6035605
             with:
               cosign-release: 'v1.7.2'
-          - name: Download artifacts
-            uses: actions/download-artifact@v3.0.0
+          - name: Download AMD64 artifacts
+            # ref.: https://github.com/actions/download-artifact, v3.0.0
+            uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741
             with:
-              name: tools-bin-deb
+              name: tools-bin-amd64
+          - name: Download ARM64 artifacts
+            # ref.: https://github.com/actions/download-artifact, v3.0.0
+            uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741
+            with:
+              name: tools-bin-arm64
           - name: Inspecting & organizing artifacts
             run: |
               echo "(current dir): $PWD" && ls -l ./
-              tar xvf ./deb.tar.gz
-              chmod -Rv 777 ./
+              tar xvf ./tools-bin-arm64.tar.gz && echo "(current dir): $PWD" && ls -l ./ && chmod -Rv 555 ./
+              tar xvf ./tools-bin-amd64.tar.gz && echo "(current dir): $PWD" && ls -l ./ && chmod -Rv 555 ./
               RELEASE_VER=$(cat ./RELEASE.md | tac | grep -Fn -m 1 'Release Versions: ' | rev | cut -d ":" -f1 | rev | xargs | tr -dc '[:alnum:]\-\.' || echo '')
               echo "RELEASE_VER=$RELEASE_VER" >> $GITHUB_ENV
               REPOSITORY_NAME="${{ github.event.repository.name }}"
@@ -209,46 +305,48 @@ jobs:
               files: |
                 ./tmconnect-linux-amd64.deb
                 ./tmconnect-linux-amd64.deb.sig
-                ./tmconnect-linux-arm64.deb
-                ./tmconnect-linux-arm64.deb.sig
                 ./tmconnect-darwin-amd64.deb
                 ./tmconnect-darwin-amd64.deb.sig
-                ./tmconnect-darwin-arm64.deb
-                ./tmconnect-darwin-arm64.deb.sig
                 ./tmconnect-windows-amd64.exe
                 ./tmconnect-windows-amd64.exe.sig
-                ./tmconnect-windows-arm64.exe
-                ./tmconnect-windows-arm64.exe.sig
                 ./tmkms-key-import-linux-amd64
                 ./tmkms-key-import-linux-amd64.sig
-                ./tmkms-key-import-linux-arm64
-                ./tmkms-key-import-linux-arm64.sig
                 ./validator-key-gen-linux-amd64.deb
                 ./validator-key-gen-linux-amd64.deb.sig
-                ./validator-key-gen-linux-arm64.deb
-                ./validator-key-gen-linux-arm64.deb.sig
                 ./validator-key-gen-windows-amd64.exe
                 ./validator-key-gen-windows-amd64.exe.sig
-                ./validator-key-gen-windows-arm64.exe
-                ./validator-key-gen-windows-arm64.exe.sig
                 ./validator-key-gen-darwin-amd64.deb
                 ./validator-key-gen-darwin-amd64.deb.sig
-                ./validator-key-gen-darwin-arm64.deb
-                ./validator-key-gen-darwin-arm64.deb.sig
                 ./bip39gen-linux-amd64.deb
                 ./bip39gen-linux-amd64.deb.sig
-                ./bip39gen-linux-arm64.deb
-                ./bip39gen-linux-arm64.deb.sig
                 ./bip39gen-windows-amd64.exe
                 ./bip39gen-windows-amd64.exe.sig
-                ./bip39gen-windows-arm64.exe
-                ./bip39gen-windows-arm64.exe.sig
                 ./bip39gen-darwin-amd64.deb
                 ./bip39gen-darwin-amd64.deb.sig
+                ./tmconnect-linux-arm64.deb
+                ./tmconnect-linux-arm64.deb.sig
+                ./tmconnect-darwin-arm64.deb
+                ./tmconnect-darwin-arm64.deb.sig
+                ./tmconnect-windows-arm64.exe
+                ./tmconnect-windows-arm64.exe.sig
+                ./tmkms-key-import-linux-arm64
+                ./tmkms-key-import-linux-arm64.sig
+                ./validator-key-gen-linux-arm64.deb
+                ./validator-key-gen-linux-arm64.deb.sig
+                ./validator-key-gen-windows-arm64.exe
+                ./validator-key-gen-windows-arm64.exe.sig
+                ./validator-key-gen-darwin-arm64.deb
+                ./validator-key-gen-darwin-arm64.deb.sig
+                ./bip39gen-linux-arm64.deb
+                ./bip39gen-linux-arm64.deb.sig
+                ./bip39gen-windows-arm64.exe
+                ./bip39gen-windows-arm64.exe.sig
                 ./bip39gen-darwin-arm64.deb
                 ./bip39gen-darwin-arm64.deb.sig
                 ./bash-utils.sh
                 ./bash-utils.sh.sig
+                ./source-code.tar.gz
+                ./source-code.tar.gz.sig
           - name: Cleanup all resources
             if: always()
             shell: bash
@@ -265,16 +363,14 @@ jobs:
               ( env.SOURCE_BRANCH == env.RELEASE_VER || env.DESTINATION_BRANCH == env.RELEASE_VER )
             with:
               github-token: "${{ secrets.GITHUB_TOKEN }}"
-          # ref.: https://github.com/actions/checkout, v2.4.0
-          - name: Checkout repository & extract branch names 
-            uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
-            with:
-              fetch-depth: 0
-          - name: Allow workspace interactions
-            shell: bash
+          # Work around https://github.com/actions/checkout/issues/760
+          - name: Add safe.directory
             run: |
-              set -x
               git config --global --add safe.directory /github/workspace
+              git config --global --add safe.directory $PWD
+          # ref.: https://github.com/actions/checkout, v3.0.0
+          - name: Checkout repository
+            uses: actions/checkout@a12a3943b4bdde767164f792f33f40b04645d846
           - name: Create PR from a version branch to latest
             # ref. repo-sync/pull-request is broken, using cea2aj/pull-request instead
             uses: cea2aj/pull-request@84eb0c3478f13651e5649367941b867ca02d7926
