@@ -173,7 +173,7 @@ jobs:
               tar xvf ./tools-bin-amd64.tar.gz -C ./bin
               chmod -Rv 555 ./bin && chmod -v 666 ./bin/RELEASE.md
               echo -e "\n\r\n\r\`\`\`" >> ./bin/RELEASE.md
-              echo -e "                   Release Versions: $RELEASE_VER | AMD64" >> ./bin/RELEASE.md
+              echo -e "                   Release Versions: $RELEASE_VER" >> ./bin/RELEASE.md
               echo -e "                  Release Date Time: $(date --rfc-2822)" >> ./bin/RELEASE.md
               echo "         tmconnect-darwin-amd64.deb: sha256:$(sha256sum ./bin/tmconnect-darwin-amd64.deb  | awk '{ print $1 }')" >> ./bin/RELEASE.md
               echo "         tmconnect-darwin-arm64.deb: sha256:$(sha256sum ./bin/tmconnect-darwin-arm64.deb  | awk '{ print $1 }')" >> ./bin/RELEASE.md
