@@ -15,8 +15,13 @@ cd ./bash-utils
 make test
 cd $WORKDIR
 
-# Test utils
+# Test mnemonic generator
 cd ./bip39gen
+make test
+cd $WORKDIR
+
+# Test tm key importer
+cd ./tmkms-key-import
 make test
 cd $WORKDIR
 

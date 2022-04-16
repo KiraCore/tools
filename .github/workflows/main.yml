@@ -86,29 +86,6 @@ jobs:
               touch ./RELEASE.md
               cp -fv ./RELEASE.md ./bin/RELEASE.md
               cp -fv ./src.tar.gz ./bin/source-code.tar.gz
-              chmod -Rv 777 ./bin
-              echo -e "\n\r### Platform Neutral Releases\n\r\`\`\`" >> ./bin/RELEASE.md
-              echo -e "\n\r\n\r\`\`\`" >> ./bin/RELEASE.md
-              echo -e "                   Release Versions: $RELEASE_VER | Any OS" >> ./bin/RELEASE.md
-              echo -e "                  Release Date Time: $(date --rfc-2822)" >> ./bin/RELEASE.md
-              echo "                      bash-utils.sh: sha256:$(sha256sum ./bin/bash-utils.sh | awk '{ print $1 }')" >> ./bin/RELEASE.md
-              echo "                 source-code.tar.gz: sha256:$(sha256sum ./bin/source-code.tar.gz | awk '{ print $1 }')" >> ./bin/RELEASE.md
-              echo -e "\`\`\`"   >> ./bin/RELEASE.md
-              echo -e "\n\r### AMD64 Releases\n\r\`\`\`" >> ./bin/RELEASE.md
-              echo -e "\n\r\n\r\`\`\`" >> ./bin/RELEASE.md
-              echo -e "                   Release Versions: $RELEASE_VER | AMD64" >> ./bin/RELEASE.md
-              echo -e "                  Release Date Time: $(date --rfc-2822)" >> ./bin/RELEASE.md
-              echo "         tmconnect-darwin-amd64.deb: sha256:$(sha256sum ./bin/tmconnect-darwin-amd64.deb  | awk '{ print $1 }')" >> ./bin/RELEASE.md
-              echo "          tmconnect-linux-amd64.deb: sha256:$(sha256sum ./bin/tmconnect-linux-amd64.deb   | awk '{ print $1 }')" >> ./bin/RELEASE.md
-              echo "        tmconnect-windows-amd64.exe: sha256:$(sha256sum ./bin/tmconnect-windows-amd64.exe | awk '{ print $1 }')" >> ./bin/RELEASE.md
-              echo "       tmkms-key-import-linux-amd64: sha256:$(sha256sum ./bin/tmkms-key-import-linux-amd64 | awk '{ print $1 }')" >> ./bin/RELEASE.md
-              echo " validator-key-gen-darwin-amd64.deb: sha256:$(sha256sum ./bin/validator-key-gen-darwin-amd64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
-              echo "  validator-key-gen-linux-amd64.deb: sha256:$(sha256sum ./bin/validator-key-gen-linux-amd64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
-              echo "validator-key-gen-windows-amd64.exe: sha256:$(sha256sum ./bin/validator-key-gen-windows-amd64.exe | awk '{ print $1 }')" >> ./bin/RELEASE.md
-              echo "          bip39gen-darwin-amd64.deb: sha256:$(sha256sum ./bin/bip39gen-darwin-amd64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
-              echo "           bip39gen-linux-amd64.deb: sha256:$(sha256sum ./bin/bip39gen-linux-amd64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
-              echo "         bip39gen-windows-amd64.exe: sha256:$(sha256sum ./bin/bip39gen-windows-amd64.exe | awk '{ print $1 }')" >> ./bin/RELEASE.md
-              echo -e "\`\`\`"   >> ./bin/RELEASE.md
               tar -czvf tools-bin-amd64.tar.gz -C ./bin .
           - name: Uploading artifacts
             uses: actions/upload-artifact@v3.0.0
@@ -198,24 +175,33 @@ jobs:
             shell: bash
             run: |
               make publish
-              cd ./bin
-              tar xvf ./tools-bin-amd64.tar.gz 
-              chmod -Rv 555 ./bin
-              chmod -v 666 ./bin/RELEASE.md
-              echo -e "\n\r### AMD64 Releases\n\r\`\`\`" >> ./bin/RELEASE.md
+              cd ./bin && tar xvf ./tools-bin-amd64.tar.gz && cd ..
+              chmod -Rv 555 ./bin && chmod -v 666 ./bin/RELEASE.md
               echo -e "\n\r\n\r\`\`\`" >> ./bin/RELEASE.md
-              echo -e "                   Release Versions: $RELEASE_VER | ARM64" >> ./bin/RELEASE.md
+              echo -e "                   Release Versions: $RELEASE_VER | AMD64" >> ./bin/RELEASE.md
               echo -e "                  Release Date Time: $(date --rfc-2822)" >> ./bin/RELEASE.md
+              echo "         tmconnect-darwin-amd64.deb: sha256:$(sha256sum ./bin/tmconnect-darwin-amd64.deb  | awk '{ print $1 }')" >> ./bin/RELEASE.md
               echo "         tmconnect-darwin-arm64.deb: sha256:$(sha256sum ./bin/tmconnect-darwin-arm64.deb  | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "          tmconnect-linux-amd64.deb: sha256:$(sha256sum ./bin/tmconnect-linux-amd64.deb   | awk '{ print $1 }')" >> ./bin/RELEASE.md
               echo "          tmconnect-linux-arm64.deb: sha256:$(sha256sum ./bin/tmconnect-linux-arm64.deb   | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "        tmconnect-windows-amd64.exe: sha256:$(sha256sum ./bin/tmconnect-windows-amd64.exe | awk '{ print $1 }')" >> ./bin/RELEASE.md
               echo "        tmconnect-windows-arm64.exe: sha256:$(sha256sum ./bin/tmconnect-windows-arm64.exe | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "       tmkms-key-import-linux-amd64: sha256:$(sha256sum ./bin/tmkms-key-import-linux-amd64 | awk '{ print $1 }')" >> ./bin/RELEASE.md
               echo "       tmkms-key-import-linux-arm64: sha256:$(sha256sum ./bin/tmkms-key-import-linux-arm64 | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo " validator-key-gen-darwin-amd64.deb: sha256:$(sha256sum ./bin/validator-key-gen-darwin-amd64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
               echo " validator-key-gen-darwin-arm64.deb: sha256:$(sha256sum ./bin/validator-key-gen-darwin-arm64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "  validator-key-gen-linux-amd64.deb: sha256:$(sha256sum ./bin/validator-key-gen-linux-amd64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
               echo "  validator-key-gen-linux-arm64.deb: sha256:$(sha256sum ./bin/validator-key-gen-linux-arm64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "validator-key-gen-windows-amd64.exe: sha256:$(sha256sum ./bin/validator-key-gen-windows-amd64.exe | awk '{ print $1 }')" >> ./bin/RELEASE.md
               echo "validator-key-gen-windows-arm64.exe: sha256:$(sha256sum ./bin/validator-key-gen-windows-arm64.exe | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "          bip39gen-darwin-amd64.deb: sha256:$(sha256sum ./bin/bip39gen-darwin-amd64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
               echo "          bip39gen-darwin-arm64.deb: sha256:$(sha256sum ./bin/bip39gen-darwin-arm64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "           bip39gen-linux-amd64.deb: sha256:$(sha256sum ./bin/bip39gen-linux-amd64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
               echo "           bip39gen-linux-arm64.deb: sha256:$(sha256sum ./bin/bip39gen-linux-arm64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "         bip39gen-windows-amd64.exe: sha256:$(sha256sum ./bin/bip39gen-windows-amd64.exe | awk '{ print $1 }')" >> ./bin/RELEASE.md
               echo "         bip39gen-windows-arm64.exe: sha256:$(sha256sum ./bin/bip39gen-windows-arm64.exe | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "                      bash-utils.sh: sha256:$(sha256sum ./bin/bash-utils.sh | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "                 source-code.tar.gz: sha256:$(sha256sum ./bin/source-code.tar.gz | awk '{ print $1 }')" >> ./bin/RELEASE.md
               echo -e "\`\`\`"   >> ./bin/RELEASE.md
               tar -czvf tools-bin-arm64.tar.gz -C ./bin .
           - name: Uploading artifacts
