@@ -21,7 +21,7 @@ function bashUtilsVersion() {
 # this is default installation script for utils
 # ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
 function bashUtilsSetup() {
-    local BASH_UTILS_VERSION="v0.1.2.4"
+    local BASH_UTILS_VERSION="v0.1.3.5"
     if [ "$1" == "version" ] ; then
         echo "$BASH_UTILS_VERSION"
         return 0
@@ -262,6 +262,7 @@ function md5() {
 # In the case where cosign verification is used the "<url>.sig" URL must exist
 # safeWget <file> <url> <hash>
 # safeWget <file> <url> <pubkey-path>
+# safeWget <file> <url> <hash>,<hash>,<hash>...
 function safeWget() {
     local OUT_PATH=$1
     local FILE_URL=$2
@@ -269,7 +270,7 @@ function safeWget() {
 
     local OUT_NAME=$(basename $OUT_PATH)
     local TMP_DIR=/tmp/downloads
-    local TMP_PATH="$TMP_DIR/$OUT_NAME"
+    local TMP_PATH="$TMP_DIR/${OUT_NAME}"
 
     local SIG_URL="${FILE_URL}.sig"
     local TMP_PATH_SIG="$TMP_DIR/${OUT_NAME}.sig"
@@ -279,8 +280,10 @@ function safeWget() {
 
     local FILE_HASH=$(sha256 $TMP_PATH)
 
+    readarray -td, EXPECTED_HASH_ARR <<<"$EXPECTED_HASH"; declare -p EXPECTED_HASH_ARR;
+
     local COSIGN_PUB_KEY=""
-    if (! $(isSHA256 "$EXPECTED_HASH")) ; then
+    if (! $(isSHA256 "${EXPECTED_HASH_ARR[0]}")) ; then
         COSIGN_PUB_KEY="$EXPECTED_HASH" && EXPECTED_HASH=""
         if ($(isCommand cosign)) && (! $(isFileEmpty $COSIGN_PUB_KEY)) ; then
             echoWarn "WARNING: Checksum was not provided, checking if a signature file is available..."
@@ -290,6 +293,8 @@ function safeWget() {
             echoErr "ERROR: Cosign tool is not installed or public key was not found in '$COSIGN_PUB_KEY'"
             return 1
         fi
+    else
+        echoInfo "INFO: One of the following checksums will be used to verify file integrity: '${EXPECTED_HASH_ARR[*]}'"
     fi
 
     local COSIGN_VERIFIED="false"
@@ -306,11 +311,19 @@ function safeWget() {
             EXPECTED_HASH=""
         fi
     fi
+
+    local EXPECTED_HASH_ARR=($(echo "$EXPECTED_HASH" | tr ',' '\n'))
+    local HASH_MATCH="false"
+    for hash in "${EXPECTED_HASH_ARR[@]}" ; do
+        if [ "$FILE_HASH" == "$hash" ] && ($(isSHA256 "$hash")); then
+            HASH_MATCH="true"
+            echoInfo "INFO: No need to download, file with the hash '$FILE_HASH' was already found in the '$TMP_DIR' directory"
+            [ "$TMP_PATH" != "$OUT_PATH" ] && cp -fv $TMP_PATH $OUT_PATH
+            break
+        fi
+    done
     
-    if [ "$FILE_HASH" == "$EXPECTED_HASH" ] && ($(isSHA256 "$EXPECTED_HASH")); then
-        echoInfo "INFO: No need to download, file with the hash '$FILE_HASH' was already found in the '$TMP_DIR' directory"
-        [ "$TMP_PATH" != "$OUT_PATH" ] && cp -fv $TMP_PATH $OUT_PATH
-    else
+    if [ "$HASH_MATCH" == "false" ] ; then
         rm -fv $OUT_PATH
         wget "$FILE_URL" -O $TMP_PATH
         [ "$TMP_PATH" != "$OUT_PATH" ] && cp -fv $TMP_PATH $OUT_PATH
@@ -318,7 +331,9 @@ function safeWget() {
     fi
 
     COSIGN_VERIFIED="false"
-    if (! $(isFileEmpty $COSIGN_PUB_KEY)) && (! $(isFileEmpty $OUT_PATH)) ; then
+    if [ "$HASH_MATCH" == "false" ] && (! $(isFileEmpty $COSIGN_PUB_KEY)) && (! $(isFileEmpty $OUT_PATH)) ; then
+
+
         echoInfo "INFO: Using cosign to verify final file integrity..."
         COSIGN_VERIFIED="true"
         cosign verify-blob --key="$COSIGN_PUB_KEY" --signature="$TMP_PATH_SIG" "$OUT_PATH" || COSIGN_VERIFIED="false"
@@ -332,13 +347,22 @@ function safeWget() {
         fi
     fi
 
+    EXPECTED_HASH_ARR=($(echo "$EXPECTED_HASH" | tr ',' '\n'))
+    HASH_MATCH="false"
+    for hash in "${EXPECTED_HASH_ARR[@]}" ; do
+        if [ "$FILE_HASH" == "$hash" ] && ($(isSHA256 "$hash")) ; then
+            HASH_MATCH="true"
+            break
+        fi
+    done
+
     if ($(isFileEmpty $OUT_PATH)) ; then
         echoErr "ERROR: Failed download from '$FILE_URL', file is exmpty or was NOT found!"
         return 1
-    elif [ "$FILE_HASH" != "$EXPECTED_HASH" ] || (! $(isSHA256 "$EXPECTED_HASH")) ; then
+    elif [ "$HASH_MATCH" != "true" ] ; then
         rm -fv $OUT_PATH || echoErr "ERROR: Failed to delete '$OUT_PATH'"
         echoErr "ERROR: Safe download filed: '$FILE_URL' -x-> '$OUT_PATH'"
-        echoErr "ERROR: Expected hash: '$EXPECTED_HASH', but got '$FILE_HASH'"
+        echoErr "ERROR: Expected hash (one of): '${EXPECTED_HASH_ARR[*]}', but got '$FILE_HASH'"
         return 1
     else
         echoInfo "INFO: Safe download suceeded: '$FILE_URL' ---> '$(realpath $OUT_PATH)'"
@@ -364,6 +388,10 @@ function getArch() {
     else
         echo "$ARCH"
     fi
+}
+
+function getPlatform() {
+    echo "$(delWhitespaces $(toLower $(uname)))"
 }
 
 function tryMkDir {

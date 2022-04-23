@@ -1,2 +1,3 @@
 Features:
-* Fixed ARM64 releases with dedicated workers
+* Added `getPlatform` to bash-utils
+* Added multi-hash check support to `safeWget` in bash-utils
