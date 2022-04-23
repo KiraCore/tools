@@ -79,11 +79,6 @@ if ($(isMD5 "$FILE_MD5")) || [ "$FILE_MD5" != "$EXPECTED_FILE_MD5" ] ; then
     exit 1
 fi
 
-BIN_DEST="/usr/local/bin/validator-key-gen" && \
-  safeWget ./validator-key-gen.deb "https://github.com/KiraCore/tools/releases/download/$TOOLS_VERSION/validator-key-gen-linux-${ARCHITECURE}.deb" \
-  "$KIRA_COSIGN_PUB" && dpkg-deb -x ./validator-key-gen.deb ./validator-key-gen && \
-   cp -fv "$KIRA_BIN/validator-key-gen/bin/validator-key-gen" $BIN_DEST && chmod -v 755 $BIN_DEST
-
 #################################################################
 echoWarn "TEST: safeWget"
 rm -fv /usr/local/bin/cosign_amd64 /usr/local/bin/cosign_arm64
@@ -91,9 +86,9 @@ rm -rfv /tmp/downloads
 
 timerStart safeWget_TEST
 
-safeWget /usr/local/bin/cosign_arm64 "https://github.com/sigstore/cosign/releases/download/v1.7.2/cosign-$(toLower $(uname))-arm64" \
+safeWget /usr/local/bin/cosign_arm64 "https://github.com/sigstore/cosign/releases/download/v1.7.2/cosign-$(getPlatform)-arm64" \
     "2448231e6bde13722aad7a17ac00789d187615a24c7f82739273ea589a42c94b,80f80f3ef5b9ded92aa39a9dd8e028f5b942a3b6964f24c47b35e7f6e4d18907"
-safeWget /usr/local/bin/cosign_amd64 "https://github.com/sigstore/cosign/releases/download/v1.7.2/cosign-$(toLower $(uname))-amd64" \
+safeWget /usr/local/bin/cosign_amd64 "https://github.com/sigstore/cosign/releases/download/v1.7.2/cosign-$(getPlatform)-amd64" \
     "2448231e6bde13722aad7a17ac00789d187615a24c7f82739273ea589a42c94b,80f80f3ef5b9ded92aa39a9dd8e028f5b942a3b6964f24c47b35e7f6e4d18907"
 
 safeWget_TEST_elaped1=$(timerSpan safeWget_TEST)
@@ -101,9 +96,9 @@ timerStart safeWget_TEST
 
 sleep 1
 
-safeWget /usr/local/bin/cosign_arm64 "https://github.com/sigstore/cosign/releases/download/v1.7.2/cosign-$(toLower $(uname))-arm64" \
+safeWget /usr/local/bin/cosign_arm64 "https://github.com/sigstore/cosign/releases/download/v1.7.2/cosign-$(getPlatform)-arm64" \
     "2448231e6bde13722aad7a17ac00789d187615a24c7f82739273ea589a42c94b,80f80f3ef5b9ded92aa39a9dd8e028f5b942a3b6964f24c47b35e7f6e4d18907"
-safeWget /usr/local/bin/cosign_amd64 "https://github.com/sigstore/cosign/releases/download/v1.7.2/cosign-$(toLower $(uname))-amd64" \
+safeWget /usr/local/bin/cosign_amd64 "https://github.com/sigstore/cosign/releases/download/v1.7.2/cosign-$(getPlatform)-amd64" \
     "2448231e6bde13722aad7a17ac00789d187615a24c7f82739273ea589a42c94b,80f80f3ef5b9ded92aa39a9dd8e028f5b942a3b6964f24c47b35e7f6e4d18907"
 
 safeWget_TEST_elaped2=$(timerSpan safeWget_TEST)
@@ -128,6 +123,7 @@ safeWget /usr/local/bin/cosign_arm64 "https://github.com/sigstore/cosign/release
 safeWget /usr/local/bin/cosign_amd64 "https://github.com/sigstore/cosign/releases/download/v1.7.2/cosign-$(toLower $(uname))-amd64" \
     ./release-cosign.pub
 
+chmod 755 /usr/local/bin/cosign_amd64 /usr/local/bin/cosign_arm64
 cosign_$(getArch) version
 
 echoInfo "INFO: Successsfully executed all bash-utils test cases, elapsed $(prettyTime $(timerSpan))"
