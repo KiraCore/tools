@@ -21,7 +21,7 @@ function bashUtilsVersion() {
 # this is default installation script for utils
 # ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
 function bashUtilsSetup() {
-    local BASH_UTILS_VERSION="v0.1.3.5"
+    local BASH_UTILS_VERSION="v0.1.4.6"
     if [ "$1" == "version" ] ; then
         echo "$BASH_UTILS_VERSION"
         return 0
@@ -268,7 +268,8 @@ function safeWget() {
     local FILE_URL=$2
     local EXPECTED_HASH=$3
 
-    local OUT_NAME=$(basename $OUT_PATH)
+    # we need to use MD5 for TMP files to ensure that we download the file again if URL changes
+    local OUT_NAME=$(echo "$OUT_PATH" | md5)
     local TMP_DIR=/tmp/downloads
     local TMP_PATH="$TMP_DIR/${OUT_NAME}"
 

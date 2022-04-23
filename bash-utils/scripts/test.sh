@@ -101,9 +101,9 @@ EOL
 
 rm -fv /usr/local/bin/cosign_amd64 /usr/local/bin/cosign_arm64
 
-safeWget /usr/local/bin/cosign_arm64 "https://github.com/sigstore/cosign/releases/download/v1.7.2/cosign-$(toLower $(uname))-arm64" \
+safeWget /usr/local/bin/cosign_arm64 "https://github.com/sigstore/cosign/releases/download/v1.7.2/cosign-$(getPlatform)-arm64" \
     ./release-cosign.pub
-safeWget /usr/local/bin/cosign_amd64 "https://github.com/sigstore/cosign/releases/download/v1.7.2/cosign-$(toLower $(uname))-amd64" \
+safeWget /usr/local/bin/cosign_amd64 "https://github.com/sigstore/cosign/releases/download/v1.7.2/cosign-$(getPlatform)-amd64" \
     ./release-cosign.pub
 
 chmod 755 /usr/local/bin/cosign_amd64 /usr/local/bin/cosign_arm64
