@@ -86,6 +86,8 @@ BIN_DEST="/usr/local/bin/validator-key-gen" && \
 
 #################################################################
 echoWarn "TEST: safeWget"
+rm -fv /usr/local/bin/cosign_amd64 /usr/local/bin/cosign_arm64
+rm -rfv /tmp/downloads
 
 timerStart safeWget_TEST
 
@@ -127,7 +129,5 @@ safeWget /usr/local/bin/cosign_amd64 "https://github.com/sigstore/cosign/release
     ./release-cosign.pub
 
 cosign_$(getArch) version
-
-rm -fv /usr/local/bin/cosign_amd64 /usr/local/bin/cosign_arm64
 
 echoInfo "INFO: Successsfully executed all bash-utils test cases, elapsed $(prettyTime $(timerSpan))"
