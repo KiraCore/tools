@@ -109,4 +109,23 @@ safeWget /usr/local/bin/cosign_amd64 "https://github.com/sigstore/cosign/release
 chmod 755 /usr/local/bin/cosign_amd64 /usr/local/bin/cosign_arm64
 cosign_$(getArch) version
 
+#################################################################
+echoWarn "TEST: setVar"
+TEST_FILE=/tmp/setVar.test
+rm -rfv $TEST_FILE && touch $TEST_FILE
+
+BASH_UTIL_TEST_1=""
+BASH_UTIL_TEST_2=""
+
+setVar BASH_UTIL_TEST_1 ":) Oo" $TEST_FILE
+setVar BASH_UTIL_TEST_2 "test" $TEST_FILE
+setVar BASH_UTIL_TEST_1 ":) Oo !" $TEST_FILE
+
+source $TEST_FILE
+
+[ "$BASH_UTIL_TEST_1" != ":) Oo !" ]  && echoErr "ERROR: Expected 'BASH_UTIL_TEST_1' to be ':) Oo !', but got '$BASH_UTIL_TEST_1'" && exit 1
+[ "$BASH_UTIL_TEST_2" != "test" ]  && echoErr "ERROR: Expected 'BASH_UTIL_TEST_2' to be ':) Oo !', but got '$BASH_UTIL_TEST_2'" && exit 1
+
+#################################################################
+
 echoInfo "INFO: Successsfully executed all bash-utils test cases, elapsed $(prettyTime $(timerSpan))"

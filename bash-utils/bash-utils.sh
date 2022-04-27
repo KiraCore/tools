@@ -924,6 +924,36 @@ function setLastLineByPrefixOrAppend() {
     fi
 }
 
+# setVar <name> <value> <file>
+function setVar() {
+    local VAR_NAME=$(delWhitespaces "$1")
+    local VAR_VALUE=$2
+    local VAR_FILE=$3
+    
+    ([ -z "$VAR_FILE" ] || [ ! -f $VAR_FILE ]) && echoErr "ERROR: File '$VAR_FILE' does NOT exist, can't usert '$VAR_NAME' variable"
+    
+    if [ ! -z "$VAR_NAME" ] && [ -f $VAR_FILE ] ; then
+        local LINE_NR=$(getLastLineByPrefix "${VAR_NAME}=" "$VAR_FILE" 2> /dev/null || echo "-1")
+
+        # add quotes if string has any whitespaces
+        echoInfo "INFO: Appending var '$VAR_NAME' with value '$VAR_VALUE' to file '$VAR_FILE'"
+        if [ -z "$VAR_VALUE" ] || [[ "$VAR_VALUE" = *" "* ]] ; then
+            echo "${VAR_NAME}=\"${VAR_VALUE}\"" >> $VAR_FILE
+        else
+            echo "${VAR_NAME}=${VAR_VALUE}" >> $VAR_FILE
+        fi
+
+        if [[ $LINE_NR -ge 0 ]] ; then
+            echoWarn "WARNING: Wiped old var '$VAR_NAME' at line '$LINE_NR' in the file '$VAR_FILE'"
+            sed -i"" "${LINE_NR}d" $VAR_FILE
+        fi
+        return 0
+    else
+        echoErr "ERROR: Failed to set environment variable '$VAR_NAME' in '$VAR_FILE'"
+        return 1
+    fi
+}
+
 function setEnv() {
     local ENV_NAME=$(delWhitespaces "$1")
     local ENV_VALUE=$2
