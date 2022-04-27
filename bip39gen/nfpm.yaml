@@ -1,0 +1,17 @@
+name: "bip39gen"
+arch: "${ARCH}"
+platform: "${PLATFORM}"
+version: "${VERSION}"
+section: "default"
+priority: "extra"
+replaces:
+- bip39gen
+provides:
+- bip39gen
+maintainer: "KIRA <partners@kira.global>"
+description: "BIP39GEN is a KIRA CLI tool enabling enabling generation of secure bip39 mnemonics"
+homepage: "https://github.com/KiraCore/tools"
+license: "AGPL-3.0 license"
+contents:
+- src: ${SOURCE}
+  dst: ./bin/
