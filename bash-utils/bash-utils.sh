@@ -21,7 +21,7 @@ function bashUtilsVersion() {
 # this is default installation script for utils
 # ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
 function bashUtilsSetup() {
-    local BASH_UTILS_VERSION="v0.1.4.6"
+    local BASH_UTILS_VERSION="v0.1.5"
     if [ "$1" == "version" ] ; then
         echo "$BASH_UTILS_VERSION"
         return 0
@@ -280,9 +280,7 @@ function safeWget() {
     rm -fv "$TMP_PATH_SIG"
 
     local FILE_HASH=$(sha256 $TMP_PATH)
-
-    readarray -td, EXPECTED_HASH_ARR <<<"$EXPECTED_HASH"; declare -p EXPECTED_HASH_ARR;
-
+    local EXPECTED_HASH_ARR=($(echo "$EXPECTED_HASH" | tr ',' '\n'))
     local COSIGN_PUB_KEY=""
     if (! $(isSHA256 "${EXPECTED_HASH_ARR[0]}")) ; then
         COSIGN_PUB_KEY="$EXPECTED_HASH" && EXPECTED_HASH=""
@@ -313,7 +311,7 @@ function safeWget() {
         fi
     fi
 
-    local EXPECTED_HASH_ARR=($(echo "$EXPECTED_HASH" | tr ',' '\n'))
+    EXPECTED_HASH_ARR=($(echo "$EXPECTED_HASH" | tr ',' '\n'))
     local HASH_MATCH="false"
     for hash in "${EXPECTED_HASH_ARR[@]}" ; do
         if [ "$FILE_HASH" == "$hash" ] && ($(isSHA256 "$hash")); then

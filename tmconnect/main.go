@@ -37,7 +37,7 @@ const codeSuccess int = 0
 const codeFail int = 1
 const BlockchainChannel = byte(0x40)
 const PexChannel = byte(0x00)
-const TmConnectVersion = "v0.0.1.0"
+const TmConnectVersion = "v0.1.5"
 
 func makeTimestamp() int64 {
 	return time.Now().UnixNano() / int64(time.Millisecond)
