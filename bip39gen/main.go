@@ -29,7 +29,7 @@ type response struct {
 
 const codeSuccess int = 0
 const codeFail int = 1
-const Bip39GenVersion = "v0.0.1.1"
+const Bip39GenVersion = "v0.1.5"
 
 func makeTimestamp() int64 {
 	return time.Now().UnixNano() / int64(time.Millisecond)

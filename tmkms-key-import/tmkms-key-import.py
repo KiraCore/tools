@@ -12,7 +12,7 @@ import unicodedata
 import base64
 import json
 
-TMKMS_KEY_IMPORT_VERSION="v0.0.1.0"
+TMKMS_KEY_IMPORT_VERSION="v0.1.5"
 
 TRACE=False
 def trace(x):

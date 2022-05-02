@@ -12,7 +12,7 @@ import (
 	"github.com/tendermint/tendermint/privval"
 )
 
-const PrivValidatorKeyGenVersion = "v0.0.1.0"
+const PrivValidatorKeyGenVersion = "v0.1.5"
 
 func main() {
 	mnemonic := flag.String("mnemonic", "", "a string")

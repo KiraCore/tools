@@ -109,6 +109,13 @@ safeWget /usr/local/bin/cosign_amd64 "https://github.com/sigstore/cosign/release
 chmod 755 /usr/local/bin/cosign_amd64 /usr/local/bin/cosign_arm64
 cosign_$(getArch) version
 
+SYSCTRL_DESTINATION=/usr/bin/systemctl2
+safeWget $SYSCTRL_DESTINATION \
+ https://raw.githubusercontent.com/gdraheim/docker-systemctl-replacement/9cbe1a00eb4bdac6ff05b96ca34ec9ed3d8fc06c/files/docker/systemctl.py \
+ "e02e90c6de6cd68062dadcc6a20078c34b19582be0baf93ffa7d41f5ef0a1fdd"
+
+systemctl2 version
+
 #################################################################
 echoWarn "TEST: setVar"
 TEST_FILE=/tmp/setVar.test
