@@ -1,4 +1,3 @@
-![IPFS]https://raw.githubusercontent.com/github/explore/80688e429a7d4ef2fca1e82350fe8e3517d3494d/topics/ipfs/ipfs.png)
 # IPFS-API
 
 The app to manipulate data whithin IPFS using pinata.cloud as node service provider.
@@ -69,8 +68,6 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available, 
 ## Authors
 
 * **Yevhen Yakubovskiyi** - *Initial work* - [MrLutik](https://github.com/mrlutik)
-
-
 
 
 
