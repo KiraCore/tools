@@ -73,7 +73,7 @@ jobs:
               tar xvf ./src.tar.gz
               chmod -Rv 555 ./scripts
               chmod -Rv 555 ./tmconnect/scripts ./tmkms-key-import/scripts ./validator-key-gen/scripts ./bash-utils/scripts ./bip39gen/scripts ./bip39gen/bip39/scripts
-              chmod -Rv 555 ./bash-utils
+              chmod -Rv 555 ./bash-utils ./ipfs-api/scripts
               chmod -Rv 666 ./RELEASE.md 
               export SOURCE_BRANCH=${{ env.SOURCE_BRANCH }}
               make test
