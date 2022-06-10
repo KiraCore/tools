@@ -22,4 +22,4 @@ rm -fv "$OUTPUT" || echo "ERROR: Failed to wipe old ipfs-api binary"
 
 go mod tidy
 GO111MODULE=on go mod verify
-env GOOS=$PLATFORM GOARCH=$ARCH go build cmd/ipfs-api/main.go -o "$OUTPUT" ./
+env GOOS=$PLATFORM GOARCH=$ARCH go build -o "$OUTPUT" ./cmd/ipfs-api/.
