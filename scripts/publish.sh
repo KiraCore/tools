@@ -46,9 +46,11 @@ cp -rfv ./tmconnect/bin/* ./bin
 cp -rfv ./tmkms-key-import/bin/* ./bin
 cp -rfv ./validator-key-gen/bin/* ./bin
 cp -rfv ./bip39gen/bin/* ./bin
+cp -rfv ./ipfs-api/bin/* ./bin
 cp -rfv ./bash-utils/bash-utils.sh ./bin/bash-utils.sh
 
 rm -rfv ./tmconnect/bin/*
 rm -rfv ./tmkms-key-import/bin/*
 rm -rfv ./validator-key-gen/bin/*
 rm -rfv ./bip39gen/bin/*
+rm -rfv ./ipfs-api/bin/*
