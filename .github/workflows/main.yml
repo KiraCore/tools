@@ -195,6 +195,12 @@ jobs:
               echo "           bip39gen-linux-arm64.deb: sha256:$(sha256sum ./bin/bip39gen-linux-arm64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
               echo "         bip39gen-windows-amd64.exe: sha256:$(sha256sum ./bin/bip39gen-windows-amd64.exe | awk '{ print $1 }')" >> ./bin/RELEASE.md
               echo "         bip39gen-windows-arm64.exe: sha256:$(sha256sum ./bin/bip39gen-windows-arm64.exe | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "          ipfs-api-darwin-amd64.deb: sha256:$(sha256sum ./bin/ipfs-api-darwin-amd64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "          ipfs-api-darwin-arm64.deb: sha256:$(sha256sum ./bin/ipfs-api-darwin-arm64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "           ipfs-api-linux-amd64.deb: sha256:$(sha256sum ./bin/ipfs-api-linux-amd64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "           ipfs-api-linux-arm64.deb: sha256:$(sha256sum ./bin/ipfs-api-linux-arm64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "         ipfs-api-windows-amd64.exe: sha256:$(sha256sum ./bin/ipfs-api-windows-amd64.exe | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "         ipfs-api-windows-arm64.exe: sha256:$(sha256sum ./bin/ipfs-api-windows-arm64.exe | awk '{ print $1 }')" >> ./bin/RELEASE.md
               echo "                      bash-utils.sh: sha256:$(sha256sum ./bin/bash-utils.sh | awk '{ print $1 }')" >> ./bin/RELEASE.md
               echo "                 source-code.tar.gz: sha256:$(sha256sum ./bin/source-code.tar.gz | awk '{ print $1 }')" >> ./bin/RELEASE.md
               echo -e "\`\`\`"   >> ./bin/RELEASE.md
