@@ -4,9 +4,7 @@ set +x
 . /etc/profile
 set -x
 
-cd ./ipfs-api || echo "Already in the root dir"
-
-. ../../bash-utils/bash-utils.sh
+. ../bash-utils/bash-utils.sh
 
 LOCAL_PLATFORM=$(toLower $(uname))
 LOCAL_ARCH=$(([[ "$(uname -m)" == *"arm"* ]] || [[ "$(uname -m)" == *"aarch"* ]]) && echo "arm64" || echo "amd64")
