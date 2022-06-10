@@ -349,6 +349,12 @@ jobs:
                 ./bip39gen-windows-arm64.exe.sig
                 ./bip39gen-darwin-arm64.deb
                 ./bip39gen-darwin-arm64.deb.sig
+                ./ipfs-api-linux-arm64.deb
+                ./ipfs-api-linux-arm64.deb.sig
+                ./ipfs-api-windows-arm64.exe
+                ./ipfs-api-windows-arm64.exe.sig
+                ./ipfs-api-darwin-arm64.deb
+                ./ipfs-api-darwin-arm64.deb.sig
                 ./bash-utils.sh
                 ./bash-utils.sh.sig
                 ./source-code.tar.gz
