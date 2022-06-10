@@ -1,6 +1,6 @@
 module github.com/kiracore/tools/ipfs-api
 
-go 1.18
+go 1.17
 
 require (
 	github.com/ipfs/go-cid v0.2.0
