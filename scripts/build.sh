@@ -28,4 +28,4 @@ make build
 cd $WORKDIR
 
 
-echoInfo "SUCCESS: Build finished, tmkms $(tmconnect version), validator-key-gen $(validator-key-gen --version), bip39gen $(bip39gen version)"
+echoInfo "SUCCESS: Build finished, tmkms $(tmconnect version), validator-key-gen $(validator-key-gen --version), bip39gen $(bip39gen version), ipfs-api $(ipfs-api version)"
