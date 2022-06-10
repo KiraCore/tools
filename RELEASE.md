@@ -1,2 +1,2 @@
 Features:
-* Added setVar function to bash-utils
+* Added ipfs-api cli tool for interacting dwith ipfs network through pinata.cloud
