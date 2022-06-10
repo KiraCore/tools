@@ -34,6 +34,11 @@ cd ./bip39gen
 make publish
 cd $WORKDIR
 
+# Publish ipfs-api
+cd ./ipfs-api
+make publish
+cd $WORKDIR
+
 # Copy all binaries to bin directory
 mkdir -p ./bin
 
