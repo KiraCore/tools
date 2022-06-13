@@ -355,6 +355,12 @@ jobs:
                 ./ipfs-api-windows-arm64.exe.sig
                 ./ipfs-api-darwin-arm64.deb
                 ./ipfs-api-darwin-arm64.deb.sig
+                ./ipfs-api-linux-amd64.deb
+                ./ipfs-api-linux-amd64.deb.sig
+                ./ipfs-api-windows-amd64.exe
+                ./ipfs-api-windows-amd64.exe.sig
+                ./ipfs-api-darwin-amd64.deb
+                ./ipfs-api-darwin-amd64.deb.sig
                 ./bash-utils.sh
                 ./bash-utils.sh.sig
                 ./source-code.tar.gz
