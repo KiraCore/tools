@@ -72,8 +72,8 @@ jobs:
               echo "(current dir): $PWD" && ls -l ./
               tar xvf ./src.tar.gz
               chmod -Rv 555 ./scripts
-              chmod -Rv 555 ./tmconnect/scripts ./tmkms-key-import/scripts ./validator-key-gen/scripts ./bash-utils/scripts ./bip39gen/scripts ./bip39gen/bip39/scripts
-              chmod -Rv 555 ./bash-utils
+              chmod -Rv 555 ./tmconnect/scripts ./tmkms-key-import/scripts ./validator-key-gen/scripts ./bash-utils/scripts ./bip39gen/scripts ./bip39gen/bip39/scripts ./ipfs-api/scripts
+              chmod -Rv 555 ./bash-utils 
               chmod -Rv 666 ./RELEASE.md 
               export SOURCE_BRANCH=${{ env.SOURCE_BRANCH }}
               make test
@@ -161,7 +161,7 @@ jobs:
           - name: Testing & Building TOOLS
             run: |
               echo "(current dir): $PWD" && ls -l ./
-              chmod -Rv 555 ./scripts ./bash-utils ./tmconnect/scripts ./tmkms-key-import/scripts ./validator-key-gen/scripts ./bip39gen/scripts ./bip39gen/bip39/scripts
+              chmod -Rv 555 ./scripts ./bash-utils ./tmconnect/scripts ./tmkms-key-import/scripts ./validator-key-gen/scripts ./bip39gen/scripts ./bip39gen/bip39/scripts ./ipfs-api/scripts
               export SOURCE_BRANCH=${{ env.SOURCE_BRANCH }}
               make test
               make build
@@ -195,6 +195,12 @@ jobs:
               echo "           bip39gen-linux-arm64.deb: sha256:$(sha256sum ./bin/bip39gen-linux-arm64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
               echo "         bip39gen-windows-amd64.exe: sha256:$(sha256sum ./bin/bip39gen-windows-amd64.exe | awk '{ print $1 }')" >> ./bin/RELEASE.md
               echo "         bip39gen-windows-arm64.exe: sha256:$(sha256sum ./bin/bip39gen-windows-arm64.exe | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "          ipfs-api-darwin-amd64.deb: sha256:$(sha256sum ./bin/ipfs-api-darwin-amd64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "          ipfs-api-darwin-arm64.deb: sha256:$(sha256sum ./bin/ipfs-api-darwin-arm64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "           ipfs-api-linux-amd64.deb: sha256:$(sha256sum ./bin/ipfs-api-linux-amd64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "           ipfs-api-linux-arm64.deb: sha256:$(sha256sum ./bin/ipfs-api-linux-arm64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "         ipfs-api-windows-amd64.exe: sha256:$(sha256sum ./bin/ipfs-api-windows-amd64.exe | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "         ipfs-api-windows-arm64.exe: sha256:$(sha256sum ./bin/ipfs-api-windows-arm64.exe | awk '{ print $1 }')" >> ./bin/RELEASE.md
               echo "                      bash-utils.sh: sha256:$(sha256sum ./bin/bash-utils.sh | awk '{ print $1 }')" >> ./bin/RELEASE.md
               echo "                 source-code.tar.gz: sha256:$(sha256sum ./bin/source-code.tar.gz | awk '{ print $1 }')" >> ./bin/RELEASE.md
               echo -e "\`\`\`"   >> ./bin/RELEASE.md
@@ -343,6 +349,18 @@ jobs:
                 ./bip39gen-windows-arm64.exe.sig
                 ./bip39gen-darwin-arm64.deb
                 ./bip39gen-darwin-arm64.deb.sig
+                ./ipfs-api-linux-arm64.deb
+                ./ipfs-api-linux-arm64.deb.sig
+                ./ipfs-api-windows-arm64.exe
+                ./ipfs-api-windows-arm64.exe.sig
+                ./ipfs-api-darwin-arm64.deb
+                ./ipfs-api-darwin-arm64.deb.sig
+                ./ipfs-api-linux-amd64.deb
+                ./ipfs-api-linux-amd64.deb.sig
+                ./ipfs-api-windows-amd64.exe
+                ./ipfs-api-windows-amd64.exe.sig
+                ./ipfs-api-darwin-amd64.deb
+                ./ipfs-api-darwin-amd64.deb.sig
                 ./bash-utils.sh
                 ./bash-utils.sh.sig
                 ./source-code.tar.gz
