@@ -1,3 +1,4 @@
+// Package to handle cli commands
 package cli
 
 import (
@@ -20,6 +21,11 @@ var rootCmd = &cobra.Command{
 	Short: "IPFS API",
 }
 
+// Parsing given path for pinata keys
+// Valid file example:
+// API Key: <key>
+// API Secret: <secret>
+// JWT: <jwt>
 func grabKey(keyPath string) (tp.Keys, error) {
 	// checking if path to keys is valid
 	if _, err := os.Stat(keyPath); os.IsNotExist(err) {
@@ -57,6 +63,7 @@ func grabKey(keyPath string) (tp.Keys, error) {
 	return key, nil
 }
 
+//Main function to create cli
 func Start() {
 	//Turn off completion
 	rootCmd.CompletionOptions.DisableDescriptions = true
@@ -70,6 +77,7 @@ func Start() {
 	downloadCommand.PersistentFlags().StringVarP(&keyPath, "key", "k", "", "path to your key")
 	testCommand.PersistentFlags().StringVarP(&keyPath, "key", "k", "", "path to yoour key")
 
+	//Assembling commands
 	rootCmd.AddCommand(cidZeroCommand)
 	rootCmd.AddCommand(cidOneCommand)
 	rootCmd.AddCommand(pinnedCommand)

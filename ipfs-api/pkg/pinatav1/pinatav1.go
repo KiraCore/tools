@@ -19,6 +19,7 @@ import (
 	"golang.org/x/net/http2"
 )
 
+//Creating tweaked client
 func NewClient() *http.Client {
 	// Client params to be adjusted ...
 
@@ -39,6 +40,7 @@ func NewClient() *http.Client {
 
 }
 
+// Testing auth wih pinata server
 func Test(keys tp.Keys) error {
 	c := NewClient()
 
@@ -78,11 +80,7 @@ func Test(keys tp.Keys) error {
 	return nil
 }
 
-// var quoteEscaper = strings.NewReplacer("\\", "\\\\", `"`, "\\\"")
-
-// func escapeQuotes(s string) string {
-// 	return quoteEscaper.Replace(s)
-// }
+// Adding HTML form to multipart body
 func addForm(bw *multipart.Writer, filePath string) error {
 	// wrap in struct
 	data := strings.Split(filePath, ":")
@@ -118,6 +116,7 @@ func addForm(bw *multipart.Writer, filePath string) error {
 	return nil
 }
 
+//Wrapping HTML forms in the request body
 func createReqBody(filePaths []string) (string, io.Reader, error) {
 	// creating a pipe
 	pipeReader, pipeWriter := io.Pipe()
@@ -142,12 +141,13 @@ func createReqBody(filePaths []string) (string, io.Reader, error) {
 
 }
 
+//Parsing directory tree recursively. NB: SLOW
 func walker(rootDir string) []string {
 	// add error handling
 	var res []string
 	wout := make(chan string)
 
-	// calling for a gouroutine wich will yeild res throug chan
+	// calling for a goroutine which will yield res through chan
 	go func() {
 		defer close(wout) // Chan is empty can be closed
 		base := filepath.Base(rootDir) + "/"
@@ -181,6 +181,7 @@ func walker(rootDir string) []string {
 
 }
 
+//Pins given file/directory to pinata.cloud service using api v1
 func Pin(args []string, keys tp.Keys) error {
 	path := args[0]
 	// checking if the path is valid and file/folder exist
@@ -188,7 +189,7 @@ func Pin(args []string, keys tp.Keys) error {
 		log.Error("pin: provided path doesn't exist")
 		return err
 	}
-	// assembling the tree
+	// parsing the tree
 	filePaths := walker(path)
 
 	// creating requestbody
@@ -231,7 +232,7 @@ func Pin(args []string, keys tp.Keys) error {
 
 	defer resp.Body.Close()
 
-	// checking response code
+	// checking a response code
 	if resp.StatusCode == http.StatusOK {
 		bytes, err := io.ReadAll(resp.Body)
 		if err != nil {
@@ -259,6 +260,7 @@ func Pin(args []string, keys tp.Keys) error {
 	return nil
 }
 
+// Deleting data from pinata.cloud by hash (CID)
 func Unpin(args []string, keys tp.Keys) error {
 	c := NewClient()
 
@@ -293,6 +295,7 @@ func Unpin(args []string, keys tp.Keys) error {
 	return nil
 }
 
+//Checking data if it is pinned on pinata.cloud
 func Pinned(args []string, keys tp.Keys) {
 	c := NewClient()
 
@@ -327,6 +330,7 @@ func Pinned(args []string, keys tp.Keys) {
 
 }
 
+//Downloading data. TODO: adding download for directories
 func Download(args []string, keys tp.Keys, gateway string) {
 	c := NewClient()
 
