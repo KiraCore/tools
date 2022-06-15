@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"mime/multipart"
 	"net/http"
+	"net/http/httputil"
 	"net/textproto"
 	"os"
 	"path/filepath"
@@ -108,6 +109,9 @@ func addForm(bw *multipart.Writer, filePath string) error {
 		h.Set("Content-Disposition",
 			fmt.Sprintf(`form-data; name="file"; filename="%s"`, fileName))
 		h.Set("Content-Type", "application/octet-stream")
+
+		bw.WriteField("pinataOptions", `{"cidVersion": 1}`)
+		bw.WriteField("pinataMetadata", fmt.Sprintf(`{"name": "%v"}`, fileName))
 
 		content, _ := bw.CreatePart(h)
 		io.Copy(content, f)
@@ -215,13 +219,12 @@ func Pin(args []string, keys tp.Keys) error {
 	client := NewClient()
 
 	// Printing request with all data for debugging
-	/*
-		requestDump, err := httputil.DumpRequest(req, true)
-		if err != nil {
-			fmt.Println(err)
-		}
-		fmt.Println(string(requestDump))
-	*/
+
+	requestDump, err := httputil.DumpRequest(req, true)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(string(requestDump))
 
 	// sending request
 	resp, err := client.Do(req)
