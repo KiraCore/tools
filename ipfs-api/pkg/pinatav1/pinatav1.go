@@ -110,6 +110,8 @@ func addForm(bw *multipart.Writer, filePath string) error {
 			fmt.Sprintf(`form-data; name="file"; filename="%s"`, fileName))
 		h.Set("Content-Type", "application/octet-stream")
 
+		// Adding data-form with metadata and option fields
+		// NB! Ready types for this entry are ready in pkg types
 		bw.WriteField("pinataOptions", `{"cidVersion": 1}`)
 		bw.WriteField("pinataMetadata", fmt.Sprintf(`{"name": "%v"}`, fileName))
 
