@@ -3,13 +3,10 @@ package cli
 // TODO: Try to wrap data in node.UnixFS and after that to put this node into merkle DAG
 
 import (
-	"bufio"
-	"encoding/hex"
-	"fmt"
 	"os"
 
-	cid "github.com/ipfs/go-cid"
-	mh "github.com/multiformats/go-multihash"
+	log "github.com/kiracore/tools/ipfs-api/pkg/ipfslog"
+	pnt "github.com/kiracore/tools/ipfs-api/pkg/pinatav1"
 	"github.com/spf13/cobra"
 )
 
@@ -28,48 +25,52 @@ var cidOneCommand = &cobra.Command{
 }
 
 func cmdGetCIDv0(cmd *cobra.Command, args []string) error {
-	prefix := cid.Prefix{
-		Version:  0,
-		Codec:    cid.DagProtobuf,
-		MhType:   mh.SHA2_256,
-		MhLength: -1,
+	f, _ := os.Open(args[0])
+	defer f.Close()
+
+	fi, err := f.Stat()
+	if err != nil {
+		return err
 	}
 
-	file, _ := os.Open(args[0])
+	bytes := make([]byte, fi.Size())
+	rb, err := f.Read(bytes)
 
-	defer file.Close()
-
-	bytes := make([]byte, 32)
-	for {
-		_, err := file.Read(bytes)
-		if err != nil {
-			break
-		}
+	if err != nil {
+		return err
 	}
 
-	cid, _ := prefix.Sum(bytes)
-	fmt.Println(cid)
+	c, err := pnt.GetCidV0(bytes)
+	if err != nil {
+		log.Error("cmdGetCIDv1: failed to get the cid: %v", err)
+	}
+	log.Info("cid v1. hash: %v. bytes: %v", c, rb)
+
 	return nil
 
 }
 func cmdGetCIDv1(cmd *cobra.Command, args []string) error {
-	builder := cid.V1Builder{
-		Codec:    cid.Raw,
-		MhType:   mh.SHA2_256,
-		MhLength: 32,
+
+	f, _ := os.Open(args[0])
+	defer f.Close()
+
+	fi, err := f.Stat()
+	if err != nil {
+		return err
 	}
 
-	file, _ := os.Open(args[0])
+	bytes := make([]byte, fi.Size())
+	rb, err := f.Read(bytes)
 
-	defer file.Close()
+	if err != nil {
+		return err
+	}
 
-	rd := bufio.NewReader(file)
-	data, _ := rd.ReadBytes(32)
-	fmt.Println(len(data))
-	fmt.Println(hex.EncodeToString(data))
-
-	cid, _ := builder.Sum(data)
-	fmt.Println(cid)
+	c, err := pnt.GetCidV1(bytes)
+	if err != nil {
+		log.Error("cmdGetCIDv1: failed to get the cid: %v", err)
+	}
+	log.Info("cid v1. hash: %v. bytes: %v", c, rb)
 
 	return nil
 

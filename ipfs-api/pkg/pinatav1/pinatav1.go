@@ -8,15 +8,16 @@ import (
 	"io/fs"
 	"mime/multipart"
 	"net/http"
-	"net/http/httputil"
 	"net/textproto"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
+	cid "github.com/ipfs/go-cid"
 	log "github.com/kiracore/tools/ipfs-api/pkg/ipfslog"
 	tp "github.com/kiracore/tools/ipfs-api/types"
+	mh "github.com/multiformats/go-multihash"
 	"golang.org/x/net/http2"
 )
 
@@ -81,6 +82,31 @@ func Test(keys tp.Keys) error {
 	return nil
 }
 
+// Adding pinataOptions to the request.
+func setPinataOptions(bw *multipart.Writer, c int8, w bool) error {
+	v, err := json.Marshal(tp.Opts)
+	if err != nil {
+		return err
+	}
+	bw.WriteField(tp.PINATAOPTS, string(v))
+	return nil
+
+}
+func setPinataMetadata(bw *multipart.Writer, fi fs.FileInfo) error {
+	d := make(map[string]interface{})
+	d["size"] = fi.Size()
+	d["modtime"] = fi.ModTime().UTC().Unix()
+	fi.Sys()
+
+	m := tp.PinataMetadata{Name: fi.Name(), KeyValues: d}
+	s, err := json.Marshal(m)
+	if err != nil {
+		return err
+	}
+	bw.WriteField(tp.PINATAMETA, string(s))
+	return nil
+}
+
 // Adding HTML form to multipart body
 func addForm(bw *multipart.Writer, filePath string) error {
 	// wrap in struct
@@ -112,8 +138,17 @@ func addForm(bw *multipart.Writer, filePath string) error {
 
 		// Adding data-form with metadata and option fields
 		// NB! Ready types for this entry are ready in pkg types
-		bw.WriteField("pinataOptions", `{"cidVersion": 1}`)
-		bw.WriteField("pinataMetadata", fmt.Sprintf(`{"name": "%v"}`, fileName))
+		if err := setPinataOptions(bw, 1, false); err != nil {
+			log.Error("addform: failed to add pinataOptions to the for. %v", err)
+			return err
+		}
+		if err := setPinataMetadata(bw, fi); err != nil {
+			log.Error("addform: failed to add pinataMetadata to the for. %v", err)
+			return err
+		}
+		//bw.WriteField("pinataOptions", `{"cidVersion": 1}`)
+
+		//bw.WriteField("pinataMetadata", fmt.Sprintf(`{"name": "%v"}`, fileName))
 
 		content, _ := bw.CreatePart(h)
 		io.Copy(content, f)
@@ -222,11 +257,11 @@ func Pin(args []string, keys tp.Keys) error {
 
 	// Printing request with all data for debugging
 
-	requestDump, err := httputil.DumpRequest(req, true)
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println(string(requestDump))
+	// requestDump, err := httputil.DumpRequest(req, true)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
+	// fmt.Println(string(requestDump))
 
 	// sending request
 	resp, err := client.Do(req)
@@ -298,6 +333,31 @@ func Unpin(args []string, keys tp.Keys) error {
 		return err
 	}
 	return nil
+}
+
+// GetCidV1 accept byte slice and count hash sum
+func GetCidV1(b []byte) (cid.Cid, error) {
+	builder := cid.V1Builder{
+		Codec:    cid.DagProtobuf,
+		MhType:   mh.SHA2_256,
+		MhLength: -1,
+	}
+	c, err := builder.Sum(b)
+	if err != nil {
+		return cid.Cid{}, err
+	}
+	return c, nil
+
+}
+
+func GetCidV0(b []byte) (cid.Cid, error) {
+	builder := cid.V0Builder{}
+	c, err := builder.Sum(b)
+	if err != nil {
+		return cid.Cid{}, err
+	}
+	return c, nil
+
 }
 
 //Checking data if it is pinned on pinata.cloud

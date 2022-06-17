@@ -12,8 +12,10 @@ import (
 )
 
 var (
-	keyPath string
-	gateway string
+	keyPath string // Path to pinata keys
+	gateway string // Pinata gateway to use
+	wd      bool   // Wrap with dictionary representation
+	c       int8   // CID version integer representation
 )
 
 var rootCmd = &cobra.Command{
@@ -71,6 +73,8 @@ func Start() {
 
 	///Adding flags
 	pinCommand.PersistentFlags().StringVarP(&keyPath, "key", "k", "", "path to your key")
+	pinCommand.Flags().BoolVarP(&wd, "wrap", "w", false, "Wrap with the directory")
+	pinCommand.Flags().Int8VarP(&c, "cid", "c", 1, "CID version. 0 - CIDv0, 1 - CIDv1")
 	pinnedCommand.PersistentFlags().StringVarP(&keyPath, "key", "k", "", "path to your key")
 	unpinCommand.PersistentFlags().StringVarP(&keyPath, "key", "k", "", "path to your key")
 	downloadCommand.PersistentFlags().StringVarP(&gateway, "gateway", "g", "https://gateway.pinata.cloud", "IPFS gateway")
