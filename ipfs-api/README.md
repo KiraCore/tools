@@ -63,7 +63,7 @@ Give the example
 
 ## Versioning
 
-We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/KiraCore/tools
+We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags](https://github.com/KiraCore/tools/tags)
 
 ## Authors
 

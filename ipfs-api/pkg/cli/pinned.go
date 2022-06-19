@@ -13,7 +13,7 @@ var pinnedCommand = &cobra.Command{
 }
 
 func pinned(cmd *cobra.Command, args []string) error {
-	keys, _ := grabKey(keyPath)
+	keys, _ := grabKey(key)
 	pinatav1.Pinned(args, keys)
 	return nil
 }

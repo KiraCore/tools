@@ -13,7 +13,7 @@ var downloadCommand = &cobra.Command{
 }
 
 func cmdDownload(cmd *cobra.Command, args []string) error {
-	keys, _ := grabKey(keyPath)
+	keys, _ := grabKey(key)
 	pnt.Download(args, keys, gateway)
 
 	return nil

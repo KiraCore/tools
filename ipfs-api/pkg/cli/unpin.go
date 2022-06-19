@@ -13,7 +13,7 @@ var unpinCommand = &cobra.Command{
 }
 
 func unpin(cmd *cobra.Command, args []string) error {
-	keys, _ := grabKey(keyPath)
+	keys, _ := grabKey(key)
 	if err := pnt.Unpin(args, keys); err != nil {
 		return err
 	}
