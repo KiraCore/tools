@@ -8,10 +8,11 @@ import (
 	"io/fs"
 	"mime/multipart"
 	"net/http"
+	"net/http/httputil"
 	"net/textproto"
 	"os"
 	"path/filepath"
-	"strings"
+	"sync"
 	"time"
 
 	cid "github.com/ipfs/go-cid"
@@ -88,137 +89,135 @@ func setPinataOptions(bw *multipart.Writer, c int8, w bool) error {
 	if err != nil {
 		return err
 	}
+	fmt.Println(string(v))
 	bw.WriteField(tp.PINATAOPTS, string(v))
 	return nil
 
 }
-func setPinataMetadata(bw *multipart.Writer, fi fs.FileInfo) error {
-	d := make(map[string]interface{})
-	d["size"] = fi.Size()
-	d["modtime"] = fi.ModTime().UTC().Unix()
-	fi.Sys()
+func setPinataMetadata(bw *multipart.Writer, fi fs.FileInfo, d map[string]string) error {
 
 	m := tp.PinataMetadata{Name: fi.Name(), KeyValues: d}
 	s, err := json.Marshal(m)
 	if err != nil {
 		return err
 	}
+
 	bw.WriteField(tp.PINATAMETA, string(s))
 	return nil
 }
 
 // Adding HTML form to multipart body
-func addForm(bw *multipart.Writer, filePath string) error {
+func addForm(bw *multipart.Writer, filePath tp.ExtendedFileInfo) error {
 	// wrap in struct
-	data := strings.Split(filePath, ":")
-	fileName := data[0]
-	path := data[1]
 
-	f, err := os.Open(path)
+	f, err := os.Open(filePath.AbsoultePath)
 	if err != nil {
 		log.Error("addform: can't open the file")
-		defer f.Close()
 		return err
 
 	}
-	fi, err := f.Stat()
-	if err != nil {
-		log.Error("addform: can't read stats from the given path")
-		return err
-	}
-	defer f.Close()
+
+	// fi, err := f.Stat()
+	// if err != nil {
+	// 	log.Error("addform: can't read stats from the given path")
+	// 	return err
+	// }
 
 	//MIME Header setup
-	// if not a standalone directory - add MIME.header
-	if !fi.IsDir() {
-		h := make(textproto.MIMEHeader)
-		h.Set("Content-Disposition",
-			fmt.Sprintf(`form-data; name="file"; filename="%s"`, fileName))
-		h.Set("Content-Type", "application/octet-stream")
 
-		// Adding data-form with metadata and option fields
-		// NB! Ready types for this entry are ready in pkg types
-		if err := setPinataOptions(bw, 1, false); err != nil {
-			log.Error("addform: failed to add pinataOptions to the for. %v", err)
-			return err
-		}
-		if err := setPinataMetadata(bw, fi); err != nil {
-			log.Error("addform: failed to add pinataMetadata to the for. %v", err)
-			return err
-		}
-		//bw.WriteField("pinataOptions", `{"cidVersion": 1}`)
+	h := make(textproto.MIMEHeader)
+	h.Set("Content-Disposition",
+		fmt.Sprintf(`form-data; name="file"; filename="%s"`, filePath.Path))
+	h.Set("Content-Type", "application/octet-stream")
+	content, _ := bw.CreatePart(h)
 
-		//bw.WriteField("pinataMetadata", fmt.Sprintf(`{"name": "%v"}`, fileName))
+	io.Copy(content, f)
 
-		content, _ := bw.CreatePart(h)
-		io.Copy(content, f)
+	defer f.Close()
 
-	}
 	return nil
 }
 
 //Wrapping HTML forms in the request body
-func createReqBody(filePaths []string) (string, io.Reader, error) {
+func createReqBody(filePaths []tp.ExtendedFileInfo) (string, io.Reader, error) {
+
 	// creating a pipe
 	pipeReader, pipeWriter := io.Pipe()
 	// creating writer for multipart request
 	bodyWriter := multipart.NewWriter(pipeWriter)
 
+	// Adding data-form with metadata and option fields
+	// NB! Ready types for this entry are ready in pkg types
+	if err := setPinataOptions(bodyWriter, 1, false); err != nil {
+		log.Error("addform: failed to add pinataOptions to the for. %v", err)
+	}
+	d := make(map[string]string)
+
+	if err := setPinataMetadata(bodyWriter, filePaths[0].Info, d); err != nil {
+		log.Error("addform: failed to add pinataMetadata to the for. %v", err)
+
+	}
+
 	// calling for a goroutine to add all forms found by walker
+	for _, t := range filePaths {
+		fmt.Println(t.Path)
+	}
 	go func() {
 		for _, filePath := range filePaths {
 			if err := addForm(bodyWriter, filePath); err != nil {
 				log.Error("createbody: failed to add form to multipart request")
 				return
+
 			}
-			log.Info("pinned: %v", filePath)
+			log.Info("pinned: %v", filePath.Info.Name())
+
 		}
 
 		bodyWriter.Close()
 		pipeWriter.Close()
 
 	}()
+
 	return bodyWriter.FormDataContentType(), pipeReader, nil
 
 }
 
 //Parsing directory tree recursively. NB: SLOW
-func walker(rootDir string) []string {
-	// add error handling
-	var res []string
-	wout := make(chan string)
+func walker(rootDir string) []tp.ExtendedFileInfo {
+
+	var wg sync.WaitGroup
+	var efi = []tp.ExtendedFileInfo{}
 
 	// calling for a goroutine which will yield res through chan
+	wg.Add(1)
 	go func() {
-		defer close(wout) // Chan is empty can be closed
 		base := filepath.Base(rootDir) + "/"
 		err := filepath.Walk(rootDir, func(path string, info fs.FileInfo, err error) error {
 			if err != nil {
 				return err
 			}
+			if !info.IsDir() {
+				rel, err := filepath.Rel(rootDir, path)
+				if err != nil {
+					log.Error("walker: can't get relative path for %v. err: %v", path, err)
+				}
+				fn := filepath.Clean(base + rel)
+				efi = append(efi, tp.ExtendedFileInfo{Info: info, Path: fn, AbsoultePath: rootDir})
 
-			rel, err := filepath.Rel(rootDir, path)
-			if err != nil {
-				log.Error("walker: can't get relative path for %v. err: %v", path, err)
 			}
-			fn := filepath.Clean(base + rel)
-			wout <- fn + ":" + path
+
+			// wout <- fn + ":" + path
 			return nil
+
 		})
 		if err != nil {
 			return
 		}
+		wg.Done()
 	}()
+	wg.Wait()
 
-	for {
-		if msg, state := <-wout; state {
-			res = append(res, msg)
-		} else {
-			break
-		}
-
-	}
-	return res
+	return efi
 
 }
 
@@ -249,19 +248,22 @@ func Pin(args []string, keys tp.Keys) error {
 	}
 
 	//adding headers
+
+	// req.Header.Add("pinata_api_key", keys.Api_key)
+	// req.Header.Add("pinata_secret_api_key", keys.Api_secret)
+	req.Header.Add("Authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiIzNWRjZDc0OC1mMDE3LTQ0NjEtYTdiOC0wOGVkZDc3MDU2NzciLCJlbWFpbCI6InlhaWV2Z2VuaXlAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInBpbl9wb2xpY3kiOnsicmVnaW9ucyI6W3siaWQiOiJGUkExIiwiZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjF9XSwidmVyc2lvbiI6MX0sIm1mYV9lbmFibGVkIjpmYWxzZSwic3RhdHVzIjoiQUNUSVZFIn0sImF1dGhlbnRpY2F0aW9uVHlwZSI6InNjb3BlZEtleSIsInNjb3BlZEtleUtleSI6ImRiYzYzNWMxYzFkZDY5YTRhMDE4Iiwic2NvcGVkS2V5U2VjcmV0IjoiNWYwZDVjOTdhNDc0YzkxYTMzMzU4ODZlNjA1MDA4NTFjNzY3ZjYyYmE1OTI5MDQ3ODMzOThlYTlmMDgyZmIxYSIsImlhdCI6MTY1NTI4OTQ2NX0.Zooi19QTZJDR6mueWpvAnD_qaG3T9LtPpInI_lTBrGo")
 	req.Header.Add("Content-Type", contType)
-	req.Header.Add("pinata_api_key", keys.Api_key)
-	req.Header.Add("pinata_secret_api_key", keys.Api_secret)
 
 	client := NewClient()
 
 	// Printing request with all data for debugging
 
-	// requestDump, err := httputil.DumpRequest(req, true)
-	// if err != nil {
-	// 	fmt.Println(err)
-	// }
-	// fmt.Println(string(requestDump))
+	requestDump, err := httputil.DumpRequest(req, true)
+	if err != nil {
+		fmt.Println(err)
+
+	}
+	fmt.Println(string(requestDump))
 
 	// sending request
 	resp, err := client.Do(req)
@@ -419,11 +421,15 @@ func Download(args []string, keys tp.Keys, gateway string) {
 	}
 
 	if _, err = io.Copy(f, resp.Body); err != nil {
-		log.Error("Failed to io.Copy")
+		log.Error("download: failed to io.Copy")
 
 	}
 	defer resp.Body.Close()
 	r, _ := io.ReadAll(resp.Body)
 	fmt.Println(string(r))
+
+}
+
+func PostDownloadCheck(args []string) {
 
 }
