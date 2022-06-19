@@ -22,6 +22,17 @@ import (
 	"golang.org/x/net/http2"
 )
 
+func addKeysToHeader(req *http.Request, keys tp.Keys) {
+	if keys.JWT != "" {
+
+		req.Header.Add("Authorization", "Bearer "+keys.JWT)
+
+	} else {
+		req.Header.Add("pinata_api_key", keys.Api_key)
+		req.Header.Add("pinata_secret_api_key", keys.Api_secret)
+	}
+}
+
 //Creating tweaked client
 func NewClient() *http.Client {
 	// Client params to be adjusted ...
@@ -50,15 +61,16 @@ func Test(keys tp.Keys) error {
 	req, err := http.NewRequest("GET", tp.BASE_URL+tp.TESTAUTH, nil)
 	if err != nil {
 		log.Error("test: something went wrong with request", err)
+		os.Exit(1)
 		return err
 	}
 
-	req.Header.Add("pinata_api_key", keys.Api_key)
-	req.Header.Add("pinata_secret_api_key", keys.Api_secret)
+	addKeysToHeader(req, keys)
 
 	resp, err := c.Do(req)
 	if err != nil {
 		log.Error("test: didn't get any response", err)
+		os.Exit(1)
 		return err
 	}
 	defer resp.Body.Close()
@@ -67,6 +79,7 @@ func Test(keys tp.Keys) error {
 		bytes, err := io.ReadAll(resp.Body)
 		if err != nil {
 			log.Error("test: can't read the request body", err)
+			os.Exit(1)
 			return err
 		}
 
@@ -75,6 +88,7 @@ func Test(keys tp.Keys) error {
 		e := json.Unmarshal(bytes, &r)
 		if e != nil {
 			log.Error("Test: failed to unmarshal json", e)
+			os.Exit(1)
 			return e
 		}
 		log.Info(r.Message)
@@ -87,10 +101,11 @@ func Test(keys tp.Keys) error {
 func setPinataOptions(bw *multipart.Writer, c int8, w bool) error {
 	v, err := json.Marshal(tp.Opts)
 	if err != nil {
+		os.Exit(1)
 		return err
 	}
-	fmt.Println(string(v))
 	bw.WriteField(tp.PINATAOPTS, string(v))
+
 	return nil
 
 }
@@ -99,6 +114,7 @@ func setPinataMetadata(bw *multipart.Writer, fi fs.FileInfo, d map[string]string
 	m := tp.PinataMetadata{Name: fi.Name(), KeyValues: d}
 	s, err := json.Marshal(m)
 	if err != nil {
+		os.Exit(1)
 		return err
 	}
 
@@ -113,17 +129,15 @@ func addForm(bw *multipart.Writer, filePath tp.ExtendedFileInfo) error {
 	f, err := os.Open(filePath.AbsoultePath)
 	if err != nil {
 		log.Error("addform: can't open the file")
+		os.Exit(1)
 		return err
 
 	}
 
-	// fi, err := f.Stat()
-	// if err != nil {
-	// 	log.Error("addform: can't read stats from the given path")
-	// 	return err
-	// }
-
 	//MIME Header setup
+	// if err := setPinataOptions(bw, 1, false); err != nil {
+	// 	log.Error("addform: failed to add pinataOptions to the for. %v", err)
+	// }
 
 	h := make(textproto.MIMEHeader)
 	h.Set("Content-Disposition",
@@ -146,26 +160,21 @@ func createReqBody(filePaths []tp.ExtendedFileInfo) (string, io.Reader, error) {
 	// creating writer for multipart request
 	bodyWriter := multipart.NewWriter(pipeWriter)
 
-	// Adding data-form with metadata and option fields
-	// NB! Ready types for this entry are ready in pkg types
-	if err := setPinataOptions(bodyWriter, 1, false); err != nil {
-		log.Error("addform: failed to add pinataOptions to the for. %v", err)
-	}
-	d := make(map[string]string)
-
-	if err := setPinataMetadata(bodyWriter, filePaths[0].Info, d); err != nil {
-		log.Error("addform: failed to add pinataMetadata to the for. %v", err)
-
-	}
-
-	// calling for a goroutine to add all forms found by walker
 	for _, t := range filePaths {
 		fmt.Println(t.Path)
 	}
 	go func() {
+		if err := setPinataOptions(bodyWriter, 1, false); err != nil {
+			log.Error("addform: failed to add pinataOptions to the for. %v", err)
+			os.Exit(1)
+		}
+		// if err := setPinataMetadata(bodyWriter, fi, d); err != nil {
+		// 	log.Error("addform: failed to add pinataMetadata to the for. %v", err)
+		// }
 		for _, filePath := range filePaths {
 			if err := addForm(bodyWriter, filePath); err != nil {
 				log.Error("createbody: failed to add form to multipart request")
+				os.Exit(1)
 				return
 
 			}
@@ -184,6 +193,11 @@ func createReqBody(filePaths []tp.ExtendedFileInfo) (string, io.Reader, error) {
 
 //Parsing directory tree recursively. NB: SLOW
 func walker(rootDir string) []tp.ExtendedFileInfo {
+	ap, err := filepath.Abs(rootDir)
+	if err != nil {
+		log.Error("walker: failed to get absolute path")
+		os.Exit(1)
+	}
 
 	var wg sync.WaitGroup
 	var efi = []tp.ExtendedFileInfo{}
@@ -191,26 +205,28 @@ func walker(rootDir string) []tp.ExtendedFileInfo {
 	// calling for a goroutine which will yield res through chan
 	wg.Add(1)
 	go func() {
-		base := filepath.Base(rootDir) + "/"
-		err := filepath.Walk(rootDir, func(path string, info fs.FileInfo, err error) error {
+		base := filepath.Base(ap) + "/"
+		err := filepath.Walk(ap, func(path string, info fs.FileInfo, err error) error {
 			if err != nil {
+				os.Exit(1)
 				return err
 			}
 			if !info.IsDir() {
-				rel, err := filepath.Rel(rootDir, path)
+				rel, err := filepath.Rel(ap, path)
 				if err != nil {
 					log.Error("walker: can't get relative path for %v. err: %v", path, err)
+					os.Exit(1)
 				}
 				fn := filepath.Clean(base + rel)
-				efi = append(efi, tp.ExtendedFileInfo{Info: info, Path: fn, AbsoultePath: rootDir})
+				efi = append(efi, tp.ExtendedFileInfo{Info: info, Path: fn, AbsoultePath: ap})
 
 			}
 
-			// wout <- fn + ":" + path
 			return nil
 
 		})
 		if err != nil {
+			os.Exit(1)
 			return
 		}
 		wg.Done()
@@ -227,6 +243,7 @@ func Pin(args []string, keys tp.Keys) error {
 	// checking if the path is valid and file/folder exist
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		log.Error("pin: provided path doesn't exist")
+		os.Exit(1)
 		return err
 	}
 	// parsing the tree
@@ -236,6 +253,7 @@ func Pin(args []string, keys tp.Keys) error {
 	contType, reader, err := createReqBody(filePaths)
 	if err != nil {
 		log.Error("pin: failed to create body")
+		os.Exit(1)
 		return err
 	}
 	log.Info("createReqBody ok\n")
@@ -244,14 +262,11 @@ func Pin(args []string, keys tp.Keys) error {
 	req, err := http.NewRequest("POST", tp.BASE_URL+tp.PINFILE, reader)
 	if err != nil {
 		log.Error("pin: failed to assemble request")
+		os.Exit(1)
 		return err
 	}
 
-	//adding headers
-
-	// req.Header.Add("pinata_api_key", keys.Api_key)
-	// req.Header.Add("pinata_secret_api_key", keys.Api_secret)
-	req.Header.Add("Authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiIzNWRjZDc0OC1mMDE3LTQ0NjEtYTdiOC0wOGVkZDc3MDU2NzciLCJlbWFpbCI6InlhaWV2Z2VuaXlAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInBpbl9wb2xpY3kiOnsicmVnaW9ucyI6W3siaWQiOiJGUkExIiwiZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjF9XSwidmVyc2lvbiI6MX0sIm1mYV9lbmFibGVkIjpmYWxzZSwic3RhdHVzIjoiQUNUSVZFIn0sImF1dGhlbnRpY2F0aW9uVHlwZSI6InNjb3BlZEtleSIsInNjb3BlZEtleUtleSI6ImRiYzYzNWMxYzFkZDY5YTRhMDE4Iiwic2NvcGVkS2V5U2VjcmV0IjoiNWYwZDVjOTdhNDc0YzkxYTMzMzU4ODZlNjA1MDA4NTFjNzY3ZjYyYmE1OTI5MDQ3ODMzOThlYTlmMDgyZmIxYSIsImlhdCI6MTY1NTI4OTQ2NX0.Zooi19QTZJDR6mueWpvAnD_qaG3T9LtPpInI_lTBrGo")
+	addKeysToHeader(req, keys)
 	req.Header.Add("Content-Type", contType)
 
 	client := NewClient()
@@ -269,6 +284,7 @@ func Pin(args []string, keys tp.Keys) error {
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Error("pin: request send error:", err)
+		os.Exit(1)
 		return err
 	}
 
@@ -279,6 +295,7 @@ func Pin(args []string, keys tp.Keys) error {
 		bytes, err := io.ReadAll(resp.Body)
 		if err != nil {
 			log.Error("pin: can't read the request body %v", err)
+			os.Exit(1)
 		}
 
 		// Parsing response
@@ -286,6 +303,7 @@ func Pin(args []string, keys tp.Keys) error {
 		e := json.Unmarshal(bytes, &r)
 		if e != nil {
 			log.Error("pin: failed to unmarshal json from response %v", e)
+			os.Exit(1)
 		}
 		log.Info("Finished successfully...\nCID: %v\nsize: %v\ntime: %v\nduplicate: %v", r.IpfsHash, r.PinSize, r.Timestamp, r.Duplicate)
 
@@ -295,6 +313,7 @@ func Pin(args []string, keys tp.Keys) error {
 		bytes, err := io.ReadAll(resp.Body)
 		if err != nil {
 			log.Error("pin: can't read the request body %v", err)
+			os.Exit(1)
 		}
 		log.Error("pin: request body: %v", string(bytes))
 	}
@@ -309,15 +328,18 @@ func Unpin(args []string, keys tp.Keys) error {
 	req, err := http.NewRequest(http.MethodDelete, tp.BASE_URL+tp.UNPIN+"/"+args[0], nil)
 	if err != nil {
 		log.Error("unpin: failed to assemble request ")
+		os.Exit(1)
 		return err
 	}
-	req.Header.Add("pinata_api_key", keys.Api_key)
-	req.Header.Add("pinata_secret_api_key", keys.Api_secret)
+	// req.Header.Add("pinata_api_key", keys.Api_key)
+	// req.Header.Add("pinata_secret_api_key", keys.Api_secret)
+	addKeysToHeader(req, keys)
 
 	resp, err := c.Do(req)
 
 	if err != nil {
 		log.Error("unpin: didn't get any response", err)
+		os.Exit(1)
 		return err
 	}
 	defer resp.Body.Close()
@@ -326,12 +348,14 @@ func Unpin(args []string, keys tp.Keys) error {
 		bytes, err := io.ReadAll(resp.Body)
 		if err != nil {
 			log.Error("unpin: can't read the request body", err)
+			os.Exit(1)
 			return err
 		}
 		log.Info("deleted. CID: %v. Server response: %v", args[0], string(bytes))
 
 	} else {
 		log.Error("unpin: file/Folder could NOT be unpinned or deleted from IPFS")
+		os.Exit(1)
 		return err
 	}
 	return nil
@@ -346,6 +370,7 @@ func GetCidV1(b []byte) (cid.Cid, error) {
 	}
 	c, err := builder.Sum(b)
 	if err != nil {
+		os.Exit(1)
 		return cid.Cid{}, err
 	}
 	return c, nil
@@ -356,6 +381,7 @@ func GetCidV0(b []byte) (cid.Cid, error) {
 	builder := cid.V0Builder{}
 	c, err := builder.Sum(b)
 	if err != nil {
+		os.Exit(1)
 		return cid.Cid{}, err
 	}
 	return c, nil
@@ -368,10 +394,12 @@ func Pinned(args []string, keys tp.Keys) {
 
 	req, err := http.NewRequest(http.MethodDelete, tp.BASE_URL+tp.UNPIN+"/"+args[0], nil)
 	if err != nil {
+		os.Exit(1)
 		return
 	}
-	req.Header.Add("pinata_api_key", keys.Api_key)
-	req.Header.Add("pinata_secret_api_key", keys.Api_secret)
+	// req.Header.Add("pinata_api_key", keys.Api_key)
+	// req.Header.Add("pinata_secret_api_key", keys.Api_secret)
+	addKeysToHeader(req, keys)
 
 	param := req.URL.Query()
 	param.Add("hashContains", args[0])
@@ -381,6 +409,7 @@ func Pinned(args []string, keys tp.Keys) {
 
 	if err != nil {
 		log.Error("didn't get any response", err)
+		os.Exit(1)
 	}
 	defer resp.Body.Close()
 
@@ -388,11 +417,13 @@ func Pinned(args []string, keys tp.Keys) {
 		bytes, err := io.ReadAll(resp.Body)
 		if err != nil {
 			log.Error("can't read the request body", err)
+			os.Exit(1)
 		}
 		log.Info("file exists: %v. %v", args[0], string(bytes))
 
 	} else {
 		log.Error("file with CID %v doesn't exist", args[0])
+		os.Exit(1)
 	}
 
 }
@@ -403,33 +434,32 @@ func Download(args []string, keys tp.Keys, gateway string) {
 
 	req, err := http.NewRequest(http.MethodGet, gateway+"/ipfs/"+args[0], nil)
 	if err != nil {
+		os.Exit(1)
 		return
 	}
-	req.Header.Add("pinata_api_key", keys.Api_key)
-	req.Header.Add("pinata_secret_api_key", keys.Api_secret)
+	addKeysToHeader(req, keys)
 
 	f, err := os.Create(args[0])
 	if err != nil {
 		log.Error("download: failed to create file/folder")
+		os.Exit(1)
 		return
 	}
 
 	resp, err := c.Do(req)
 	if err != nil {
 		log.Error("download: failed to get the response")
+		os.Exit(1)
 		return
 	}
 
 	if _, err = io.Copy(f, resp.Body); err != nil {
 		log.Error("download: failed to io.Copy")
 
+		os.Exit(1)
 	}
 	defer resp.Body.Close()
 	r, _ := io.ReadAll(resp.Body)
 	fmt.Println(string(r))
-
-}
-
-func PostDownloadCheck(args []string) {
 
 }
