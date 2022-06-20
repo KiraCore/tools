@@ -11,6 +11,7 @@ import (
 	tp "github.com/kiracore/tools/ipfs-api/types"
 )
 
+// Gets keys value from plain text or json file
 func keyFromFile(path string, fi fs.FileInfo) (tp.Keys, error) {
 	var keys tp.Keys
 
@@ -52,6 +53,7 @@ func keyFromFile(path string, fi fs.FileInfo) (tp.Keys, error) {
 	}
 }
 
+// Gets keys from string provided by user
 func keyFromString(key string) (tp.Keys, error) {
 
 	k1 := strings.Split(key, " ")
@@ -76,6 +78,7 @@ func keyFromString(key string) (tp.Keys, error) {
 
 }
 
+// grabKey chooses source to parse and provide keys
 func grabKey(key string) (tp.Keys, error) {
 	if key == "" {
 		log.Error("grabKey: key can't be empty")

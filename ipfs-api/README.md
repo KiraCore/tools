@@ -10,51 +10,21 @@ Get the repo from github.
 git clone https://github.com/KiraCore/tools.git 
 `
 
-### Prerequisites
-
-To build the app you need the golang to be preinstalled.
-
-```
-https://go.dev/doc/install
-```
-
-Check for updates and install building essentials
-`
-sudo apt update
-sudo apt install build-essential
-sudo apt upgrsde -y
-
-`
-
 ### Installing
 
-Check the latest branch. It should start from v ...
-
-`
-git branch -r | grep v0
-`
-
-Switch for the latest branch. 
-
-`
-git checkout origin/v0...
-`
-
-after this step just enter the ipfs-api directory  and execute:
-`
-make build
-`
-the executable will appear in the tools/ipfs-api/bin directory
-
-Make sure it has an executable permission:
-`
-chmod +x tools/ipfs-api/bin/ipfs-api
-`
-
+Installation script:
 
 ```
-Give the example
-```
+TOOLS_VERSION="v0.1.6-rc.3" && rm -rfv /tmp/ipfs-api && \
+ safeWget /tmp/ipfs-api.deb "https://github.com/KiraCore/tools/releases/download/$TOOLS_VERSION/ipfs-api-$(getPlatform)-$(getArch).deb" "$KIRA_COSIGN_PUB" && \
+ dpkg-deb -x /tmp/ipfs-api.deb /tmp/ipfs-api && cp -fv "/tmp/ipfs-api/bin/ipfs-api" /usr/local/bin/ipfs-api && chmod -v 755 /usr/local/bin/ipfs-api && \
+ ipfs-api version
+ ```
+
+## Use
+
+
+
 
 ## Built With
 

@@ -22,6 +22,7 @@ import (
 	"golang.org/x/net/http2"
 )
 
+// Adding authentication method from given input, json or plain text file
 func addKeysToHeader(req *http.Request, keys tp.Keys) {
 	if keys.JWT != "" {
 
@@ -98,6 +99,8 @@ func Test(keys tp.Keys) error {
 }
 
 // Adding pinataOptions to the request.
+// func using external variable tp.Opts to write
+// user input data
 func setPinataOptions(bw *multipart.Writer, c int8, w bool) error {
 	v, err := json.Marshal(tp.Opts)
 	if err != nil {
@@ -124,8 +127,8 @@ func setPinataMetadata(bw *multipart.Writer, fi fs.FileInfo, d map[string]string
 
 // Adding HTML form to multipart body
 func addForm(bw *multipart.Writer, filePath tp.ExtendedFileInfo) error {
-	// wrap in struct
 
+	// wrap in struct
 	f, err := os.Open(filePath.AbsoultePath)
 	if err != nil {
 		log.Error("addform: can't open the file")
@@ -133,11 +136,6 @@ func addForm(bw *multipart.Writer, filePath tp.ExtendedFileInfo) error {
 		return err
 
 	}
-
-	//MIME Header setup
-	// if err := setPinataOptions(bw, 1, false); err != nil {
-	// 	log.Error("addform: failed to add pinataOptions to the for. %v", err)
-	// }
 
 	h := make(textproto.MIMEHeader)
 	h.Set("Content-Disposition",
@@ -160,17 +158,12 @@ func createReqBody(filePaths []tp.ExtendedFileInfo) (string, io.Reader, error) {
 	// creating writer for multipart request
 	bodyWriter := multipart.NewWriter(pipeWriter)
 
-	for _, t := range filePaths {
-		fmt.Println(t.Path)
-	}
 	go func() {
 		if err := setPinataOptions(bodyWriter, 1, false); err != nil {
 			log.Error("addform: failed to add pinataOptions to the for. %v", err)
 			os.Exit(1)
 		}
-		// if err := setPinataMetadata(bodyWriter, fi, d); err != nil {
-		// 	log.Error("addform: failed to add pinataMetadata to the for. %v", err)
-		// }
+
 		for _, filePath := range filePaths {
 			if err := addForm(bodyWriter, filePath); err != nil {
 				log.Error("createbody: failed to add form to multipart request")
@@ -278,7 +271,7 @@ func Pin(args []string, keys tp.Keys) error {
 		fmt.Println(err)
 
 	}
-	fmt.Println(string(requestDump))
+	log.Debug(string(requestDump))
 
 	// sending request
 	resp, err := client.Do(req)
@@ -306,6 +299,7 @@ func Pin(args []string, keys tp.Keys) error {
 			os.Exit(1)
 		}
 		log.Info("Finished successfully...\nCID: %v\nsize: %v\ntime: %v\nduplicate: %v", r.IpfsHash, r.PinSize, r.Timestamp, r.Duplicate)
+		fmt.Println(string(bytes))
 
 	} else {
 		// if something unexpected received in the response body
@@ -318,46 +312,6 @@ func Pin(args []string, keys tp.Keys) error {
 		log.Error("pin: request body: %v", string(bytes))
 	}
 
-	return nil
-}
-
-// Deleting data from pinata.cloud by hash (CID)
-func Unpin(args []string, keys tp.Keys) error {
-	c := NewClient()
-
-	req, err := http.NewRequest(http.MethodDelete, tp.BASE_URL+tp.UNPIN+"/"+args[0], nil)
-	if err != nil {
-		log.Error("unpin: failed to assemble request ")
-		os.Exit(1)
-		return err
-	}
-	// req.Header.Add("pinata_api_key", keys.Api_key)
-	// req.Header.Add("pinata_secret_api_key", keys.Api_secret)
-	addKeysToHeader(req, keys)
-
-	resp, err := c.Do(req)
-
-	if err != nil {
-		log.Error("unpin: didn't get any response", err)
-		os.Exit(1)
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == http.StatusOK {
-		bytes, err := io.ReadAll(resp.Body)
-		if err != nil {
-			log.Error("unpin: can't read the request body", err)
-			os.Exit(1)
-			return err
-		}
-		log.Info("deleted. CID: %v. Server response: %v", args[0], string(bytes))
-
-	} else {
-		log.Error("unpin: file/Folder could NOT be unpinned or deleted from IPFS")
-		os.Exit(1)
-		return err
-	}
 	return nil
 }
 
@@ -385,46 +339,6 @@ func GetCidV0(b []byte) (cid.Cid, error) {
 		return cid.Cid{}, err
 	}
 	return c, nil
-
-}
-
-//Checking data if it is pinned on pinata.cloud
-func Pinned(args []string, keys tp.Keys) {
-	c := NewClient()
-
-	req, err := http.NewRequest(http.MethodDelete, tp.BASE_URL+tp.UNPIN+"/"+args[0], nil)
-	if err != nil {
-		os.Exit(1)
-		return
-	}
-	// req.Header.Add("pinata_api_key", keys.Api_key)
-	// req.Header.Add("pinata_secret_api_key", keys.Api_secret)
-	addKeysToHeader(req, keys)
-
-	param := req.URL.Query()
-	param.Add("hashContains", args[0])
-	req.URL.RawQuery = param.Encode()
-
-	resp, err := c.Do(req)
-
-	if err != nil {
-		log.Error("didn't get any response", err)
-		os.Exit(1)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == http.StatusOK {
-		bytes, err := io.ReadAll(resp.Body)
-		if err != nil {
-			log.Error("can't read the request body", err)
-			os.Exit(1)
-		}
-		log.Info("file exists: %v. %v", args[0], string(bytes))
-
-	} else {
-		log.Error("file with CID %v doesn't exist", args[0])
-		os.Exit(1)
-	}
 
 }
 
