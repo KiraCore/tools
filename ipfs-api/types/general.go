@@ -2,6 +2,8 @@ package types
 
 import (
 	"io/fs"
+
+	"github.com/sirupsen/logrus"
 )
 
 type Keys struct {
@@ -15,3 +17,15 @@ type ExtendedFileInfo struct {
 	Path         string
 	AbsoultePath string
 }
+
+var LogLevelMap = []logrus.Level{
+	1: logrus.TraceLevel,
+	2: logrus.DebugLevel,
+	3: logrus.InfoLevel,
+	4: logrus.WarnLevel,
+	5: logrus.ErrorLevel,
+	6: logrus.FatalLevel,
+	7: logrus.PanicLevel,
+}
+
+var V int32
