@@ -8,7 +8,6 @@ import (
 	"io/fs"
 	"mime/multipart"
 	"net/http"
-	"net/http/httputil"
 	"net/textproto"
 	"os"
 	"path/filepath"
@@ -131,7 +130,7 @@ func addForm(bw *multipart.Writer, filePath tp.ExtendedFileInfo) error {
 	// wrap in struct
 	f, err := os.Open(filePath.AbsoultePath)
 	if err != nil {
-		log.Error("addform: can't open the file")
+		log.Error("addform: can't open the file %v", filePath.AbsoultePath)
 		os.Exit(1)
 		return err
 
@@ -141,21 +140,27 @@ func addForm(bw *multipart.Writer, filePath tp.ExtendedFileInfo) error {
 	h.Set("Content-Disposition",
 		fmt.Sprintf(`form-data; name="file"; filename="%s"`, filePath.Path))
 	h.Set("Content-Type", "application/octet-stream")
+
 	content, _ := bw.CreatePart(h)
+	d, err := io.Copy(content, f)
 
-	io.Copy(content, f)
+	if err != nil {
+		log.Error("addForm: failed to copy data: %v", err)
+	} else {
+		log.Info("addForm: uploaded file %v: bytes : %v", filePath.Path, d)
+	}
 
-	defer f.Close()
+	f.Close()
 
 	return nil
 }
 
 //Wrapping HTML forms in the request body
 func createReqBody(filePaths []tp.ExtendedFileInfo) (string, io.Reader, error) {
-
 	// creating a pipe
 	pipeReader, pipeWriter := io.Pipe()
 	// creating writer for multipart request
+
 	bodyWriter := multipart.NewWriter(pipeWriter)
 
 	go func() {
@@ -171,7 +176,6 @@ func createReqBody(filePaths []tp.ExtendedFileInfo) (string, io.Reader, error) {
 				return
 
 			}
-			log.Info("pinned: %v", filePath.Info.Name())
 
 		}
 
@@ -187,6 +191,7 @@ func createReqBody(filePaths []tp.ExtendedFileInfo) (string, io.Reader, error) {
 //Parsing directory tree recursively. NB: SLOW
 func walker(rootDir string) []tp.ExtendedFileInfo {
 	ap, err := filepath.Abs(rootDir)
+	base := filepath.Base(ap)
 	if err != nil {
 		log.Error("walker: failed to get absolute path")
 		os.Exit(1)
@@ -195,10 +200,9 @@ func walker(rootDir string) []tp.ExtendedFileInfo {
 	var wg sync.WaitGroup
 	var efi = []tp.ExtendedFileInfo{}
 
-	// calling for a goroutine which will yield res through chan
 	wg.Add(1)
 	go func() {
-		base := filepath.Base(ap) + "/"
+
 		err := filepath.Walk(ap, func(path string, info fs.FileInfo, err error) error {
 			if err != nil {
 				os.Exit(1)
@@ -206,13 +210,13 @@ func walker(rootDir string) []tp.ExtendedFileInfo {
 			}
 			if !info.IsDir() {
 				rel, err := filepath.Rel(ap, path)
+
 				if err != nil {
 					log.Error("walker: can't get relative path for %v. err: %v", path, err)
 					os.Exit(1)
 				}
-				fn := filepath.Clean(base + rel)
-				efi = append(efi, tp.ExtendedFileInfo{Info: info, Path: fn, AbsoultePath: ap})
-
+				fn := filepath.Clean(base + "/" + rel)
+				efi = append(efi, tp.ExtendedFileInfo{Info: info, Path: fn, AbsoultePath: path})
 			}
 
 			return nil
@@ -249,7 +253,7 @@ func Pin(args []string, keys tp.Keys) error {
 		os.Exit(1)
 		return err
 	}
-	log.Info("createReqBody ok\n")
+	log.Info("pin: body formed\n")
 
 	// forming request
 	req, err := http.NewRequest("POST", tp.BASE_URL+tp.PINFILE, reader)
@@ -266,12 +270,12 @@ func Pin(args []string, keys tp.Keys) error {
 
 	// Printing request with all data for debugging
 
-	requestDump, err := httputil.DumpRequest(req, true)
-	if err != nil {
-		fmt.Println(err)
+	// requestDump, err := httputil.DumpRequest(req, true)
+	// if err != nil {
+	// 	fmt.Println(err)
 
-	}
-	log.Debug(string(requestDump))
+	// }
+	// log.Debug(string(requestDump))
 
 	// sending request
 	resp, err := client.Do(req)

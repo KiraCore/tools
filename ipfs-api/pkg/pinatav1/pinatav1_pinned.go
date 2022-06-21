@@ -37,8 +37,9 @@ func Pinned(args []string, keys tp.Keys) {
 	defer resp.Body.Close()
 	requestDump, err := httputil.DumpRequest(req, true)
 	if err != nil {
-		fmt.Println(err)
-
+		log.Error("pin: failed to dump request log")
+	} else {
+		log.Debug(string(requestDump))
 	}
 
 	log.Debug(string(requestDump))

@@ -11,6 +11,7 @@ var Log *logrus.Logger
 func init() {
 
 	Log = logrus.New()
+	Log.SetLevel(logrus.InfoLevel)
 
 }
 
