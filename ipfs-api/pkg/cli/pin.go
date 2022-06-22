@@ -10,10 +10,11 @@ import (
 )
 
 var pinCommand = &cobra.Command{
-	Use:   "pin <file/folder-path> <file/folder-name> --key=<file-path/string>",
-	Short: "File/folder upload and pin",
-	Long:  "File/folder upload and pin",
-	RunE:  pinCmd,
+	Use:     "pin <file/folder-path> <file/folder-name> --key=<file-path/string>",
+	Short:   "File/folder upload and pin",
+	Long:    "File/folder upload and pin",
+	PreRunE: checkName,
+	RunE:    pinCmd,
 }
 
 func pinCmd(cmd *cobra.Command, args []string) error {
@@ -26,5 +27,10 @@ func pinCmd(cmd *cobra.Command, args []string) error {
 		log.Fatalln("\033[31m", err)
 		os.Exit(1)
 	}
+	return nil
+}
+func checkName(cmd *cobra.Command, args []string) error {
+	keys, _ := grabKey(key)
+	pnt.GetHashByName(args, keys)
 	return nil
 }
