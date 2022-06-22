@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"mime/multipart"
 	"net/http"
+	"net/http/httputil"
 	"net/textproto"
 	"os"
 	"path/filepath"
@@ -169,7 +170,7 @@ func createReqBody(args []string, filePaths []tp.ExtendedFileInfo) (string, io.R
 			os.Exit(1)
 		}
 		if len(args) > 1 {
-			bodyWriter.WriteField(tp.PINATAMETA, fmt.Sprintf(`{name: %v, keyvalues: {}}`, args[1]))
+			bodyWriter.WriteField(tp.PINATAMETA, fmt.Sprintf(`{"name":"%v","keyvalues": {}}`, args[1]))
 
 		}
 
@@ -257,11 +258,11 @@ func GetHashByName(args []string, keys tp.Keys) {
 			os.Exit(1)
 		}
 		defer resp.Body.Close()
-		bytes, err := io.ReadAll(resp.Body)
-		if err != nil {
-			log.Error("pin: can't read the request body %v", err)
-			os.Exit(1)
-		}
+		// bytes, err := io.ReadAll(resp.Body)
+		// if err != nil {
+		// 	log.Error("pin: can't read the request body %v", err)
+		// 	os.Exit(1)
+		// }
 		// Printing request with all data for debugging
 
 		// requestDump, err := httputil.DumpRequest(req, true)
@@ -272,7 +273,7 @@ func GetHashByName(args []string, keys tp.Keys) {
 		// fmt.Println(string(requestDump))
 
 		// sending request
-		fmt.Println(string(bytes))
+		//fmt.Println(string(bytes))
 
 	}
 
@@ -314,12 +315,12 @@ func Pin(args []string, keys tp.Keys) error {
 
 	// Printing request with all data for debugging
 
-	// requestDump, err := httputil.DumpRequest(req, true)
-	// if err != nil {
-	// 	fmt.Println(err)
+	requestDump, err := httputil.DumpRequest(req, true)
+	if err != nil {
+		fmt.Println(err)
 
-	// }
-	// log.Debug(string(requestDump))
+	}
+	log.Debug(string(requestDump))
 
 	// sending request
 	resp, err := client.Do(req)

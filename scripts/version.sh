@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-echo "v0.1.7-rc.6"
+echo "v0.1.8-rc.7"

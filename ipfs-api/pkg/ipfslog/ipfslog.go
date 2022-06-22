@@ -3,6 +3,8 @@
 package ipfslog
 
 import (
+	"io/ioutil"
+
 	"github.com/sirupsen/logrus"
 )
 
@@ -11,7 +13,8 @@ var Log *logrus.Logger
 func init() {
 
 	Log = logrus.New()
-	Log.SetLevel(logrus.InfoLevel)
+	Log.SetLevel(logrus.TraceLevel)
+	Log.Out = ioutil.Discard
 
 }
 
