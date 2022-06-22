@@ -8,7 +8,6 @@ import (
 	"io/fs"
 	"mime/multipart"
 	"net/http"
-	"net/http/httputil"
 	"net/textproto"
 	"os"
 	"path/filepath"
@@ -236,7 +235,7 @@ func walker(rootDir string) []tp.ExtendedFileInfo {
 }
 
 func GetHashByName(args []string, keys tp.Keys) {
-	if args[1] != "" {
+	if len(args) > 1 {
 		c := NewClient()
 		req, err := http.NewRequest("GET", tp.BASE_URL+tp.PINNEDDATA+"?metadata[name]="+args[1], nil)
 		if err != nil {
@@ -261,12 +260,12 @@ func GetHashByName(args []string, keys tp.Keys) {
 		}
 		// Printing request with all data for debugging
 
-		requestDump, err := httputil.DumpRequest(req, true)
-		if err != nil {
-			fmt.Println(err)
+		// requestDump, err := httputil.DumpRequest(req, true)
+		// if err != nil {
+		// 	fmt.Println(err)
 
-		}
-		fmt.Println(string(requestDump))
+		// }
+		// fmt.Println(string(requestDump))
 
 		// sending request
 		fmt.Println(string(bytes))
