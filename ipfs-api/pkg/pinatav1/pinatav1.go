@@ -264,7 +264,6 @@ func GetHashByName(args []string, keys tp.Keys) {
 		// 	os.Exit(1)
 		// }
 		// Printing request with all data for debugging
-
 		// requestDump, err := httputil.DumpRequest(req, true)
 		// if err != nil {
 		// 	fmt.Println(err)

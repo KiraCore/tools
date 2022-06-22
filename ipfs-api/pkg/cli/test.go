@@ -3,7 +3,8 @@ package cli
 import (
 	"os"
 
-	pnt "github.com/kiracore/tools/ipfs-api/pkg/pinatav1"
+	log "github.com/kiracore/tools/ipfs-api/pkg/ipfslog"
+	pnt "github.com/kiracore/tools/ipfs-api/pkg/pinatav2"
 	"github.com/spf13/cobra"
 )
 
@@ -15,10 +16,23 @@ var testCommand = &cobra.Command{
 }
 
 func test(cmd *cobra.Command, args []string) error {
-	keys, _ := grabKey(key)
-	if err := pnt.Test(keys); err != nil {
+	keys, err := pnt.GrabKey(key)
+	if err != nil {
+		log.Error("grabKey: failed to get keys: %v", err)
 		os.Exit(1)
-		return err
 	}
+	if !keys.Check() {
+		log.Error("Keys not provided")
+		os.Exit(1)
+	}
+
+	p := pnt.PinataApi{}
+	p.SetKeys(keys)
+	er := p.Test()
+	if er != nil {
+		os.Exit(1)
+	}
+
 	return nil
+
 }

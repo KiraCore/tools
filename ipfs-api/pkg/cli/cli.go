@@ -2,16 +2,16 @@
 package cli
 
 import (
-	tp "github.com/kiracore/tools/ipfs-api/types"
 	"github.com/spf13/cobra"
 )
 
 var (
-	key     string // Path to pinata keys
-	gateway string // Pinata gateway to use
-	wd      bool   // Wrap with dictionary representation
-	c       int8   // CID version integer representation
-	v       int32
+	key       string // Path to pinata keys
+	gateway   string // Pinata gateway to use
+	meta      string
+	path      string
+	c         int8 // CID version integer representation
+	verbosity int32
 )
 
 var rootCmd = &cobra.Command{
@@ -26,7 +26,7 @@ func Start() {
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
 
 	///Adding flags
-	rootCmd.PersistentFlags().Int32VarP(&v, "verbose", "v", 0, "Verbosity of the output from 0..5 ")
+	rootCmd.PersistentFlags().Int32VarP(&verbosity, "verbose", "v", 0, "Verbosity of the output from 0..5 ")
 	pinCommand.PersistentFlags().StringVarP(&key, "key", "k", "", "path to your key")
 	pinCommand.Flags().Int8VarP(&c, "cid", "c", 1, "CID version. 0 - CIDv0, 1 - CIDv1")
 	pinnedCommand.PersistentFlags().StringVarP(&key, "key", "k", "", "path to your key")
@@ -47,5 +47,5 @@ func Start() {
 	cobra.CheckErr(rootCmd.Execute())
 
 	// setting verbosity level
-	tp.V = v
+
 }

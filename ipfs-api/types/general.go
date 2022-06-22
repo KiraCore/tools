@@ -19,13 +19,13 @@ type ExtendedFileInfo struct {
 }
 
 var LogLevelMap = []logrus.Level{
-	1: logrus.TraceLevel,
-	2: logrus.DebugLevel,
-	3: logrus.InfoLevel,
-	4: logrus.WarnLevel,
-	5: logrus.ErrorLevel,
-	6: logrus.FatalLevel,
-	7: logrus.PanicLevel,
+	logrus.TraceLevel,
+	logrus.DebugLevel,
+	logrus.InfoLevel,
+	logrus.WarnLevel,
+	logrus.ErrorLevel,
+	logrus.FatalLevel,
+	logrus.PanicLevel,
 }
 
 var V int32

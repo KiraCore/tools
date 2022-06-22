@@ -1,0 +1,35 @@
+POST /pinning/pinFileToIPFS HTTP/1.1
+Host: api.pinata.cloud
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiIzNWRjZDc0OC1mMDE3LTQ0NjEtYTdiOC0wOGVkZDc3MDU2NzciLCJlbWFpbCI6InlhaWV2Z2VuaXlAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInBpbl9wb2xpY3kiOnsicmVnaW9ucyI6W3siaWQiOiJGUkExIiwiZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjF9XSwidmVyc2lvbiI6MX0sIm1mYV9lbmFibGVkIjpmYWxzZSwic3RhdHVzIjoiQUNUSVZFIn0sImF1dGhlbnRpY2F0aW9uVHlwZSI6InNjb3BlZEtleSIsInNjb3BlZEtleUtleSI6IjZkYzA3ZWQ0YjQ3MzBhZDBmYThmIiwic2NvcGVkS2V5U2VjcmV0IjoiYjgzMmQ0ZTk5MDBkNDBmM2MzODJjYTNkZjM0ZjkyZjNiNjBhMDY3YzllZDE2NWNlYzBhNjE4MWIxMzk5YzEyMiIsImlhdCI6MTY1NTcwNjk0Mn0.275ZMx9dEwInnfcKWtwSIAbtkyYNbwEQRm4bPS9vaVE
+Content-Type: multipart/form-data; boundary=83f6d30161a1d39fa9ac08789f63125115508a157b271a88f514de0d8347
+
+--83f6d30161a1d39fa9ac08789f63125115508a157b271a88f514de0d8347
+Content-Disposition: form-data; name="pinataOptions"
+
+{"wrapWithDirectory":false,"cidVersion":1,"regions":{}}
+--83f6d30161a1d39fa9ac08789f63125115508a157b271a88f514de0d8347
+Content-Disposition: form-data; name="pinataMetadata"
+
+{"name":"tra-la-la","keyvalues":null}
+--83f6d30161a1d39fa9ac08789f63125115508a157b271a88f514de0d8347
+Content-Disposition: form-data; name="file"; filename="test_dir/test_dir2/test_dir2/test_file2.txt"
+Content-Type: application/octet-stream
+
+
+--83f6d30161a1d39fa9ac08789f63125115508a157b271a88f514de0d8347
+Content-Disposition: form-data; name="file"; filename="test_dir/test_dir2/test_file2.txt"
+Content-Type: application/octet-stream
+
+
+--83f6d30161a1d39fa9ac08789f63125115508a157b271a88f514de0d8347
+Content-Disposition: form-data; name="file"; filename="test_dir/test_file.json"
+Content-Type: application/octet-stream
+
+{"wrapWithDirectory":false,"cidVersion":1,"regions":{}}
+
+--83f6d30161a1d39fa9ac08789f63125115508a157b271a88f514de0d8347
+Content-Disposition: form-data; name="file"; filename="test_dir/test_file1.txt"
+Content-Type: application/octet-stream
+
+
+--83f6d30161a1d39fa9ac08789f63125115508a157b271a88f514de0d8347--
