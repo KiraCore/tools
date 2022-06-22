@@ -156,7 +156,7 @@ func addForm(bw *multipart.Writer, filePath tp.ExtendedFileInfo) error {
 }
 
 //Wrapping HTML forms in the request body
-func createReqBody(filePaths []tp.ExtendedFileInfo) (string, io.Reader, error) {
+func createReqBody(args []string, filePaths []tp.ExtendedFileInfo) (string, io.Reader, error) {
 	// creating a pipe
 	pipeReader, pipeWriter := io.Pipe()
 	// creating writer for multipart request
@@ -167,6 +167,10 @@ func createReqBody(filePaths []tp.ExtendedFileInfo) (string, io.Reader, error) {
 		if err := setPinataOptions(bodyWriter, 1, false); err != nil {
 			log.Error("addform: failed to add pinataOptions to the for. %v", err)
 			os.Exit(1)
+		}
+		if len(args) > 1 {
+			bodyWriter.WriteField(tp.PINATAMETA, fmt.Sprintf(`{name: %v, keyvalues: {}}`, args[1]))
+
 		}
 
 		for _, filePath := range filePaths {
@@ -287,7 +291,7 @@ func Pin(args []string, keys tp.Keys) error {
 	filePaths := walker(path)
 
 	// creating requestbody
-	contType, reader, err := createReqBody(filePaths)
+	contType, reader, err := createReqBody(args, filePaths)
 	if err != nil {
 		log.Error("pin: failed to create body")
 		os.Exit(1)
