@@ -14,7 +14,7 @@ var (
 	meta      string
 	path      string
 	c         int8 // CID version integer representation
-	verbosity int8
+	verbosity bool
 )
 
 var rootCmd = &cobra.Command{
@@ -29,7 +29,7 @@ func Start() {
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
 
 	///Adding flags
-	rootCmd.PersistentFlags().Int8VarP(&verbosity, "verbose", "v", 0, "Verbosity of the output from 0..5 ")
+	rootCmd.PersistentFlags().BoolVarP(&verbosity, "verbose", "v", false, "Verbosity of the output from 0..5 ")
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		if err := ipfslog.SetDebugLvl(verbosity); err != nil {
 			os.Exit(1)
