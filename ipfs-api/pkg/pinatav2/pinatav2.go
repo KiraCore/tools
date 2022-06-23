@@ -38,6 +38,12 @@ type PinnedResponse struct {
 	Rows  []Rows `json:"rows,omitempty"`
 }
 
+type PinResponseJSONProd struct {
+	Duplicate bool   `json:"duplicate,omitempty"`
+	IpfsHash  string `json:"hash"`
+	Timestamp string `json:"timestamp"`
+	PinSize   int64  `json:"size"`
+}
 type PinResponseJSON struct {
 	Duplicate bool   `json:"isduplicate,omitempty"`
 	IpfsHash  string `json:"ipfshash"`

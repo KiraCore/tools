@@ -15,7 +15,7 @@ git clone https://github.com/KiraCore/tools.git
 Installation script:
 
 ```
-TOOLS_VERSION="v0.2.1" && rm -rfv /tmp/ipfs-api && \
+TOOLS_VERSION="v0.2.2" && rm -rfv /tmp/ipfs-api && \
  safeWget /tmp/ipfs-api.deb "https://github.com/KiraCore/tools/releases/download/$TOOLS_VERSION/ipfs-api-$(getPlatform)-$(getArch).deb" "$KIRA_COSIGN_PUB" && \
  dpkg-deb -x /tmp/ipfs-api.deb /tmp/ipfs-api && cp -fv "/tmp/ipfs-api/bin/ipfs-api" /usr/local/bin/ipfs-api && chmod -v 755 /usr/local/bin/ipfs-api && \
  ipfs-api version

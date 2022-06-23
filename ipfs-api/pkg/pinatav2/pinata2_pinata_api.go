@@ -279,7 +279,8 @@ func (p *PinataApi) OutputPinJson() error {
 	if err := json.Unmarshal(p.resp, &s); err != nil {
 		return err
 	}
-	j, err := json.Marshal(s)
+	s2 := PinResponseJSONProd(s)
+	j, err := json.Marshal(s2)
 	if err != nil {
 		return err
 	}
@@ -287,6 +288,9 @@ func (p *PinataApi) OutputPinJson() error {
 	return nil
 }
 func (p *PinataApi) OutputPinnedJson() error {
+	if p.respCode != http.StatusOK {
+		return errors.New("something failed")
+	}
 	s := PinnedResponse{}
 	if err := json.Unmarshal(p.resp, &s); err != nil {
 		return err
@@ -300,6 +304,9 @@ func (p *PinataApi) OutputPinnedJson() error {
 }
 
 func (p *PinataApi) OutputTestJson() error {
+	if p.respCode != http.StatusOK {
+		return errors.New("something failed")
+	}
 	s := TestResponse{}
 	if err := json.Unmarshal(p.resp, &s); err != nil {
 		return err
@@ -312,6 +319,9 @@ func (p *PinataApi) OutputTestJson() error {
 	return nil
 }
 func (p *PinataApi) OutputUnpinJson() error {
+	if p.respCode != http.StatusOK {
+		return errors.New("something failed")
+	}
 	s := UnpinResponse{}
 	if err := json.Unmarshal(p.resp, &s); err != nil {
 		return err
