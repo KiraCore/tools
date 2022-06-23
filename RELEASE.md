@@ -1,4 +1,4 @@
 Features:
-* fix metadat, log
+* fix ipfs-api refactored
 
  

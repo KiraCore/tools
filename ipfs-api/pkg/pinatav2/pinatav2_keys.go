@@ -3,6 +3,7 @@ package pinatav2
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"io/fs"
 	"os"
 	"strings"
@@ -10,26 +11,12 @@ import (
 	log "github.com/kiracore/tools/ipfs-api/pkg/ipfslog"
 )
 
-// Secured keys struct. Can't be changed anywhere.
-// Should only be passed as a copy.
-type Keys struct {
-	api_key    string
-	api_secret string
-	jwt        string
-}
-
-// Structure for parsing keys provided in json
-// Should only be passed as a copy.
-type KeysJSON struct {
-	Api_key    string `json:"api_key,omitempty"`
-	Api_secret string `json:"api_secret,omitempty"`
-	Jwt        string `json:"jwt,omitempty"`
-}
-
-
-
 func (k Keys) Add(key string, secret string, jwt string) Keys {
 	return Keys{api_key: key, api_secret: secret, jwt: jwt}
+}
+
+func (k Keys) Check() bool {
+	return k.set
 }
 
 func keyFromFile(path string, fi fs.FileInfo) (Keys, error) {
@@ -69,8 +56,11 @@ func keyFromFile(path string, fi fs.FileInfo) (Keys, error) {
 				return keys, err
 			}
 		}
-
-		return keys.Add(res[0], res[1], res[2]), nil
+		if len(res) > 1 {
+			return keys.Add(res[0], res[1], res[2]), nil
+		} else {
+			return keys.Add("", "", res[0]), nil
+		}
 
 	}
 }
@@ -84,7 +74,7 @@ func keyFromString(key string) (Keys, error) {
 
 	if len(k1) > 2 || len(k2) > 2 {
 		log.Error("keyFromString: format incorrect. expect: | key secret | key,secret | key, secret |")
-		os.Exit(1)
+		return Keys{set: false}, errors.New("keyFromString: format incorrect. expect: | key secret | key,secret | key, secret |")
 	}
 
 	if len(k2) > 1 {
@@ -102,14 +92,17 @@ func keyFromString(key string) (Keys, error) {
 }
 
 // grabKey chooses source to parse and provide keys
-func grabKey(key string) (Keys, error) {
+func GrabKey(key string) (Keys, error) {
 	if key == "" {
 		log.Error("grabKey: key can't be empty")
-		os.Exit(1)
+		return Keys{set: false}, errors.New("grabKey: key can't be empty")
+
 	}
 	if fi, err := os.Stat(key); err == nil {
-
-		return keyFromFile(key, fi)
+		if !fi.IsDir() {
+			return keyFromFile(key, fi)
+		}
+		return Keys{set: false}, err
 	} else {
 
 		return keyFromString(key)
