@@ -4,19 +4,51 @@ package pinatav2
 import (
 	"io/fs"
 	"net/http"
+	"time"
 )
+
+type UnpinResponse struct {
+	Success bool      `json:"success"`
+	Hash    string    `json:"hash"`
+	Time    time.Time `json:"time"`
+}
+
+type TestResponse struct {
+	Message string `json:"message"`
+}
+type Regions struct {
+	RegionId  string `json:"regionId,omitempty"`
+	CurrentRC int16  `json:"currentReplicationCount,omitempty"`
+	DesiredRC int16  `json:"desiredReplicationCount,omitempty"`
+}
+
+type Rows struct {
+	Id        string             `json:"id,omitempty"`
+	CID       string             `json:"ipfs_pin_hash,omitempty"`
+	UserId    string             `json:"user_id,omitempty"`
+	Size      int64              `json:"size,omitempty"`
+	Date      time.Time          `json:"date_pinned,omitempty"`
+	DateUnpin time.Time          `json:"date_unpinned,omitempty"`
+	Metadata  PinataMetadataJSON `json:"metadata,omitempty"`
+	Regions   []Regions          `json:"regions,omitempty"`
+}
+
+type PinnedResponse struct {
+	Count int32  `json:"count,omitempty"`
+	Rows  []Rows `json:"rows,omitempty"`
+}
 
 type PinResponseJSON struct {
 	Duplicate bool   `json:"isduplicate,omitempty"`
-	IpfsHash  string `json:"hash"`
+	IpfsHash  string `json:"ipfshash"`
 	Timestamp string `json:"timestamp"`
 	PinSize   int64  `json:"pinsize"`
 }
 type PinResponse struct {
-	duplicate bool   `json:"isDuplicate,omitempty"`
-	ipfsHash  string `json:"ipfshash"`
-	timestamp string `json:"timestamp"`
-	pinSize   int64  `json:"pinsize"`
+	duplicate bool
+	ipfsHash  string
+	timestamp string
+	pinSize   int64
 }
 
 type PinataMetadataJSON struct {
@@ -25,21 +57,21 @@ type PinataMetadataJSON struct {
 }
 
 type PinataMetadata struct {
-	name      string            `json:"name"`
-	keyValues map[string]string `json:"keyvalues"`
+	name      string
+	keyValues map[string]string
 }
 
 type RegionsJSON struct {
-	RegionId  string `json:"regionId,omitempty"`
-	CurrentRC int16  `json:"currentReplicationCount,omitempty"`
-	DesiredRC int16  `json:"desiredReplicationCount,omitempty"`
+	RegionId  string `json:"regionid,omitempty"`
+	CurrentRC int16  `json:"currentreplicationcount,omitempty"`
+	DesiredRC int16  `json:"desiredreplicationcount,omitempty"`
 }
 
-type Regions struct {
-	regionId  string `json:"regionId,omitempty"`
-	currentRC int16  `json:"currentReplicationCount,omitempty"`
-	desiredRC int16  `json:"desiredReplicationCount,omitempty"`
-}
+// type Regions struct {
+// 	regionId  string
+// 	currentRC int16
+// 	desiredRC int16
+// }
 
 type PinataOptionsJSON struct {
 	WrapWithDirectory bool    `json:"wrapWithDirectory"` // Adds availability to address dir name instead of hash

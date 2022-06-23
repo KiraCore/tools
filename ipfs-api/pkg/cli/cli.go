@@ -2,6 +2,9 @@
 package cli
 
 import (
+	"os"
+
+	"github.com/kiracore/tools/ipfs-api/pkg/ipfslog"
 	"github.com/spf13/cobra"
 )
 
@@ -11,7 +14,7 @@ var (
 	meta      string
 	path      string
 	c         int8 // CID version integer representation
-	verbosity int32
+	verbosity int8
 )
 
 var rootCmd = &cobra.Command{
@@ -26,7 +29,13 @@ func Start() {
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
 
 	///Adding flags
-	rootCmd.PersistentFlags().Int32VarP(&verbosity, "verbose", "v", 0, "Verbosity of the output from 0..5 ")
+	rootCmd.PersistentFlags().Int8VarP(&verbosity, "verbose", "v", 0, "Verbosity of the output from 0..5 ")
+	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		if err := ipfslog.SetDebugLvl(verbosity); err != nil {
+			os.Exit(1)
+		}
+		return nil
+	}
 	pinCommand.PersistentFlags().StringVarP(&key, "key", "k", "", "path to your key")
 	pinCommand.Flags().Int8VarP(&c, "cid", "c", 1, "CID version. 0 - CIDv0, 1 - CIDv1")
 	pinnedCommand.PersistentFlags().StringVarP(&key, "key", "k", "", "path to your key")

@@ -54,7 +54,7 @@ func (p *PinataApi) Test() error {
 		log.Debug("Ipfs-api: test: invalid request: %v", err)
 		return err
 	}
-	p.request.dump = *req
+
 	resp, err := p.client.Do(req)
 	if err != nil {
 		log.Debug("Ipfs-api: test: invalid response: %v", err)
@@ -62,15 +62,55 @@ func (p *PinataApi) Test() error {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode == http.StatusOK {
-		bytes, err := io.ReadAll(resp.Body)
-		if err != nil {
-			log.Debug("Ipfs-api: test: failed to read response: %v", err)
-			return err
-		}
-		fmt.Println(string(bytes))
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
 	}
+	p.SaveResp(b)
+	p.SetRespCode(resp.StatusCode)
 
+	return nil
+}
+
+func (p *PinataApi) Unpin(hash string) error {
+	req, err := p.request.Del(tp.BASE_URL + tp.UNPIN)
+	if err != nil {
+		return err
+	}
+	resp, err := p.client.Do(req)
+	if err != nil {
+		log.Debug("Ipfs-api: test: invalid response: %v", err)
+		return err
+	}
+	defer resp.Body.Close()
+
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	p.SaveResp(b)
+	p.SetRespCode(resp.StatusCode)
+	return nil
+}
+
+func (p *PinataApi) Pinned(hash string) error {
+	req, err := p.request.Get(tp.BASE_URL + tp.PINNEDDATA)
+	if err != nil {
+		return err
+	}
+	resp, err := p.client.Do(req)
+	if err != nil {
+		log.Debug("Ipfs-api: test: invalid response: %v", err)
+		return err
+	}
+	defer resp.Body.Close()
+
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	p.SaveResp(b)
+	p.SetRespCode(resp.StatusCode)
 	return nil
 }
 
@@ -113,29 +153,12 @@ func (p *PinataApi) Pin(path string) error {
 	}
 	defer resp.Body.Close()
 
-	b, _ := io.ReadAll(resp.Body)
-	p.SaveResp(b)
-	p.SetRespCode(resp.StatusCode)
-	pr := PinResponseJSON{}
-	if err := json.Unmarshal(b, &pr); err != nil {
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
 		return err
 	}
-
-	if resp.StatusCode == http.StatusOK {
-
-		if err != nil {
-			log.Debug("Ipfs-api: test: failed to read response: %v", err)
-			return err
-		}
-		j, err := json.Marshal(pr)
-		if err != nil {
-			return err
-		}
-		fmt.Println(string(j))
-	} else {
-		fmt.Println(string(b))
-	}
-
+	p.SaveResp(b)
+	p.SetRespCode(resp.StatusCode)
 	return nil
 }
 
@@ -249,4 +272,54 @@ func (p *PinataApi) SetRespCode(code int) {
 }
 func (p *PinataApi) SaveResp(resp []byte) {
 	p.resp = resp
+}
+
+func (p *PinataApi) OutputPinJson() error {
+	s := PinResponseJSON{}
+	if err := json.Unmarshal(p.resp, &s); err != nil {
+		return err
+	}
+	j, err := json.Marshal(s)
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(j))
+	return nil
+}
+func (p *PinataApi) OutputPinnedJson() error {
+	s := PinnedResponse{}
+	if err := json.Unmarshal(p.resp, &s); err != nil {
+		return err
+	}
+	j, err := json.Marshal(s)
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(j))
+	return nil
+}
+
+func (p *PinataApi) OutputTestJson() error {
+	s := TestResponse{}
+	if err := json.Unmarshal(p.resp, &s); err != nil {
+		return err
+	}
+	j, err := json.Marshal(s)
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(j))
+	return nil
+}
+func (p *PinataApi) OutputUnpinJson() error {
+	s := UnpinResponse{}
+	if err := json.Unmarshal(p.resp, &s); err != nil {
+		return err
+	}
+	j, err := json.Marshal(s)
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(j))
+	return nil
 }

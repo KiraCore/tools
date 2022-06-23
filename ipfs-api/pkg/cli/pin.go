@@ -1,7 +1,7 @@
 package cli
 
 import (
-	"fmt"
+	"os"
 
 	log "github.com/kiracore/tools/ipfs-api/pkg/ipfslog"
 	pnt "github.com/kiracore/tools/ipfs-api/pkg/pinatav2"
@@ -51,9 +51,8 @@ func pinCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	p := pnt.PinataApi{}
-	fmt.Println(meta, path)
 	p.SetKeys(keys)
-	p.Dump()
+
 	switch len(args) {
 	case 1:
 		{
@@ -70,6 +69,10 @@ func pinCmd(cmd *cobra.Command, args []string) error {
 				log.Error("pin failed %v", err)
 			}
 		}
+	}
+	if err := p.OutputPinJson(); err != nil {
+		log.Error("failed to print results: %v", err)
+		os.Exit(1)
 	}
 
 	return nil

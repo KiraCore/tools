@@ -40,7 +40,7 @@ type Rows struct {
 	Id        string         `json:"id,omitempty"`
 	CID       string         `json:"ipfs_pin_hash,omitempty"`
 	UserId    string         `json:"user_id,omitempty"`
-	Size      int16          `json:"size,omitempty"`
+	Size      int64          `json:"size,omitempty"`
 	Date      time.Time      `json:"date_pinned,omitempty"`
 	DateUnpin time.Time      `json:"date_unpinned,omitempty"`
 	Metadata  PinataMetadata `json:"metadata,omitempty"`
