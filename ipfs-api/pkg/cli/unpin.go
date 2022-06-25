@@ -17,11 +17,18 @@ func unpin(cmd *cobra.Command, args []string) error {
 	keys, _ := pnt.GrabKey(key)
 	p := pnt.PinataApi{}
 	p.SetKeys(keys)
-	err := p.Unpin(args[0])
-	if err != nil {
-		return err
-	}
-	p.OutputUnpinJson()
-	return nil
 
+	if pnt.ValidateCid(args[0]) {
+		err := p.Unpin(args[0])
+		if err != nil {
+			return err
+		}
+		p.OutputUnpinJson()
+	} else {
+		err := p.Pinned(args[0])
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

@@ -59,14 +59,19 @@ func pinCmd(cmd *cobra.Command, args []string) error {
 			err := p.Pin(args[0])
 			if err != nil {
 				log.Error("pin failed %v", err)
+				return err
 			}
 		}
 	case 2:
 		{
-			p.SetMetaName(args[1])
+			if err := p.SetMetaName(args[1]); err != nil {
+				log.Error("failed to add metadata %v", err)
+				return err
+			}
 			err := p.Pin(args[0])
 			if err != nil {
 				log.Error("pin failed %v", err)
+				return err
 			}
 		}
 	}
