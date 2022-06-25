@@ -14,12 +14,21 @@ import (
 	"net/textproto"
 	"time"
 
+	cid "github.com/ipfs/go-cid"
 	log "github.com/kiracore/tools/ipfs-api/pkg/ipfslog"
 	tp "github.com/kiracore/tools/ipfs-api/types"
 	"golang.org/x/net/http2"
 )
 
 // Setting new client for an Api
+func ValidateCid(hash string) bool {
+	_, err := cid.Decode(hash)
+	if err != nil {
+		return false
+	}
+	return true
+}
+
 func (p *PinataApi) newClient() {
 
 	// Client params to be adjusted ...
@@ -94,10 +103,17 @@ func (p *PinataApi) Unpin(hash string) error {
 }
 
 func (p *PinataApi) Pinned(hash string) error {
-	req, err := p.request.Get(tp.BASE_URL + tp.PINNEDDATA)
+	url := Url{}
+	if ValidateCid(hash) {
+		url.Set(tp.BASE_URL + tp.PINNEDDATA + "/?status=pinned&hashContains=" + hash)
+	} else {
+		url.Set(tp.BASE_URL + tp.PINNEDDATA + "/?status=pinned&metadata[name]=" + hash)
+	}
+	req, err := p.request.Get(url.Get())
 	if err != nil {
 		return err
 	}
+
 	resp, err := p.client.Do(req)
 	if err != nil {
 		log.Debug("Ipfs-api: test: invalid response: %v", err)
@@ -111,10 +127,13 @@ func (p *PinataApi) Pinned(hash string) error {
 	}
 	p.SaveResp(b)
 	p.SetRespCode(resp.StatusCode)
+
 	return nil
 }
 
 func (p *PinataApi) Pin(path string) error {
+	// Return response as a struct. Clone output logic to
+	// response struct
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		log.Error("pin: provided path doesn't exist")
 		return err
@@ -216,11 +235,9 @@ func (p *PinataApi) SetOpts(c int8, b bool) error {
 	} else {
 		return errors.New("CID version should be 0 or 1")
 	}
-	if b && !b {
-		p.opts.wrapWithDirectory = b
-	} else {
-		return errors.New("accept bool value true or false")
-	}
+
+	p.opts.wrapWithDirectory = b
+
 	return nil
 }
 
@@ -247,7 +264,20 @@ func (p *PinataApi) GetMeta() string {
 }
 
 func (p *PinataApi) SetMetaName(n string) error {
-	if len(n) != 0 && len(n) <= 250 {
+	if len(n) != 0 && len(n) <= 245 {
+		err := p.Pinned(n)
+		if err != nil {
+			return err
+		}
+		s := PinnedResponse{}
+		if err := json.Unmarshal(p.resp, &s); err != nil {
+			return err
+		}
+		if s.Count != 0 {
+			log.Error("SetMetaName: name exist")
+			return errors.New("name already exist")
+		}
+
 		p.meta.name = n
 		return nil
 	} else {
@@ -332,4 +362,12 @@ func (p *PinataApi) OutputUnpinJson() error {
 	}
 	fmt.Println(string(j))
 	return nil
+}
+
+func (u *Url) Set(url string) {
+	u.url = url
+}
+
+func (u *Url) Get() string {
+	return u.url
 }

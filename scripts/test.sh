@@ -25,9 +25,9 @@ cd ./tmkms-key-import
 make test
 cd $WORKDIR
 
-# Test tm key importer
+# Test ipfs-api
 cd ./ipfs-api
-make test
+make test 
 cd $WORKDIR
 
 echoInfo "SUCCESS: Testing finished"

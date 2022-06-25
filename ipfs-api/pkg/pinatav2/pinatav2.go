@@ -34,8 +34,8 @@ type Rows struct {
 }
 
 type PinnedResponse struct {
-	Count int32  `json:"count,omitempty"`
-	Rows  []Rows `json:"rows,omitempty"`
+	Count int32  `json:"count"`
+	Rows  []Rows `json:"rows"`
 }
 
 type PinResponseJSONProd struct {
@@ -78,6 +78,14 @@ type RegionsJSON struct {
 // 	currentRC int16
 // 	desiredRC int16
 // }
+
+type Url struct {
+	url string
+}
+type Query struct {
+	Hash string `url:"metadata[name],omitempty"`
+	Meta string `url:"metadata[name],omitempty"`
+}
 
 type PinataOptionsJSON struct {
 	WrapWithDirectory bool    `json:"wrapWithDirectory"` // Adds availability to address dir name instead of hash
