@@ -82,15 +82,45 @@ func (p *PinataApi) Test() error {
 }
 
 func (p *PinataApi) Unpin(hash string) error {
-	req, err := p.request.Del(tp.BASE_URL + tp.UNPIN)
+	url := Url{}
+	if ValidateCid(hash) {
+		url.Set(tp.BASE_URL + tp.UNPIN + "/" + hash)
+		log.Debug("unpin: url: %v", url.Get())
+	} else {
+		err := p.Pinned(hash)
+		if err != nil {
+			return err
+		}
+		s := PinnedResponse{}
+		if err := json.Unmarshal(p.resp, &s); err != nil {
+			log.Error("unpin: failed to unmarshal")
+			return err
+		}
+
+		switch s.Count {
+		case 0:
+			return fmt.Errorf(`not found. data with name %s doesn't exist`, hash)
+		case 1:
+			url.Set(tp.BASE_URL + tp.UNPIN + "/" + s.Rows[0].CID) //TODO: refactor
+			p.SetData(s.Rows[0].CID)
+
+		default:
+			return errors.New("more than one result returned")
+		}
+
+	}
+
+	req, err := p.request.Del(url.Get())
+
 	if err != nil {
 		return err
 	}
 	resp, err := p.client.Do(req)
 	if err != nil {
-		log.Debug("Ipfs-api: test: invalid response: %v", err)
+
 		return err
 	}
+
 	defer resp.Body.Close()
 
 	b, err := io.ReadAll(resp.Body)
@@ -98,7 +128,9 @@ func (p *PinataApi) Unpin(hash string) error {
 		return err
 	}
 	p.SaveResp(b)
+
 	p.SetRespCode(resp.StatusCode)
+
 	return nil
 }
 
@@ -307,11 +339,13 @@ func (p *PinataApi) SaveResp(resp []byte) {
 func (p *PinataApi) OutputPinJson() error {
 	s := PinResponseJSON{}
 	if err := json.Unmarshal(p.resp, &s); err != nil {
+		log.Error("failed to unmarshal in json")
 		return err
 	}
 	s2 := PinResponseJSONProd(s)
 	j, err := json.Marshal(s2)
 	if err != nil {
+		log.Error("failed to marshal")
 		return err
 	}
 	fmt.Println(string(j))
@@ -350,17 +384,17 @@ func (p *PinataApi) OutputTestJson() error {
 }
 func (p *PinataApi) OutputUnpinJson() error {
 	if p.respCode != http.StatusOK {
-		return errors.New("something failed")
+		return fmt.Errorf("server returned: %v", p.respCode)
+	} else {
+		s := UnpinResponse{Success: true, Hash: p.data, Time: time.Now()}
+		j, err := json.Marshal(s)
+		if err != nil {
+			log.Error("failed to marshal")
+			return err
+		}
+		fmt.Println(string(j))
 	}
-	s := UnpinResponse{}
-	if err := json.Unmarshal(p.resp, &s); err != nil {
-		return err
-	}
-	j, err := json.Marshal(s)
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(j))
+
 	return nil
 }
 
@@ -370,4 +404,8 @@ func (u *Url) Set(url string) {
 
 func (u *Url) Get() string {
 	return u.url
+}
+
+func (p *PinataApi) SetData(data string) {
+	p.data = data
 }
