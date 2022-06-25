@@ -1,6 +1,9 @@
 package cli
 
 import (
+	"errors"
+
+	log "github.com/kiracore/tools/ipfs-api/pkg/ipfslog"
 	pnt "github.com/kiracore/tools/ipfs-api/pkg/pinatav2"
 	"github.com/spf13/cobra"
 )
@@ -14,21 +17,28 @@ var unpinCommand = &cobra.Command{
 }
 
 func unpin(cmd *cobra.Command, args []string) error {
-	keys, _ := pnt.GrabKey(key)
+	if len(args) == 0 {
+		log.Error("pinned: empty arg")
+		return errors.New("args can't be empty")
+	}
+	keys, err := pnt.GrabKey(key)
+	if err != nil {
+		log.Error("failed to process keys")
+		return err
+	}
+
 	p := pnt.PinataApi{}
 	p.SetKeys(keys)
-
-	if pnt.ValidateCid(args[0]) {
-		err := p.Unpin(args[0])
-		if err != nil {
-			return err
-		}
-		p.OutputUnpinJson()
-	} else {
-		err := p.Pinned(args[0])
-		if err != nil {
-			return err
-		}
+	p.SetData(args[0])
+	if err := p.Unpin(args[0]); err != nil {
+		log.Error("unable to unpin: %v", err)
+		return err
 	}
+	err = p.OutputUnpinJson()
+	if err != nil {
+		log.Error("failed to print results")
+		return err
+	}
+
 	return nil
 }

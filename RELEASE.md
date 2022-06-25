@@ -1,6 +1,6 @@
 Features:
-* Added func to validate cid
-* Added tests to test the cid validation func
-* Added check if pinned by name and hash
-* Added precheck if metadata name exist on gateway
+* Added unpin logic to accept name and cid, as well as pre-check
+
+Fix:
+* ipfs-api cli verbosity description fix
 

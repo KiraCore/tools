@@ -136,6 +136,7 @@ type PinataApi struct {
 	walker   Walker
 	opts     PinataOptions
 	meta     PinataMetadata
+	data     string
 	resp     []byte
 	dump     bool
 	respCode int

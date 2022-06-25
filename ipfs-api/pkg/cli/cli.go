@@ -29,7 +29,7 @@ func Start() {
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
 
 	///Adding flags
-	rootCmd.PersistentFlags().BoolVarP(&verbosity, "verbose", "v", false, "Verbosity of the output from 0..5 ")
+	rootCmd.PersistentFlags().BoolVarP(&verbosity, "verbose", "v", false, "Verbosity level: if true log output or false - jsons and errors. ")
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		if err := ipfslog.SetDebugLvl(verbosity); err != nil {
 			os.Exit(1)

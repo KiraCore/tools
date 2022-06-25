@@ -16,6 +16,5 @@ var versionCommand = &cobra.Command{
 
 func cmdVersion(cmd *cobra.Command, args []string) error {
 	fmt.Println(tp.IpfsApiVersion)
-
 	return nil
 }
