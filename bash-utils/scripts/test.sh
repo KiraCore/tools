@@ -134,5 +134,57 @@ source $TEST_FILE
 [ "$BASH_UTIL_TEST_2" != "test" ]  && echoErr "ERROR: Expected 'BASH_UTIL_TEST_2' to be ':) Oo !', but got '$BASH_UTIL_TEST_2'" && exit 1
 
 #################################################################
+echoWarn "TEST: date2unix"
+
+TMP_DATE_1=$(date)
+TMP_DATE_1_RESULT_1=$(date2unix "$TMP_DATE_1")
+TMP_DATE_1_RESULT_2=$(echo "$TMP_DATE_1" | date2unix)
+
+( (! $(isNaturalNumber "$TMP_DATE_1_RESULT_1")) || [ $TMP_DATE_1_RESULT_1 -lt 1 ] || [ "$TMP_DATE_1_RESULT_1" != "$TMP_DATE_1_RESULT_2" ]  ) && \
+ echoErr "ERROR: Expected 'TMP_DATE_1_RESULT_1' to be greter than 0 and equal to 'TMP_DATE_1_RESULT_2', but got '$TMP_DATE_1_RESULT_1' && '$TMP_DATE_1_RESULT_2' from '$TMP_DATE_1'" && exit 1 || echoInfo "INFO: Test 1 passed"
+
+TMP_DATE_3="1970-01-01T00:00:00"
+TMP_DATE_3_EXPECTED="0"
+TMP_DATE_3_RESULT_1=$(date2unix "$TMP_DATE_3")
+TMP_DATE_3_RESULT_2=$(echo "$TMP_DATE_3" | date2unix)
+TMP_DATE_3_RESULT_3=$(date2unix "")
+TMP_DATE_3_RESULT_4=$(echo "" | date2unix)
+
+( (! $(isNaturalNumber "$TMP_DATE_3_RESULT_1")) || [ "${TMP_DATE_3_RESULT_1},${TMP_DATE_3_RESULT_2},${TMP_DATE_3_RESULT_3},${TMP_DATE_3_RESULT_4}" != "0,0,0,0" ] ) && \
+ echoErr "ERROR: Expected 'TMP_DATE_3_RESULT_1' to be equal to 'TMP_DATE_3_RESULT_2', 'TMP_DATE_3_RESULT_3', 'TMP_DATE_3_RESULT_4' and '$TMP_DATE_3_EXPECTED', but got '$TMP_DATE_3_RESULT_1', '$TMP_DATE_3_RESULT_2', '$TMP_DATE_3_RESULT_3' && '$TMP_DATE_3_RESULT_4' from '$TMP_DATE_3' && ''" && exit 1 || echoInfo "INFO: Test 2 passed"
+
+TMP_DATE_2="2022-06-24T11:35:30.636Z"
+TMP_DATE_2_EXPECTED="1656070530"
+TMP_DATE_2_RESULT_1=$(date2unix "$TMP_DATE_2")
+TMP_DATE_2_RESULT_2=$(echo "$TMP_DATE_2" | date2unix)
+
+( (! $(isNaturalNumber "$TMP_DATE_2_RESULT_1")) || [ $TMP_DATE_2_RESULT_1 -ne $TMP_DATE_2_EXPECTED ] || [ "$TMP_DATE_2_RESULT_1" != "$TMP_DATE_2_RESULT_2" ] ) && \
+ echoErr "ERROR: Expected 'TMP_DATE_2_RESULT_1' to be equal to 'TMP_DATE_2_RESULT_2' and '$TMP_DATE_2_EXPECTED', but got '$TMP_DATE_2_RESULT_1' && '$TMP_DATE_2_RESULT_2' from '$TMP_DATE_2'" && exit 1 || echoInfo "INFO: Test 3 passed"
+
+#################################################################
+echoWarn "TEST: versionToNumber"
+
+[[ $(versionToNumber "v1.2.3.4") -lt $(versionToNumber "v0.999.999.999") ]] && \
+ echoErr "ERROR: Version 'v1.2.3.4' must be greater than v0.999.999.999" && exit 1 || echoInfo "INFO: Test 1 passed"
+
+[[ $(versionToNumber "v0.2.3.4") -gt $(versionToNumber "v0.999.999.999") ]] && \
+ echoErr "ERROR: Version 'v0.2.3.4' must be less than v0.999.999.999" && exit 1 || echoInfo "INFO: Test 2 passed"
+
+[ "$(versionToNumber v1.2.3.4)" != "1000200030004" ] && \
+ echoErr "ERROR: Version 'v1.2.3.4' must be equal to 1000200030004, but got '$(versionToNumber v1.2.3.4)'" && exit 1 || echoInfo "INFO: Test 3 passed"
+
+[ "$(versionToNumber v1.2.3-rc.4)" != "1000200030004" ] && \
+ echoErr "ERROR: Version 'v1.2.3-rc.4' must be equal to 1000200030004, but got '$(versionToNumber v1.2.3-rc.4)'" && exit 1 || echoInfo "INFO: Test 4 passed"
+
+[ "$(versionToNumber v1.2.3-alpha.4)" != "1000200030004" ] && \
+ echoErr "ERROR: Version 'v1.2.3-alpha.4' must be equal to 1000200030004, but got '$(versionToNumber v1.2.3-alpha.4)'" && exit 1 || echoInfo "INFO: Test 5 passed"
+
+( [ "$(versionToNumber v1.2.3)" != "1000200030000" ] || "$(echo "1.2.3" | versionToNumber)" != "1000200030000" ]  ) && \
+ echoErr "ERROR: Version 'v1.2.3' must be equal to 1000200030004, but got '$(versionToNumber v1.2.3)'" && exit 1 || echoInfo "INFO: Test 6 passed"
+
+( [ "$(echo "" | versionToNumber)" != "0" ] || [ "$(versionToNumber "")" != "0" ] ) && \
+ echoErr "ERROR: Version '' must be equal to 0" && exit 1 || echoInfo "INFO: Test 7 passed"
+
+#################################################################
 
 echoInfo "INFO: Successsfully executed all bash-utils test cases, elapsed $(prettyTime $(timerSpan))"
