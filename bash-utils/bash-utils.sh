@@ -21,7 +21,7 @@ function bashUtilsVersion() {
 # this is default installation script for utils
 # ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
 function bashUtilsSetup() {
-    local BASH_UTILS_VERSION="v0.1.5"
+    local BASH_UTILS_VERSION="v0.2.5"
     if [ "$1" == "version" ] ; then
         echo "$BASH_UTILS_VERSION"
         return 0
@@ -194,7 +194,9 @@ function isVersion {
 }
 
 function date2unix() {
-    local DATE_TMP="$*" && DATE_TMP=$(echo "$DATE_TMP" | xargs 2> /dev/null || echo -n "")
+    local DATE_TMP=""
+    [ -z "$*" ] && DATE_TMP="$(timeout 1 cat 2> /dev/null || echo "")" || DATE_TMP="$*"
+    DATE_TMP=$(echo "$DATE_TMP" | xargs 2> /dev/null || echo -n "")
     if (! $(isNullOrWhitespaces "$DATE_TMP")) && (! $(isNaturalNumber $DATE_TMP)) ; then
         DATE_TMP=$(date -d "$DATE_TMP" +"%s" 2> /dev/null || echo "0")
     fi
@@ -229,7 +231,9 @@ function isFileEmpty() {
 
 # Example use case: [[ $(versionToNumber "v0.0.0.3") -lt $(versionToNumber "v1.0.0.2") ]] && echo true || echo false
 function versionToNumber() {
-    local version=$(echo "$1" | grep -o '[^-]*$' 2> /dev/null || echo "v0.0.0.0")
+    local version=""
+    [ -z "$1" ] && version="$(timeout 1 cat 2> /dev/null || echo "")" || version="$1"
+    version=$(echo "$version" | tr -d [a-z,A-Z] | sed "s/-././g" | sed "s/+/./g" | sed "s/-//g" | tr -d ' ')
     local major=$(echo $version | cut -d. -f1 | sed 's/[^0-9]*//g' 2> /dev/null || echo "0") && (! $(isNaturalNumber "$major")) && major=0
     local minor=$(echo $version | cut -d. -f2 | sed 's/[^0-9]*//g' 2> /dev/null || echo "0") && (! $(isNaturalNumber "$minor")) && minor=0
     local micro=$(echo $version | cut -d. -f3 | sed 's/[^0-9]*//g' 2> /dev/null || echo "0") && (! $(isNaturalNumber "$micro")) && micro=0
