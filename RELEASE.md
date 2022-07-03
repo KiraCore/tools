@@ -1,6 +1,7 @@
 Features:
-* Added unpin logic to accept name and cid, as well as pre-check
+* Added ```--overwrite``` flag
+* Added ```--force``` flag
+* Added ```--metadata``` flag
 
-Fix:
-* ipfs-api cli verbosity description fix
+
 

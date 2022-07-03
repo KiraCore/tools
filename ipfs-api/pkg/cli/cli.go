@@ -15,6 +15,8 @@ var (
 	path      string
 	c         int8 // CID version integer representation
 	verbosity bool
+	force     bool
+	overwrite bool
 )
 
 var rootCmd = &cobra.Command{
@@ -38,6 +40,10 @@ func Start() {
 	}
 	pinCommand.PersistentFlags().StringVarP(&key, "key", "k", "", "path to your key")
 	pinCommand.Flags().Int8VarP(&c, "cid", "c", 1, "CID version. 0 - CIDv0, 1 - CIDv1")
+	pinCommand.PersistentFlags().BoolVarP(&force, "force", "f", false, "force to change name if file/folder already exist (default false)")
+	pinCommand.PersistentFlags().BoolVarP(&overwrite, "overwrite", "o", false, "will delete and pin again given file/folder (default false)")
+	pinCommand.PersistentFlags().StringVarP(&meta, "metadata", "m", "", "additional metadata, coma-separated. Example: -m=key,value,key,value")
+
 	pinnedCommand.PersistentFlags().StringVarP(&key, "key", "k", "", "path to your key")
 	unpinCommand.PersistentFlags().StringVarP(&key, "key", "k", "", "path to your key")
 
