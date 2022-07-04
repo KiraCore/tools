@@ -225,6 +225,9 @@ jobs:
             uses: sigstore/cosign-installer@d6a3abf1bdea83574e28d40543793018b6035605
             with:
               cosign-release: 'v1.7.2'
+          # ref.: https://github.com/actions/checkout, v3.0.0
+          - name: Checkout repository
+            uses: actions/checkout@a12a3943b4bdde767164f792f33f40b04645d846
           - name: Download AMD64 artifacts
             # ref.: https://github.com/actions/download-artifact, v3.0.0
             uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741
@@ -272,6 +275,7 @@ jobs:
               echo "  Release ver.: ${{ env.RELEASE_VER }}"
               echo "Release exists: ${{ env.RELEASE_EXISTS }}"
               echo "   Pre-release: ${{ env.PRE_RELEASE }}"
+              echo "   Commit hash: ${{ github.sha }}"
           - name: Reject on error
             # ref.: https://github.com/andrewslotin/rummelsnuff, v1.1.0
             uses: andrewslotin/rummelsnuff@a0c9c1929f44eefff922aced1ee4dd64eddf12d6
@@ -302,6 +306,7 @@ jobs:
               ( startsWith(env.SOURCE_BRANCH, 'v') && contains(env.SOURCE_BRANCH, '.') )
             uses: softprops/action-gh-release@1e07f4398721186383de40550babbdf2b84acfc5
             with:
+              target_commitish: ${{ github.sha }}
               body_path: RELEASE.md
               tag_name: ${{ env.SOURCE_BRANCH }}
               name: ${{ env.SOURCE_BRANCH }}
@@ -386,9 +391,6 @@ jobs:
             run: |
               git config --global --add safe.directory /github/workspace
               git config --global --add safe.directory $PWD
-          # ref.: https://github.com/actions/checkout, v3.0.0
-          - name: Checkout repository
-            uses: actions/checkout@a12a3943b4bdde767164f792f33f40b04645d846
           - name: Create PR from a version branch to latest
             # ref. repo-sync/pull-request is broken, using cea2aj/pull-request instead
             uses: cea2aj/pull-request@84eb0c3478f13651e5649367941b867ca02d7926
