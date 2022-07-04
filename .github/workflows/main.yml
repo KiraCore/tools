@@ -233,14 +233,17 @@ jobs:
             uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741
             with:
               name: tools-bin-amd64
+              path: ./artifacts
           - name: Download ARM64 artifacts
             # ref.: https://github.com/actions/download-artifact, v3.0.0
             uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741
             with:
               name: tools-bin-arm64
+              path: ./artifacts
           - name: Inspecting & organizing artifacts
             run: |
               echo "(current dir): $PWD" && ls -l ./
+              cd ./artifacts
               tar xvf ./tools-bin-arm64.tar.gz && echo "(current dir): $PWD" && ls -l ./ && chmod -Rv 555 ./
               tar xvf ./tools-bin-amd64.tar.gz && echo "(current dir): $PWD" && ls -l ./ && chmod -Rv 555 ./
               RELEASE_VER=$(cat ./RELEASE.md | tac | grep -Fn -m 1 'Release Versions: ' | rev | cut -d ":" -f1 | rev | xargs | tr -dc '[:alnum:]\-\.' || echo '')
@@ -295,8 +298,9 @@ jobs:
               COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
             run: |
               echo "$KEY" > ../cosign.key
-              for FILE in *; do FILE_NAME=$(basename $FILE); cosign sign-blob --key=../cosign.key --output-signature=./${FILE_NAME}.sig ./$FILE_NAME; done
-              rm -fv ../cosign.key
+              cd ./artifacts
+              for FILE in *; do FILE_NAME=$(basename $FILE); cosign sign-blob --key=../../cosign.key --output-signature=./${FILE_NAME}.sig ./$FILE_NAME; done
+              shred -vzn 3 ../../cosign.key
           # ref: https://github.com/softprops/action-gh-release, v0.1.14
           # Release on merge only (push action) - this should run only once
           - name: Publish release
@@ -314,62 +318,62 @@ jobs:
               draft: false
               fail_on_unmatched_files: true
               files: |
-                ./tmconnect-linux-amd64.deb
-                ./tmconnect-linux-amd64.deb.sig
-                ./tmconnect-darwin-amd64.deb
-                ./tmconnect-darwin-amd64.deb.sig
-                ./tmconnect-windows-amd64.exe
-                ./tmconnect-windows-amd64.exe.sig
-                ./tmkms-key-import-linux-amd64
-                ./tmkms-key-import-linux-amd64.sig
-                ./validator-key-gen-linux-amd64.deb
-                ./validator-key-gen-linux-amd64.deb.sig
-                ./validator-key-gen-windows-amd64.exe
-                ./validator-key-gen-windows-amd64.exe.sig
-                ./validator-key-gen-darwin-amd64.deb
-                ./validator-key-gen-darwin-amd64.deb.sig
-                ./bip39gen-linux-amd64.deb
-                ./bip39gen-linux-amd64.deb.sig
-                ./bip39gen-windows-amd64.exe
-                ./bip39gen-windows-amd64.exe.sig
-                ./bip39gen-darwin-amd64.deb
-                ./bip39gen-darwin-amd64.deb.sig
-                ./tmconnect-linux-arm64.deb
-                ./tmconnect-linux-arm64.deb.sig
-                ./tmconnect-darwin-arm64.deb
-                ./tmconnect-darwin-arm64.deb.sig
-                ./tmconnect-windows-arm64.exe
-                ./tmconnect-windows-arm64.exe.sig
-                ./tmkms-key-import-linux-arm64
-                ./tmkms-key-import-linux-arm64.sig
-                ./validator-key-gen-linux-arm64.deb
-                ./validator-key-gen-linux-arm64.deb.sig
-                ./validator-key-gen-windows-arm64.exe
-                ./validator-key-gen-windows-arm64.exe.sig
-                ./validator-key-gen-darwin-arm64.deb
-                ./validator-key-gen-darwin-arm64.deb.sig
-                ./bip39gen-linux-arm64.deb
-                ./bip39gen-linux-arm64.deb.sig
-                ./bip39gen-windows-arm64.exe
-                ./bip39gen-windows-arm64.exe.sig
-                ./bip39gen-darwin-arm64.deb
-                ./bip39gen-darwin-arm64.deb.sig
-                ./ipfs-api-linux-arm64.deb
-                ./ipfs-api-linux-arm64.deb.sig
-                ./ipfs-api-windows-arm64.exe
-                ./ipfs-api-windows-arm64.exe.sig
-                ./ipfs-api-darwin-arm64.deb
-                ./ipfs-api-darwin-arm64.deb.sig
-                ./ipfs-api-linux-amd64.deb
-                ./ipfs-api-linux-amd64.deb.sig
-                ./ipfs-api-windows-amd64.exe
-                ./ipfs-api-windows-amd64.exe.sig
-                ./ipfs-api-darwin-amd64.deb
-                ./ipfs-api-darwin-amd64.deb.sig
-                ./bash-utils.sh
-                ./bash-utils.sh.sig
-                ./source-code.tar.gz
-                ./source-code.tar.gz.sig
+                ./artifacts/tmconnect-linux-amd64.deb
+                ./artifacts/tmconnect-linux-amd64.deb.sig
+                ./artifacts/tmconnect-darwin-amd64.deb
+                ./artifacts/tmconnect-darwin-amd64.deb.sig
+                ./artifacts/tmconnect-windows-amd64.exe
+                ./artifacts/tmconnect-windows-amd64.exe.sig
+                ./artifacts/tmkms-key-import-linux-amd64
+                ./artifacts/tmkms-key-import-linux-amd64.sig
+                ./artifacts/validator-key-gen-linux-amd64.deb
+                ./artifacts/validator-key-gen-linux-amd64.deb.sig
+                ./artifacts/validator-key-gen-windows-amd64.exe
+                ./artifacts/validator-key-gen-windows-amd64.exe.sig
+                ./artifacts/validator-key-gen-darwin-amd64.deb
+                ./artifacts/validator-key-gen-darwin-amd64.deb.sig
+                ./artifacts/bip39gen-linux-amd64.deb
+                ./artifacts/bip39gen-linux-amd64.deb.sig
+                ./artifacts/bip39gen-windows-amd64.exe
+                ./artifacts/bip39gen-windows-amd64.exe.sig
+                ./artifacts/bip39gen-darwin-amd64.deb
+                ./artifacts/bip39gen-darwin-amd64.deb.sig
+                ./artifacts/tmconnect-linux-arm64.deb
+                ./artifacts/tmconnect-linux-arm64.deb.sig
+                ./artifacts/tmconnect-darwin-arm64.deb
+                ./artifacts/tmconnect-darwin-arm64.deb.sig
+                ./artifacts/tmconnect-windows-arm64.exe
+                ./artifacts/tmconnect-windows-arm64.exe.sig
+                ./artifacts/tmkms-key-import-linux-arm64
+                ./artifacts/tmkms-key-import-linux-arm64.sig
+                ./artifacts/validator-key-gen-linux-arm64.deb
+                ./artifacts/validator-key-gen-linux-arm64.deb.sig
+                ./artifacts/validator-key-gen-windows-arm64.exe
+                ./artifacts/validator-key-gen-windows-arm64.exe.sig
+                ./artifacts/validator-key-gen-darwin-arm64.deb
+                ./artifacts/validator-key-gen-darwin-arm64.deb.sig
+                ./artifacts/bip39gen-linux-arm64.deb
+                ./artifacts/bip39gen-linux-arm64.deb.sig
+                ./artifacts/bip39gen-windows-arm64.exe
+                ./artifacts/bip39gen-windows-arm64.exe.sig
+                ./artifacts/bip39gen-darwin-arm64.deb
+                ./artifacts/bip39gen-darwin-arm64.deb.sig
+                ./artifacts/ipfs-api-linux-arm64.deb
+                ./artifacts/ipfs-api-linux-arm64.deb.sig
+                ./artifacts/ipfs-api-windows-arm64.exe
+                ./artifacts/ipfs-api-windows-arm64.exe.sig
+                ./artifacts/ipfs-api-darwin-arm64.deb
+                ./artifacts/ipfs-api-darwin-arm64.deb.sig
+                ./artifacts/ipfs-api-linux-amd64.deb
+                ./artifacts/ipfs-api-linux-amd64.deb.sig
+                ./artifacts/ipfs-api-windows-amd64.exe
+                ./artifacts/ipfs-api-windows-amd64.exe.sig
+                ./artifacts/ipfs-api-darwin-amd64.deb
+                ./artifacts/ipfs-api-darwin-amd64.deb.sig
+                ./artifacts/bash-utils.sh
+                ./artifacts/bash-utils.sh.sig
+                ./artifacts/source-code.tar.gz
+                ./artifacts/source-code.tar.gz.sig
           - name: Cleanup all resources
             if: always()
             shell: bash
