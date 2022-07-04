@@ -2,8 +2,10 @@
 package pinatav2
 
 import (
+	"errors"
 	"io/fs"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -56,7 +58,12 @@ type PinResponse struct {
 	timestamp string
 	pinSize   int64
 }
+type PinataPutMetadataJSON struct {
+	IpfsHash  string            `json:"ipfsPinHash"`
+	Name      string            `json:"name"`      // By default name of the file/directory
+	KeyValues map[string]string `json:"keyvalues"` // Some additional data
 
+}
 type PinataMetadataJSON struct {
 	Name      string            `json:"name"`      // By default name of the file/directory
 	KeyValues map[string]string `json:"keyvalues"` // Some additional data
@@ -140,4 +147,19 @@ type PinataApi struct {
 	resp     []byte
 	dump     bool
 	respCode int
+}
+
+func StrToMeta(meta string) (map[string]string, error) {
+	var n = make(map[string]string)
+	s := strings.Split(meta, ",")
+	l := len(s)
+	if l != 0 && l%2 == 0 {
+		for i := 0; i < l; i = i + 2 {
+			n[strings.TrimSpace(s[i])] = strings.TrimSpace(s[i+1])
+		}
+
+	} else {
+		return make(map[string]string), errors.New("number of key/value pairs should be equal")
+	}
+	return n, nil
 }

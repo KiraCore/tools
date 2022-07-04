@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"os"
 
 	log "github.com/kiracore/tools/ipfs-api/pkg/ipfslog"
@@ -27,24 +28,12 @@ var pinCommand = &cobra.Command{
 	RunE:  pinCmd,
 }
 
-// func pinCmd(cmd *cobra.Command, args []string) error {
-// 	if c != 1 && c != 0 {
-// 		log.Fatalln("CID version value should be 0 or 1")
-// 	}
-// 	keys, _ := grabKey(key)
-// 	tp.Opts = tp.PinataOptions{CidVersion: c, WrapWithDirectory: wd}
-// 	if err := pnt.Pin(args, keys); err != nil {
-// 		log.Fatalln("\033[31m", err)
-// 		os.Exit(1)
-// 	}
-// 	return nil
-// }
-// func checkName(cmd *cobra.Command, args []string) error {
-// 	keys, _ := grabKey(key)
-// 	pnt.GetHashByName(args, keys)
-// 	return nil
-// }
 func pinCmd(cmd *cobra.Command, args []string) error {
+	if overwrite && force {
+		log.Error("pinCmd: conflict: only one flag can be set")
+		return errors.New("conflict: only one flag can be set")
+	}
+
 	keys, err := pnt.GrabKey(key)
 	if err != nil {
 		log.Error("grabKey: failed to get keys: %v", err)
@@ -55,30 +44,102 @@ func pinCmd(cmd *cobra.Command, args []string) error {
 
 	switch len(args) {
 	case 1:
-		{
-			err := p.Pin(args[0])
-			if err != nil {
-				log.Error("pin failed %v", err)
-				return err
-			}
+		if force {
+			log.Error("pinCmd: can't force if metadata is not provided")
+			return errors.New("can't force if metadata is not provided")
 		}
-	case 2:
-		{
-			if err := p.SetMetaName(args[1]); err != nil {
-				log.Error("failed to add metadata %v", err)
-				return err
-			}
-			err := p.Pin(args[0])
+		if len(meta) > 0 {
+			m, err := pnt.StrToMeta(meta)
 			if err != nil {
-				log.Error("pin failed %v", err)
 				return err
 			}
+			p.SetMetaData(m)
 		}
-	}
-	if err := p.OutputPinJson(); err != nil {
-		log.Error("failed to print results: %v", err)
-		os.Exit(1)
-	}
 
+		err := p.Pin(args[0])
+		if err != nil {
+			log.Error("pin failed %v", err)
+			return err
+		}
+		if err := p.OutputPinJson(); err != nil {
+			log.Error("failed to print results: %v", err)
+			os.Exit(1)
+		}
+
+	case 2:
+		switch force {
+		case false:
+			switch overwrite {
+			case false:
+				if err := p.SetMetaName(args[1]); err != nil {
+					log.Error("failed to add metadata %v", err)
+					return err
+				}
+				if len(meta) > 0 {
+					m, err := pnt.StrToMeta(meta)
+					if err != nil {
+						return err
+					}
+					p.SetMetaData(m)
+				}
+				err := p.Pin(args[0])
+				if err != nil {
+					log.Error("pin failed %v", err)
+					return err
+				}
+				if err := p.OutputPinJson(); err != nil {
+					log.Error("failed to print results: %v", err)
+					os.Exit(1)
+				}
+			case true:
+				if err := p.SetMetaName(args[1]); err != nil {
+					p.Unpin(args[1])
+				}
+				if err := p.SetMetaName(args[1]); err != nil {
+					log.Error("failed to add metadata %v", err)
+					return err
+				}
+				if len(meta) > 0 {
+					m, err := pnt.StrToMeta(meta)
+					if err != nil {
+						return err
+					}
+					p.SetMetaData(m)
+				}
+
+				err := p.Pin(args[0])
+				if err != nil {
+					log.Error("pin failed %v", err)
+					return err
+				}
+
+			}
+		case true:
+			if len(meta) > 0 {
+				m, err := pnt.StrToMeta(meta)
+				if err != nil {
+					return err
+				}
+				p.SetMetaData(m)
+			}
+			err := p.Pin(args[0])
+			if err != nil {
+				log.Error("pin failed %v", err)
+				return err
+			}
+			o, err := p.OutputPinJsonObj()
+			if err != nil {
+				return err
+			}
+			if o.Duplicate {
+				err := p.SetMeta(o.IpfsHash, args[1])
+				if err != nil {
+					return err
+				}
+			}
+
+		}
+
+	}
 	return nil
 }

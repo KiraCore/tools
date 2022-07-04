@@ -33,3 +33,13 @@ func (r *Request) Post(url string, reader *io.Reader) (*http.Request, error) {
 	r.header.Init() //initialize header(adding keys)
 	return req, nil
 }
+
+func (r *Request) Put(url string, reader io.Reader) (*http.Request, error) {
+	req, err := http.NewRequest(http.MethodPut, url, reader)
+	if err != nil {
+		return req, err
+	}
+	r.header.header = req.Header
+	r.header.Init() //initialize header(adding keys)
+	return req, nil
+}

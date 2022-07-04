@@ -1,6 +1,7 @@
 package pinatav2
 
 import (
+	"bytes"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
@@ -223,6 +224,7 @@ func (p *PinataApi) createBody() (string, io.Reader, error) {
 		bw.WriteField(tp.PINATAOPTS, p.GetOpts())
 
 		if p.CheckMeta() {
+			log.Debug("meta available: will set %v", p.GetMeta())
 			bw.WriteField(tp.PINATAMETA, p.GetMeta())
 		}
 
@@ -294,7 +296,50 @@ func (p *PinataApi) GetMeta() string {
 	}
 	return string(j)
 }
+func (p *PinataApi) SetMeta(h string, n string) error {
+	r := PinataPutMetadataJSON{
+		IpfsHash:  h,
+		Name:      n,
+		KeyValues: p.meta.keyValues,
+	}
+	var buf bytes.Buffer
 
+	err := json.NewEncoder(&buf).Encode(r)
+	if err != nil {
+		log.Error("SetMeta: %s", err)
+		return err
+	}
+
+	req, err := p.request.Put(tp.BASE_URL+tp.METADATA_URL, &buf)
+	if err != nil {
+		return err
+	}
+	req.Header.Add("Content-Type", "application/json")
+
+	rd, err := httputil.DumpRequest(req, true)
+	if err != nil {
+		return err
+	}
+	f, err := os.Create("./dump.log")
+	if err != nil {
+		return err
+	}
+	f.Write(rd)
+	f.Close()
+
+	if resp, err := p.client.Do(req); err != nil {
+		return err
+	} else {
+		r, _ := io.ReadAll(resp.Body)
+		fmt.Println(string(r))
+	}
+
+	return nil
+
+}
+func (p *PinataApi) SetMetaData(m map[string]string) {
+	p.meta.keyValues = m
+}
 func (p *PinataApi) SetMetaName(n string) error {
 	if len(n) != 0 && len(n) <= 245 {
 		err := p.Pinned(n)
@@ -309,7 +354,7 @@ func (p *PinataApi) SetMetaName(n string) error {
 			log.Error("SetMetaName: name exist")
 			return errors.New("name already exist")
 		}
-
+		log.Debug("setting meta name to %s", n)
 		p.meta.name = n
 		return nil
 	} else {
@@ -334,6 +379,15 @@ func (p *PinataApi) SetRespCode(code int) {
 }
 func (p *PinataApi) SaveResp(resp []byte) {
 	p.resp = resp
+}
+func (p *PinataApi) OutputPinJsonObj() (PinResponseJSON, error) {
+	s := PinResponseJSON{}
+	if err := json.Unmarshal(p.resp, &s); err != nil {
+		log.Error("failed to unmarshal in json")
+		return PinResponseJSON{}, err
+	}
+	return s, nil
+
 }
 
 func (p *PinataApi) OutputPinJson() error {
