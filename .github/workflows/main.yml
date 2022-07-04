@@ -306,7 +306,7 @@ jobs:
             with:
               target_commitish: ${{ github.sha }}
               body_path: RELEASE.md
-              tag_name: ${{ env.SOURCE_BRANCH }}
+              tag_name: ${{ env.RELEASE_VER }}
               name: ${{ env.SOURCE_BRANCH }}
               prerelease: ${{ env.PRE_RELEASE }}
               draft: false
