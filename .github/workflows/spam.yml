@@ -35,6 +35,7 @@ jobs:
               VERSION_REGEX="^(v?)([0-9]+)\.([0-9]+)\.([0-9]+)(-?)([a-zA-Z]+)?(\.?([0-9]+)?)$"
               REPOSITORY_NAME=${{ github.event.repository.name }}
               RELEASE_VER=$(./scripts/version.sh) && echo "RELEASE_VER=$RELEASE_VER" >> $GITHUB_ENV
+              RELEASE_BRANCH="release/$RELEASE_VER" && echo "RELEASE_BRANCH=$RELEASE_BRANCH" >> $GITHUB_ENV
               SOURCE_BRANCH="$(echo ${{ env.REF_BRANCH }})" && echo "SOURCE_BRANCH=$SOURCE_BRANCH" >> $GITHUB_ENV
               DESTINATION_BRANCH="$(echo ${{ env.BASE_REF_BRANCH }})" && echo "DESTINATION_BRANCH=$DESTINATION_BRANCH" >> $GITHUB_ENV
               git ls-remote https://github.com/kiracore/$REPOSITORY_NAME | egrep -q "refs/tags/${RELEASE_VER}$" && echo "RELEASE_EXISTS=true" >> $GITHUB_ENV || echo "RELEASE_EXISTS=false" >> $GITHUB_ENV
@@ -79,7 +80,7 @@ jobs:
             uses: dessant/repo-lockdown@0b093279a77b44bbc38e85089b5463dd06b4aea4
             if: |
               ( startsWith(env.DESTINATION_BRANCH, 'release/v') && contains(env.DESTINATION_BRANCH, '.') ) &&
-              ( env.DESTINATION_BRANCH != env.RELEASE_VER )
+              ( env.DESTINATION_BRANCH != env.RELEASE_BRANCH )
             with:
               pr-labels: 'invalid'
               pr-comment: >
