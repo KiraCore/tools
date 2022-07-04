@@ -1,0 +1,17 @@
+name: "validator-key-gen"
+arch: "${ARCH}"
+platform: "${PLATFORM}"
+version: "${VERSION}"
+section: "default"
+priority: "extra"
+replaces:
+- validator-key-gen
+provides:
+- validator-key-gen
+maintainer: "KIRA <partners@kira.global>"
+description: "VALIDATOR-KEY-GEN is KIRA a tool enabling generation of the validator keys from mnemonic"
+homepage: "https://github.com/KiraCore/tools"
+license: "AGPL-3.0 license"
+contents:
+- src: ${SOURCE}
+  dst: ./bin/
