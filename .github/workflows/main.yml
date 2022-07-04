@@ -374,11 +374,8 @@ jobs:
             if: always()
             shell: bash
             run: |
-              set -x
-              chmod -R 666 ./
               shred -vzn 3 ../cosign.key || echo "WARNING: Failed to shred key file"
               rm -fv ../cosign.key
-              rm -rfv ./*
               echo "(current dir): $PWD" && ls -l ./
           # ref.: https://github.com/hmarr/auto-approve-action, v2.1.0
           - name: Approve pull request on success
