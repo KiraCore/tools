@@ -15,7 +15,7 @@ jobs:
       id-token: write
       pull-requests: write
     container: 
-      image: ghcr.io/kiracore/docker/base-image:v0.10.9
+      image: ghcr.io/kiracore/docker/base-image:v0.11.1
     steps:
           # Work around https://github.com/actions/checkout/issues/760
           - name: Add safe.directory
@@ -103,7 +103,7 @@ jobs:
       id-token: write
       pull-requests: write
     container: 
-      image: ghcr.io/kiracore/docker/base-image:v0.10.9
+      image: ghcr.io/kiracore/docker/base-image:v0.11.1
     steps:
           # Work around https://github.com/actions/checkout/issues/760
           - name: Add safe.directory
@@ -131,12 +131,12 @@ jobs:
           - name: Setup ENV variables & install bash-utils
             run: |
               set -x
+              set -e
               WORK_DIR=$PWD
               echo "(current dir): $WORK_DIR" && ls -l ./
               cd $WORK_DIR
               chmod -Rv 555 ./scripts ./bash-utils
               ./bash-utils/bash-utils.sh bashUtilsSetup
-              set +x
               RELEASE_VER="$(./scripts/version.sh)" && echo "RELEASE_VER=$RELEASE_VER" >> $GITHUB_ENV
               REPOSITORY_NAME="${{ github.event.repository.name }}" && echo "REPOSITORY_NAME=$REPOSITORY_NAME" >> $GITHUB_ENV
               git ls-remote https://github.com/kiracore/$REPOSITORY_NAME | egrep -q "refs/tags/${RELEASE_VER}$" && echo "RELEASE_EXISTS=true" >> $GITHUB_ENV || echo "RELEASE_EXISTS=false" >> $GITHUB_ENV
@@ -149,13 +149,14 @@ jobs:
           - name: Print debug data before build
             run: |
               . /etc/profile
-              go version
+              echo "     Source branch: $(bash-utils bashUtilsVersion)"
               echo "     Source branch: ${{ env.SOURCE_BRANCH }}"
               echo "Destination branch: ${{ env.DESTINATION_BRANCH }}"
               echo "        Event name: ${{ github.event_name }}"
               echo "   Repository name: ${{ env.REPOSITORY_NAME }}"
               echo "   Release version: ${{ env.RELEASE_VER }}"
               echo "    Release exists: ${{ env.RELEASE_EXISTS }}"
+              go version
           - name: Download AMD64 artifacts
             # ref.: https://github.com/actions/download-artifact, v3.0.0
             uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741
