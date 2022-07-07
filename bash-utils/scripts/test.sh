@@ -114,6 +114,7 @@ safeWget $SYSCTRL_DESTINATION \
  https://raw.githubusercontent.com/gdraheim/docker-systemctl-replacement/9cbe1a00eb4bdac6ff05b96ca34ec9ed3d8fc06c/files/docker/systemctl.py \
  "e02e90c6de6cd68062dadcc6a20078c34b19582be0baf93ffa7d41f5ef0a1fdd"
 
+chmod -v 555 $SYSCTRL_DESTINATION
 systemctl2 version
 
 #################################################################
@@ -184,6 +185,58 @@ echoWarn "TEST: versionToNumber"
 
 ( [ "$(echo "" | versionToNumber)" != "0" ] || [ "$(versionToNumber "")" != "0" ] ) && \
  echoErr "ERROR: Version '' must be equal to 0" && exit 1 || echoInfo "INFO: Test 7 passed"
+
+#################################################################
+echoWarn "TEST: setTomlVar"
+
+cat > ./test.toml << EOL
+aaa = "aaa"
+b = 2
+cc_cc = true
+ddd = [ "aaa", "b", "cc_cc", ]
+
+[tag]
+aaa = "aaa"
+b = 2
+cc_cc = true
+ddd = "empty test"
+
+[tag_2]
+aaa = "aaa"
+b = 2
+cc_cc = true
+ddd = "whitespace test"
+EOL
+
+cat > ./expected.toml << EOL
+aaa = "Hello World"
+b = 2
+cc_cc = true
+ddd = [ "aaa", "b2", "cc_cc", ]
+
+[tag]
+aaa = "aaa"
+b = 3
+cc_cc = true
+ddd = ""
+
+[tag_2]
+aaa = "aaa"
+b = -4
+cc_cc = false
+ddd = "   "
+EOL
+
+setTomlVar "" aaa "Hello World" ./test.toml
+setTomlVar "" ddd '[ "aaa", "b2", "cc_cc", ]' ./test.toml
+setTomlVar "[tag]" b 3 ./test.toml
+setTomlVar "[tag]" ddd "" ./test.toml
+setTomlVar "[tag_2]" b -4 ./test.toml
+setTomlVar "[tag_2]" cc_cc false ./test.toml
+setTomlVar "[tag_2]" ddd "   " ./test.toml
+
+[ "$(sha256 ./test.toml)" != "$(sha256 ./expected.toml)" ] && \
+ echoNErr "\nERROR: Expected ' ./test.toml' to have a hash '$(sha256 ./test.toml)', but got '$(sha256 ./expected.toml)':\n$(cat ./test.toml)\n" && exit 1 || echoInfo "INFO: Test 1 passed"
 
 #################################################################
 
