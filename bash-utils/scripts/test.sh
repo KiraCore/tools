@@ -186,5 +186,57 @@ echoWarn "TEST: versionToNumber"
  echoErr "ERROR: Version '' must be equal to 0" && exit 1 || echoInfo "INFO: Test 7 passed"
 
 #################################################################
+echoWarn "TEST: setTomlVar"
+
+cat > ./test.toml << EOL
+aaa = "aaa"
+b = 2
+cc_cc = true
+ddd = [ "aaa", "b", "cc_cc", ]
+
+[tag]
+aaa = "aaa"
+b = 2
+cc_cc = true
+ddd = "empty test"
+
+[tag_2]
+aaa = "aaa"
+b = 2
+cc_cc = true
+ddd = "whitespace test"
+EOL
+
+cat > ./expected.toml << EOL
+aaa = "Hello World"
+b = 2
+cc_cc = true
+ddd = [ "aaa", "b2", "cc_cc", ]
+
+[tag]
+aaa = "aaa"
+b = 3
+cc_cc = true
+ddd = ""
+
+[tag_2]
+aaa = "aaa"
+b = -4
+cc_cc = false
+ddd = "   "
+EOL
+
+setTomlVar "" aaa "Hello World" ./test.toml
+setTomlVar "" ddd '[ "aaa", "b2", "cc_cc", ]' ./test.toml
+setTomlVar "[tag]" b 3 ./test.toml
+setTomlVar "[tag]" ddd "" ./test.toml
+setTomlVar "[tag_2]" b -4 ./test.toml
+setTomlVar "[tag_2]" cc_cc false ./test.toml
+setTomlVar "[tag_2]" ddd "   " ./test.toml
+
+[ "$(sha256 ./test.toml)" != "$(sha256 ./expected.toml)" ] && \
+ echoNErr "\nERROR: Expected ' ./test.toml' to have a hash '$(sha256 ./test.toml)', but got '$(sha256 ./expected.toml)':\n$(cat ./test.toml)\n" && exit 1 || echoInfo "INFO: Test 1 passed"
+
+#################################################################
 
 echoInfo "INFO: Successsfully executed all bash-utils test cases, elapsed $(prettyTime $(timerSpan))"

@@ -1,7 +1,5 @@
 Features:
-* Added ```--overwrite``` flag
-* Added ```--force``` flag
-* Added ```--metadata``` flag
+* Added `strLength, strStartsWith, strEndsWith, setTomlVar` to bash-utils
 
 
 

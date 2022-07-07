@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# QUICK EDIT: FILE="/usr/local/bin/bash-utils.sh" && rm $FILE && nano $FILE && chmod 555 $FILE
+# QUICK EDIT: FILE="/tmp/bash-utils.sh" && rm -fv $FILE && nano $FILE && chmod 555 $FILE && /tmp/bash-utils.sh bashUtilsSetup
 # NOTE: For this script to work properly the KIRA_GLOBS_DIR env variable should be set to "/var/kiraglob" or equivalent & the directory should exist
 REGEX_DNS="^(([a-zA-Z](-?[a-zA-Z0-9])*)\.)+[a-zA-Z]{2,}$"
 REGEX_IP="^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$"
@@ -21,7 +21,7 @@ function bashUtilsVersion() {
 # this is default installation script for utils
 # ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
 function bashUtilsSetup() {
-    local BASH_UTILS_VERSION="v0.2.5"
+    local BASH_UTILS_VERSION="v0.2.12"
     if [ "$1" == "version" ] ; then
         echo "$BASH_UTILS_VERSION"
         return 0
@@ -98,7 +98,7 @@ function toUpper() {
 }
 
 function isNullOrEmpty() {
-    local val=$(toLower "$1")
+    local val=$(bash-utils toLower "$1")
     if [ -z "$val" ] || [ "$val" == "null" ] || [ "$val" == "nil" ] ; then echo "true" ; else echo "false" ; fi
 }
 
@@ -107,7 +107,7 @@ function delWhitespaces() {
 }
 
 function isNullOrWhitespaces() {
-    isNullOrEmpty $(delWhitespaces "$1")
+    isNullOrEmpty $(bash-utils delWhitespaces "$1")
 }
 
 function isKiraAddress() {
@@ -151,8 +151,8 @@ function isInteger() {
 }
 
 function isBoolean() {
-    if ($(isNullOrEmpty "$1")) ; then echo "false" ; else
-        local val=$(toLower "$1")
+    if ($(bash-utils isNullOrEmpty "$1")) ; then echo "false" ; else
+        local val=$(bash-utils toLower "$1")
         if [ "$val" == "false" ] || [ "$val" == "true" ] ; then echo "true"
         else echo "false" ; fi
     fi
@@ -163,7 +163,7 @@ function isNodeId() {
 }
 
 function isNumber() {
-     if ($(isNullOrEmpty "$1")) ; then echo "false" ; else [[ "$1" =~ $REGEX_NUMBER ]] && echo "true" || echo "false" ; fi
+     if ($(bash-utils isNullOrEmpty "$1")) ; then echo "false" ; else [[ "$1" =~ $REGEX_NUMBER ]] && echo "true" || echo "false" ; fi
 }
 
 function isNaturalNumber() {
@@ -259,6 +259,38 @@ function md5() {
         echo $(cat | md5sum | awk '{ print $1 }' | xargs || echo -n "") || echo -n ""
     else
         [ -f $1 ] && echo $(md5sum $1 | awk '{ print $1 }' | xargs || echo -n "") || echo -n ""
+    fi
+}
+
+function strLength() {
+    [ -z "$1" ] && local string="$(timeout 1 cat 2> /dev/null || echo -n '')" || local string="$1"
+    [ -z "$string" ] && echo "0" || echo $(echo "$string" | awk '{print length}') || echo -n "-1"
+}
+
+function strStartsWith() {
+    local string="$1"
+    local prefix="$2"
+    local string_len=$(bash-utils strLength "$string")
+    local prefix_len=$(bash-utils strLength "$prefix")
+    if [[ $prefix_len -gt $string_len ]] ; then
+        echo "false"
+    else
+        local substr="${string:0:$prefix_len}"
+        [ "$substr" == "$prefix" ] && echo "true" || echo "false"
+    fi
+}
+
+function strEndsWith() {
+    local string="$1"
+    local suffix="$2"
+    local string_len=$(bash-utils strLength "$string")
+    local suffix_len=$(bash-utils strLength "$suffix")
+    if [[ $suffix_len -gt $string_len ]] ; then
+        echo "false"
+    else
+        local n="-${suffix_len}"
+        local substr="${string:$n}"
+        [ "$substr" == "$suffix" ] && echo "true" || echo "false"
     fi
 }
 
@@ -382,29 +414,39 @@ function getRamTotal() {
     ($(isNaturalNumber "$MEMORY")) && echo $MEMORY || echo "0"
 }
 
+# allowed modes: 'default', 'short', 'long'
 function getArch() {
+    local mode="$1" && mode="$(bash-utils toLower $mode)"
     local ARCH=$(uname -m)
     if [[ "$ARCH" == *"arm"* ]] || [[ "$ARCH" == *"aarch"* ]] ; then
         echo "arm64"
     elif [[ "$ARCH" == *"x64"* ]] || [[ "$ARCH" == *"x86_64"* ]] || [[ "$ARCH" == *"amd64"* ]] || [[ "$ARCH" == *"amd"* ]] ; then
-        echo "amd64"
+        if [ "$mode" == "short" ] ; then
+            echo "x64"
+        else
+            echo "amd64"
+        fi
     else
         echo "$ARCH"
     fi
 }
 
+function getArchX() {
+    echo $(bash-utils getArch 'short')
+}
+
 function getPlatform() {
-    echo "$(delWhitespaces $(toLower $(uname)))"
+    echo "$(delWhitespaces $(bash-utils toLower $(uname)))"
 }
 
 function tryMkDir {
     for kg_var in "$@" ; do
         kg_var=$(echo "$kg_var" | tr -d '\011\012\013\014\015\040' 2>/dev/null || echo -n "")
         [ -z "$kg_var" ] && continue
-        [ "$(toLower "$kg_var")" == "-v" ] && continue
+        [ "$(bash-utils toLower "$kg_var")" == "-v" ] && continue
         
         if [ -f "$kg_var" ] ; then
-            if [ "$(toLower "$1")" == "-v" ] ; then
+            if [ "$(bash-utils toLower "$1")" == "-v" ] ; then
                 rm -f "$kg_var" 2> /dev/null || : 
                 [ ! -f "$kg_var" ] && echo "removed file '$kg_var'" || echo "failed to remove file '$kg_var'"
             else
@@ -412,7 +454,7 @@ function tryMkDir {
             fi
         fi
 
-        if [ "$(toLower "$1")" == "-v" ]  ; then
+        if [ "$(bash-utils toLower "$1")" == "-v" ]  ; then
             [ ! -d "$kg_var" ] && mkdir -p "$var" 2> /dev/null || :
             [ -d "$kg_var" ] && echo "created directory '$kg_var'" || echo "failed to create direcotry '$kg_var'"
         elif [ ! -d "$kg_var" ] ; then
@@ -512,9 +554,9 @@ function jsonEdit() {
     local VALUE="$2"
     [ ! -z "$3" ] && FIN=$(realpath $3 2> /dev/null || echo -n "")
     [ ! -z "$4" ] && FOUT=$(realpath $4 2> /dev/null || echo -n "")
-    [ "$(toLower "$VALUE")" == "null" ] && VALUE="None"
-    [ "$(toLower "$VALUE")" == "true" ] && VALUE="True"
-    [ "$(toLower "$VALUE")" == "false" ] && VALUE="False"
+    [ "$(bash-utils toLower "$VALUE")" == "null" ] && VALUE="None"
+    [ "$(bash-utils toLower "$VALUE")" == "true" ] && VALUE="True"
+    [ "$(bash-utils toLower "$VALUE")" == "false" ] && VALUE="False"
     if [ ! -z "$INPUT" ] ; then
         for k in ${INPUT//./ } ; do
             k=$(echo $k | xargs 2> /dev/null || echo -n "") && [ -z "$k" ] && continue
@@ -543,9 +585,9 @@ function jsonObjEdit() {
     [ ! -z "$2" ] && FVAL=$(realpath $2 2> /dev/null || echo -n "")
     [ ! -z "$3" ] && FIN=$(realpath $3 2> /dev/null || echo -n "")
     [ ! -z "$4" ] && FOUT=$(realpath $4 2> /dev/null || echo -n "")
-    [ "$(toLower "$VALUE")" == "null" ] && VALUE="None"
-    [ "$(toLower "$VALUE")" == "true" ] && VALUE="True"
-    [ "$(toLower "$VALUE")" == "false" ] && VALUE="False"
+    [ "$(bash-utils toLower "$VALUE")" == "null" ] && VALUE="None"
+    [ "$(bash-utils toLower "$VALUE")" == "true" ] && VALUE="True"
+    [ "$(bash-utils toLower "$VALUE")" == "false" ] && VALUE="False"
     if [ ! -z "$INPUT" ] ; then
         for k in ${INPUT//./ } ; do
             k=$(echo $k | xargs 2> /dev/null || echo -n "") && [ -z "$k" ] && continue
@@ -583,7 +625,7 @@ function urlContentLength() {
 }
 
 function globName() {
-    echo $(echo "$(toLower "$1")" | tr -d '\011\012\013\014\015\040' | md5sum | awk '{ print $1 }')
+    echo $(echo "$(bash-utils toLower "$1")" | tr -d '\011\012\013\014\015\040' | md5sum | awk '{ print $1 }')
     return 0
 }
 
@@ -761,7 +803,7 @@ function isCommand {
 
 function isServiceActive {
     local ISACT=$(systemctl is-active "$1" 2> /dev/null || echo "inactive")
-    [ "$(toLower "$ISACT")" == "active" ] && echo "true" || echo "false"
+    [ "$(bash-utils toLower "$ISACT")" == "active" ] && echo "true" || echo "false"
 }
 
 # returns 0 if failure, otherwise natural number in microseconds
@@ -785,10 +827,10 @@ function pressToContinue {
             local kg_OPTION=""
             local FOUND=false
             read -n 1 -s kg_OPTION
-            kg_OPTION=$(toLower "$kg_OPTION")
+            kg_OPTION=$(bash-utils toLower "$kg_OPTION")
             for kg_var in "$@" ; do
                 kg_var=$(echo "$kg_var" | tr -d '\011\012\013\014\015\040' 2>/dev/null || echo -n "")
-                [ "$(toLower "$kg_var")" == "$kg_OPTION" ] && globSet OPTION "$kg_OPTION" && FOUND=true && break
+                [ "$(bash-utils toLower "$kg_var")" == "$kg_OPTION" ] && globSet OPTION "$kg_OPTION" && FOUND=true && break
             done
             [ "$FOUND" == "true" ] && break
         done
@@ -922,6 +964,73 @@ function setLastLineByPrefixOrAppend() {
         echo "$TEXT" >> $FILE
     elif [ "$ADDED" != "true" ] ; then
         echoErr "ERROR: Failed to set line or apped to '$FILE'"
+        return 1
+    fi
+}
+
+function getFirstLineByPrefixAfterPrefix() {
+    local tag="$1"
+    local prefix="$2"
+    local file="$3"
+
+    local result=0
+    local index=0
+    local min_line=0
+    (! $(bash-utils isNullOrWhitespaces "$tag")) && \
+     min_line=$(bash-utils getFirstLineByPrefix "$tag" "$file")
+
+    if [[ $min_line -le -1 ]] ; then
+        result="-1"
+    else
+        while [[ result -le min_line ]] ; do
+            index="$((index+1))"
+            result=$(bash-utils getNLineByPrefix $index "$prefix" "$file")
+            [[ $result -le -1 ]] && break
+        done
+    fi
+
+    echo "$result"
+}
+
+# setTomlVar <tag> <name> <value> <file>
+function setTomlVar() {
+    local VAR_TAG=$(bash-utils delWhitespaces "$1")
+    local VAR_NAME=$(bash-utils delWhitespaces "$2")
+    local VAR_VALUE="$3"
+    local VAR_FILE=$4
+    
+    ([ -z "$VAR_FILE" ] || [ ! -f $VAR_FILE ]) && \
+     bash-utils echoErr "ERROR: File '$VAR_FILE' does NOT exist, can't usert '$VAR_NAME' variable"
+    
+    local MIN_LINE_NR=$(bash-utils getFirstLineByPrefixAfterPrefix "" "$VAR_TAG" "$VAR_FILE")
+    local LINE_NR=$(bash-utils getFirstLineByPrefixAfterPrefix "$VAR_TAG" "$VAR_NAME =" "$VAR_FILE")
+    local MAX_LINE_NR=$(bash-utils getFirstLineByPrefixAfterPrefix "$VAR_TAG" "[" "$VAR_FILE")
+    ( [[ $LINE_NR -le 0 ]] || ( [[ $MAX_LINE_NR -gt 0 ]] && [[ $LINE_NR -ge $MAX_LINE_NR ]] ) ) && \
+     bash-utils echoErr "ERROR: File '$VAR_FILE' does NOT contain a variable name '$VAR_NAME' occuring afer the tag '$VAR_TAG' (line $MIN_LINE_NR), but before the next tag (line $MAX_LINE_NR)" && \
+     LINE_NR=-1
+
+    if [ ! -z "$VAR_NAME" ] && [ -f $VAR_FILE ] && [ $LINE_NR -ge 1 ] ; then
+        
+        if ($(bash-utils isNullOrWhitespaces "$VAR_VALUE")) ; then
+            bash-utils echoWarn "WARNING: Brackets will be added, value '$VAR_VALUE' is empty or a sequece od whitespaces"
+            VAR_VALUE="\"$VAR_VALUE\""
+        elif ( ($(bash-utils strStartsWith "$VAR_VALUE" "\"")) && ($(bash-utils strEndsWith "$VAR_VALUE" "\"")) ) ; then
+            : # nothing to do, quotes already present
+        elif ( (! $(bash-utils strStartsWith "$VAR_VALUE" "[")) || (! $(bash-utils strEndsWith "$VAR_VALUE" "]")) ) ; then
+            if  ($(isSubStr "$VAR_VALUE" " ")) ; then
+                bash-utils echoWarn "WARNING: Brackets will be added, value '$VAR_VALUE' contains whitespaces"
+                VAR_VALUE="\"$VAR_VALUE\""
+            elif ( (! $(bash-utils isBoolean "$VAR_VALUE")) && (! $(bash-utils isNumber "$VAR_VALUE")) ) ; then
+                bash-utils echoWarn "WARNING: Brackets will be added, value '$VAR_VALUE' in nither a number or boolean"
+                VAR_VALUE="\"$VAR_VALUE\""       
+            fi
+        fi
+
+        bash-utils echoInfo "INFO: Appending var '$VAR_NAME' with value '$VAR_VALUE' to file '$VAR_FILE' (line $LINE_NR), after the tag '$VAR_TAG' (line $MIN_LINE_NR)"
+        bash-utils setLineByNumber "$LINE_NR" "$VAR_NAME = $VAR_VALUE" "$VAR_FILE"
+        return 0
+    else
+        bash-utils echoErr "ERROR: Failed to set variable '$VAR_NAME' in '$VAR_FILE'"
         return 1
     fi
 }
