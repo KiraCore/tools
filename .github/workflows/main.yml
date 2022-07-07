@@ -69,7 +69,6 @@ jobs:
               echo "   Repository name: ${{ env.REPOSITORY_NAME }}"
               echo "   Release version: ${{ env.RELEASE_VER }}"
               echo "    Release exists: ${{ env.RELEASE_EXISTS }}"
-              go version
           - name: Testing & Building TOOLS
             run: |
               set -x
@@ -84,6 +83,7 @@ jobs:
           - name: Publishing TOOLS binaries
             shell: bash
             run: |
+              set -x
               make publish
               touch ./RELEASE.md
               cp -fv ./RELEASE.md ./bin/RELEASE.md
@@ -156,7 +156,6 @@ jobs:
               echo "   Repository name: ${{ env.REPOSITORY_NAME }}"
               echo "   Release version: ${{ env.RELEASE_VER }}"
               echo "    Release exists: ${{ env.RELEASE_EXISTS }}"
-              go version
           - name: Download AMD64 artifacts
             # ref.: https://github.com/actions/download-artifact, v3.0.0
             uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741
