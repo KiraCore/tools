@@ -69,6 +69,7 @@ jobs:
               echo "    Release exists: ${{ env.RELEASE_EXISTS }}"
           - name: Testing & Building TOOLS
             run: |
+              set -x
               echo "(current dir): $PWD" && ls -l ./
               tar xvf ./src.tar.gz
               chmod -Rv 555 ./scripts
