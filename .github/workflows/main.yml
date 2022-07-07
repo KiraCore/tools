@@ -42,11 +42,13 @@ jobs:
               echo "DESTINATION_BRANCH=$(echo ${{ env.BASE_REF_BRANCH }})" >> $GITHUB_ENV
           - name: Archive src, install latest bash-utils and setup envs
             run: |
+              set -x
               WORK_DIR=$PWD
               echo "(current dir): $WORK_DIR" && ls -l ./
               cd ../ && tar -czvf src.tar.gz -C ./tools . && cp ./src.tar.gz ./tools/src.tar.gz
               cd $WORK_DIR
               chmod -Rv 555 ./scripts ./bash-utils
+              ./bash-utils/bash-utils.sh bashUtilsSetup
               set +x
               RELEASE_VER="$(./scripts/version.sh)" && echo "RELEASE_VER=$RELEASE_VER" >> $GITHUB_ENV
               REPOSITORY_NAME="${{ github.event.repository.name }}" && echo "REPOSITORY_NAME=$REPOSITORY_NAME" >> $GITHUB_ENV
@@ -126,12 +128,14 @@ jobs:
             run: |
               echo "SOURCE_BRANCH=$(echo ${{ env.REF_BRANCH }})" >> $GITHUB_ENV
               echo "DESTINATION_BRANCH=$(echo ${{ env.BASE_REF_BRANCH }})" >> $GITHUB_ENV
-          - name: Setup ENV variables
+          - name: Setup ENV variables & install bash-utils
             run: |
+              set -x
               WORK_DIR=$PWD
               echo "(current dir): $WORK_DIR" && ls -l ./
               cd $WORK_DIR
               chmod -Rv 555 ./scripts ./bash-utils
+              ./bash-utils/bash-utils.sh bashUtilsSetup
               set +x
               RELEASE_VER="$(./scripts/version.sh)" && echo "RELEASE_VER=$RELEASE_VER" >> $GITHUB_ENV
               REPOSITORY_NAME="${{ github.event.repository.name }}" && echo "REPOSITORY_NAME=$REPOSITORY_NAME" >> $GITHUB_ENV
