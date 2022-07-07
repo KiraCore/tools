@@ -15,7 +15,7 @@ jobs:
       id-token: write
       pull-requests: write
     container: 
-      image: ghcr.io/kiracore/docker/base-image:v0.9.3-rc.3@sha256:ae4cbe04ad2befb265bc9696d001447a8453eb8cd5786bd439d66fa854b3e572
+      image: ghcr.io/kiracore/docker/base-image:v0.10.9
     steps:
           # Work around https://github.com/actions/checkout/issues/760
           - name: Add safe.directory
@@ -72,9 +72,7 @@ jobs:
               set -x
               echo "(current dir): $PWD" && ls -l ./
               tar xvf ./src.tar.gz
-              chmod -Rv 555 ./scripts
-              chmod -Rv 555 ./tmconnect/scripts ./tmkms-key-import/scripts ./validator-key-gen/scripts ./bash-utils/scripts ./bip39gen/scripts ./bip39gen/bip39/scripts ./ipfs-api/scripts
-              chmod -Rv 555 ./bash-utils 
+              chmod -Rv 555 ./scripts ./bash-utils ./tmconnect/scripts ./tmkms-key-import/scripts ./validator-key-gen/scripts ./bash-utils/scripts ./bip39gen/scripts ./bip39gen/bip39/scripts ./ipfs-api/scripts
               chmod -Rv 666 ./RELEASE.md 
               export SOURCE_BRANCH=${{ env.SOURCE_BRANCH }}
               make test
@@ -103,7 +101,7 @@ jobs:
       id-token: write
       pull-requests: write
     container: 
-      image: ghcr.io/kiracore/docker/base-image:v0.9.3-rc.3@sha256:077c3d5e07c2766027af5e92338a25ffcf8688a2be79e3aa9eae9598650e716a
+      image: ghcr.io/kiracore/docker/base-image:v0.10.9
     steps:
           # Work around https://github.com/actions/checkout/issues/760
           - name: Add safe.directory
@@ -161,6 +159,7 @@ jobs:
               name: tools-bin-amd64
           - name: Testing & Building TOOLS
             run: |
+              set -x
               echo "(current dir): $PWD" && ls -l ./
               chmod -Rv 555 ./scripts ./bash-utils ./tmconnect/scripts ./tmkms-key-import/scripts ./validator-key-gen/scripts ./bip39gen/scripts ./bip39gen/bip39/scripts ./ipfs-api/scripts
               export SOURCE_BRANCH=${{ env.SOURCE_BRANCH }}
