@@ -114,6 +114,7 @@ safeWget $SYSCTRL_DESTINATION \
  https://raw.githubusercontent.com/gdraheim/docker-systemctl-replacement/9cbe1a00eb4bdac6ff05b96ca34ec9ed3d8fc06c/files/docker/systemctl.py \
  "e02e90c6de6cd68062dadcc6a20078c34b19582be0baf93ffa7d41f5ef0a1fdd"
 
+chmod -v 555 $SYSCTRL_DESTINATION
 systemctl2 version
 
 #################################################################
