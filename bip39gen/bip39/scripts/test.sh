@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 set -e
-set +x
-. /etc/profile
 set -x
+. /etc/profile
 
 cd ./bip39 || echo "Already in the root dir"
 

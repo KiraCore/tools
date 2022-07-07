@@ -15,7 +15,7 @@ jobs:
       id-token: write
       pull-requests: write
     container: 
-      image: ghcr.io/kiracore/docker/base-image:v0.11.1
+      image: ghcr.io/kiracore/docker/base-image:v0.11.2
     steps:
           # Work around https://github.com/actions/checkout/issues/760
           - name: Add safe.directory
@@ -69,6 +69,7 @@ jobs:
               echo "   Repository name: ${{ env.REPOSITORY_NAME }}"
               echo "   Release version: ${{ env.RELEASE_VER }}"
               echo "    Release exists: ${{ env.RELEASE_EXISTS }}"
+              go version
           - name: Testing & Building TOOLS
             run: |
               set -x
@@ -104,7 +105,7 @@ jobs:
       id-token: write
       pull-requests: write
     container: 
-      image: ghcr.io/kiracore/docker/base-image:v0.11.1
+      image: ghcr.io/kiracore/docker/base-image:v0.11.2
     steps:
           # Work around https://github.com/actions/checkout/issues/760
           - name: Add safe.directory
