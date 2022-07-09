@@ -253,7 +253,7 @@ VAR_NAME=$(getTomlVarName 8 ./test.toml) && VAR_NAME_EXP="[tag] ddd"
 [ "$VAR_NAME" != "$VAR_NAME_EXP" ] && \
  echoNErr "\nERROR: Expected variable name 8 to be '$VAR_NAME', but got $VAR_NAME_EXP" && exit 1 || echoInfo "INFO: Test 3 passed"
 
-VAR_NAME=$(getTomlVarName 10 ./test.toml) && VAR_NAME_EXP="[tag2] b"
+VAR_NAME=$(getTomlVarName 10 ./test.toml) && VAR_NAME_EXP="[tag_2] b"
 [ "$VAR_NAME" != "$VAR_NAME_EXP" ] && \
  echoNErr "\nERROR: Expected variable name 10 to be '$VAR_NAME', but got $VAR_NAME_EXP" && exit 1 || echoInfo "INFO: Test 4 passed"
 
