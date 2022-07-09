@@ -21,7 +21,7 @@ function bashUtilsVersion() {
 # this is default installation script for utils
 # ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
 function bashUtilsSetup() {
-    local BASH_UTILS_VERSION="v0.2.12"
+    local BASH_UTILS_VERSION="v0.2.13"
     if [ "$1" == "version" ] ; then
         echo "$BASH_UTILS_VERSION"
         return 0
@@ -263,35 +263,42 @@ function md5() {
 }
 
 function strLength() {
-    [ -z "$1" ] && local string="$(timeout 1 cat 2> /dev/null || echo -n '')" || local string="$1"
-    [ -z "$string" ] && echo "0" || echo $(echo "$string" | awk '{print length}') || echo -n "-1"
+    local result=""
+    [ -z "$1" ] && result="0" || result=$(echo "$1" | awk '{print length}') || result=-1
+    if ($(isNumber "$result")) ; then
+        echo $result
+    else
+        echo -1
+    fi
 }
 
 function strStartsWith() {
     local string="$1"
     local prefix="$2"
-    local string_len=$(bash-utils strLength "$string")
-    local prefix_len=$(bash-utils strLength "$prefix")
-    if [[ $prefix_len -gt $string_len ]] ; then
-        echo "false"
-    else
+    local string_len=$(strLength "$string")
+    local prefix_len=$(strLength "$prefix")
+    if [[ $prefix_len -eq $string_len ]] && [[ $string_len -ge 1 ]] ; then
+        [ "$string" == "$prefix" ] && echo "true" && return 0 || echo "false" && return 0
+    elif [[ $prefix_len -le $string_len ]] && [[ $prefix_len -ge 1 ]] && [[ $string_len -ge 1 ]] ; then
         local substr="${string:0:$prefix_len}"
-        [ "$substr" == "$prefix" ] && echo "true" || echo "false"
+        [ "$substr" == "$prefix" ] && echo "true" && return 0 || echo "false" && return 0
     fi
+    echo "false"
 }
 
 function strEndsWith() {
     local string="$1"
     local suffix="$2"
-    local string_len=$(bash-utils strLength "$string")
-    local suffix_len=$(bash-utils strLength "$suffix")
-    if [[ $suffix_len -gt $string_len ]] ; then
-        echo "false"
-    else
+    local string_len=$(strLength "$string")
+    local suffix_len=$(strLength "$suffix")
+    if [[ $suffix_len -eq $string_len ]] && [[ $string_len -ge 1 ]] ; then
+        [ "$string" == "$suffix" ] && echo "true" && return 0 || echo "false" && return 0
+    elif [[ $suffix_len -le $string_len ]] && [[ $suffix_len -ge 1 ]] && [[ $string_len -ge 1 ]] ; then
         local n="-${suffix_len}"
         local substr="${string:$n}"
-        [ "$substr" == "$suffix" ] && echo "true" || echo "false"
+        [ "$substr" == "$suffix" ] && echo "true" && return 0 || echo "false" && return 0
     fi
+    echo "false"
 }
 
 # Allows to safely download file from external resources by hash verification or cosign file signature
@@ -992,12 +999,47 @@ function getFirstLineByPrefixAfterPrefix() {
     echo "$result"
 }
 
+# Gets var names by index, e.g. getTomlVarName 36 ./example.toml -> [<tag>] <name>
+function getTomlVarName() {
+    local index=$1
+    local file=$2
+    local tag="[base]"
+    local name=""
+    local result=""
+    local cnt=0
+    while read -r row; do
+       local line=$(delWhitespaces "$row")
+       if ($(strStartsWith "$line" "#")) || ($(isNullOrWhitespaces "$line")) ; then 
+            continue
+       elif ($(strStartsWith "$line" '[')) && ($(strEndsWith "$line" ']')) ; then
+           tag="$line"
+           continue
+       elif ($(isSubStr "$line" '=')) ; then
+           name=$(echo "$line" | cut -d= -f1 | xargs)
+           if  ($(isNullOrWhitespaces "$line")) ; then
+               continue
+           else
+               cnt="$((cnt+1))"
+               if [[ $cnt -eq $index ]] ; then
+                   result="$tag $name"
+                   break
+               fi
+           fi
+       else
+           continue
+       fi
+    done < $file
+    echo "$result"
+}
+
 # setTomlVar <tag> <name> <value> <file>
 function setTomlVar() {
     local VAR_TAG=$(bash-utils delWhitespaces "$1")
     local VAR_NAME=$(bash-utils delWhitespaces "$2")
     local VAR_VALUE="$3"
     local VAR_FILE=$4
+
+    ( [ "$VAR_TAG" == "[base]" ] || [ "$VAR_TAG" == "" ] ) && echoWarn "WARNING: Base tag detected!" && VAR_TAG=""
     
     ([ -z "$VAR_FILE" ] || [ ! -f $VAR_FILE ]) && \
      bash-utils echoErr "ERROR: File '$VAR_FILE' does NOT exist, can't usert '$VAR_NAME' variable"

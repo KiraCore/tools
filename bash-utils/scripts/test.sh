@@ -228,7 +228,7 @@ ddd = "   "
 EOL
 
 setTomlVar "" aaa "Hello World" ./test.toml
-setTomlVar "" ddd '[ "aaa", "b2", "cc_cc", ]' ./test.toml
+setTomlVar "[base]" ddd '[ "aaa", "b2", "cc_cc", ]' ./test.toml
 setTomlVar "[tag]" b 3 ./test.toml
 setTomlVar "[tag]" ddd "" ./test.toml
 setTomlVar "[tag_2]" b -4 ./test.toml
@@ -237,6 +237,25 @@ setTomlVar "[tag_2]" ddd "   " ./test.toml
 
 [ "$(sha256 ./test.toml)" != "$(sha256 ./expected.toml)" ] && \
  echoNErr "\nERROR: Expected ' ./test.toml' to have a hash '$(sha256 ./test.toml)', but got '$(sha256 ./expected.toml)':\n$(cat ./test.toml)\n" && exit 1 || echoInfo "INFO: Test 1 passed"
+
+#################################################################
+echoWarn "TEST: getTomlVarName"
+
+VAR_NAME=$(getTomlVarName 1 ./test.toml) && VAR_NAME_EXP="[base] aaa"
+[ "$VAR_NAME" != "$VAR_NAME_EXP" ] && \
+ echoNErr "\nERROR: Expected variable name 1 to be '$VAR_NAME', but got $VAR_NAME_EXP" && exit 1 || echoInfo "INFO: Test 1 passed"
+
+VAR_NAME=$(getTomlVarName 3 ./test.toml) && VAR_NAME_EXP="[base] cc_cc"
+[ "$VAR_NAME" != "$VAR_NAME_EXP" ] && \
+ echoNErr "\nERROR: Expected variable name 3 to be '$VAR_NAME', but got $VAR_NAME_EXP" && exit 1 || echoInfo "INFO: Test 2 passed"
+
+VAR_NAME=$(getTomlVarName 8 ./test.toml) && VAR_NAME_EXP="[tag] ddd"
+[ "$VAR_NAME" != "$VAR_NAME_EXP" ] && \
+ echoNErr "\nERROR: Expected variable name 8 to be '$VAR_NAME', but got $VAR_NAME_EXP" && exit 1 || echoInfo "INFO: Test 3 passed"
+
+VAR_NAME=$(getTomlVarName 10 ./test.toml) && VAR_NAME_EXP="[tag2] b"
+[ "$VAR_NAME" != "$VAR_NAME_EXP" ] && \
+ echoNErr "\nERROR: Expected variable name 10 to be '$VAR_NAME', but got $VAR_NAME_EXP" && exit 1 || echoInfo "INFO: Test 4 passed"
 
 #################################################################
 
