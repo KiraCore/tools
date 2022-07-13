@@ -230,9 +230,9 @@ EOL
 setTomlVar "" aaa "Hello World" ./test.toml
 setTomlVar "[base]" ddd '[ "aaa", "b2", "cc_cc", ]' ./test.toml
 setTomlVar "[tag]" b 3 ./test.toml
-setTomlVar "[tag]" ddd "" ./test.toml
+setTomlVar "tag" ddd "" ./test.toml
 setTomlVar "[tag_2]" b -4 ./test.toml
-setTomlVar "[tag_2]" cc_cc false ./test.toml
+setTomlVar "tag_2" cc_cc false ./test.toml
 setTomlVar "[tag_2]" ddd "   " ./test.toml
 
 [ "$(sha256 ./test.toml)" != "$(sha256 ./expected.toml)" ] && \

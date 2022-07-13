@@ -1,5 +1,5 @@
 Features:
-* Added `getTomlVarName` to bash-utils
+* Added `getTomlVarNames` to bash-utils
 
 
 

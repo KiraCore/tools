@@ -21,7 +21,7 @@ function bashUtilsVersion() {
 # this is default installation script for utils
 # ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
 function bashUtilsSetup() {
-    local BASH_UTILS_VERSION="v0.2.13"
+    local BASH_UTILS_VERSION="v0.2.14"
     if [ "$1" == "version" ] ; then
         echo "$BASH_UTILS_VERSION"
         return 0
@@ -1005,41 +1005,60 @@ function getTomlVarName() {
     local file=$2
     local tag="[base]"
     local name=""
-    local result=""
     local cnt=0
-    while read -r row; do
-       local line=$(delWhitespaces "$row")
-       if ($(strStartsWith "$line" "#")) || ($(isNullOrWhitespaces "$line")) ; then 
-            continue
-       elif ($(strStartsWith "$line" '[')) && ($(strEndsWith "$line" ']')) ; then
+    local line=""
+    local line_nr=0
+    mapfile rows < $file
+    for row in "${rows[@]}"; do
+       line=$(echo "$row" | tr -d '\011\012\013\014\015\040')
+       line_nr="$((line_nr+1))"
+       if [[ $line = \[*\] ]] ; then
            tag="$line"
            continue
-       elif ($(isSubStr "$line" '=')) ; then
+       elif  [ -z "$line" ] || [[ $line = \#* ]] || [[ $line_nr -lt $index ]]; then 
+            continue
+       elif [[ $line = *=* ]] ; then
            name=$(echo "$line" | cut -d= -f1 | xargs)
-           if  ($(isNullOrWhitespaces "$line")) ; then
-               continue
-           else
+           if  [ ! -z "$name" ] ; then
                cnt="$((cnt+1))"
-               if [[ $cnt -eq $index ]] ; then
-                   result="$tag $name"
-                   break
-               fi
+               [[ $cnt -eq $index ]] && echo "$tag $name" && break
            fi
-       else
-           continue
        fi
-    done < $file
-    echo "$result"
+    done
+}
+
+# getTomlVarNames ./example.toml
+function getTomlVarNames() {
+    local file=$1
+    local tag="[base]"
+    local name=""
+    local result=""
+    local cnt=0
+    local line=""
+    mapfile rows < $file
+    for row in "${rows[@]}"; do
+       line=$(echo "$row" | tr -d '\011\012\013\014\015\040')
+       if [[ $line = \[*\] ]] ; then
+           tag="$line"
+           continue
+       elif  [ -z "$line" ] || [[ $line = \#* ]] ; then 
+            continue
+       elif [[ $line = *=* ]] ; then
+           name=$(echo "$line" | cut -d= -f1 | xargs)
+           [ ! -z "$name" ] && echo "$tag $name"
+       fi
+    done
 }
 
 # setTomlVar <tag> <name> <value> <file>
 function setTomlVar() {
-    local VAR_TAG=$(delWhitespaces "$1")
+    local VAR_TAG=$(echo "$1" | tr -d '\011\012\013\014\015\040\133\135' | xargs)
     local VAR_NAME=$(delWhitespaces "$2")
     local VAR_VALUE="$3"
     local VAR_FILE=$4
 
-    ( [ "$VAR_TAG" == "[base]" ] || [ "$VAR_TAG" == "" ] ) && echoWarn "WARNING: Base tag detected!" && VAR_TAG=""
+    ( [ "$VAR_TAG" == "base" ] || [ "$VAR_TAG" == "" ] ) && echoWarn "WARNING: Base tag detected!" && VAR_TAG=""
+    [ ! -z "$VAR_TAG" ] && VAR_TAG="[$VAR_TAG]"
     
     ([ -z "$VAR_FILE" ] || [ ! -f $VAR_FILE ]) && \
      echoErr "ERROR: File '$VAR_FILE' does NOT exist, can't usert '$VAR_NAME' variable"
