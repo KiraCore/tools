@@ -1,17 +1,88 @@
 #!/usr/bin/env bash
-# QUICK EDIT: FILE="/usr/local/bin/kira-utils.sh" && rm $FILE && nano $FILE && chmod 555 $FILE
+# QUICK EDIT: FILE="/tmp/bash-utils.sh" && rm -fv $FILE && nano $FILE && chmod 555 $FILE && /tmp/bash-utils.sh bashUtilsSetup
 # NOTE: For this script to work properly the KIRA_GLOBS_DIR env variable should be set to "/var/kiraglob" or equivalent & the directory should exist
 REGEX_DNS="^(([a-zA-Z](-?[a-zA-Z0-9])*)\.)+[a-zA-Z]{2,}$"
 REGEX_IP="^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$"
 REGEX_NODE_ID="^[a-f0-9]{40}$"
 REGEX_TXHASH="^[a-fA-F0-9]{64}$"
+REGEX_SHA256="^[a-fA-F0-9]{64}$"
+REGEX_MD5="^[a-fA-F0-9]{32}$"
 REGEX_INTEGER="^-?[0-9]+$"
 REGEX_NUMBER="^[+-]?([0-9]*[.])?([0-9]+)?$"
 REGEX_PUBLIC_IP='^([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?<!172\.(16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31))(?<!127)(?<!^10)(?<!^0)\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?<!192\.168)(?<!172\.(16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31))\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?<!\.255$)(?<!\b255.255.255.0\b)(?<!\b255.255.255.242\b)$'
 REGEX_KIRA="^(kira)[a-zA-Z0-9]{39}$"
+REGEX_VERSION="^(v?)([0-9]+)\.([0-9]+)\.([0-9]+)(-?)([a-zA-Z]+)?(\.?([0-9]+)?)$"
 
-function utilsVersion() {
-    echo "v0.0.15"
+
+function bashUtilsVersion() {
+    bashUtilsSetup "version" 2> /dev/null || bash-utils bashUtilsSetup "version"
+}
+
+# this is default installation script for utils
+# ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
+function bashUtilsSetup() {
+    local BASH_UTILS_VERSION="v0.2.14"
+    if [ "$1" == "version" ] ; then
+        echo "$BASH_UTILS_VERSION"
+        return 0
+    else
+        local GLOBS_DIR="$1"
+        local UTILS_SOURCE=$(realpath "$0")
+        local VERSION=$($UTILS_SOURCE bashUtilsVersion || echo '')
+        local UTILS_DESTINATION="/usr/local/bin/bash-utils.sh"
+
+        if [ -z "$GLOBS_DIR" ] ; then
+            [ -z "$KIRA_GLOBS_DIR" ] && KIRA_GLOBS_DIR="/var/kiraglob"
+        else
+            KIRA_GLOBS_DIR=$GLOBS_DIR
+        fi
+
+        echo "INFO: Loaded utils from '$UTILS_SOURCE', installing bash-utils & setting up glob dir in '$KIRA_GLOBS_DIR'..."
+
+        if [ "$VERSION" != "$BASH_UTILS_VERSION" ] ; then
+            bash-utils echoErr "ERROR: Self check version mismatch, expected '$BASH_UTILS_VERSION', but got '$VERSION'"
+            return 1
+        elif [ "$UTILS_SOURCE" == "$UTILS_DESTINATION" ] ; then
+            bash-utils echoErr "ERROR: Installation source script and destination can't be the same"
+            return 1
+        elif [ ! -f "$UTILS_SOURCE" ] ; then
+            bash-utils echoErr "ERROR: utils source was NOT found"
+            return 1
+        else
+            mkdir -p "/usr/local/bin"
+            cp -fv "$UTILS_SOURCE" "$UTILS_DESTINATION"
+            cp -fv "$UTILS_SOURCE" "/usr/local/bin/bash-utils"
+            chmod -v 555 "$UTILS_DESTINATION" "/usr/local/bin/bash-utils"
+
+            local SUDOUSER="${SUDO_USER}" && [ "$SUDOUSER" == "root" ] && SUDOUSER=""
+            local USERNAME="${USER}" && [ "$USERNAME" == "root" ] && USERNAME=""
+            local LOGNAME=$(logname 2> /dev/null echo "") && [ "$LOGNAME" == "root" ] && LOGNAME=""
+
+            local TARGET="/$LOGNAME/.bashrc" && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
+            TARGET="/$USERNAME/.bashrc" && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
+            TARGET="/$SUDOUSER/.bashrc" && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
+            TARGET="/root/.bashrc" && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
+            TARGET=~/.bashrc && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
+            TARGET=~/.zshrc && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
+            TARGET=~/.profile && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
+
+            mkdir -p "$KIRA_GLOBS_DIR"
+
+            bash-utils setGlobEnv KIRA_GLOBS_DIR "$KIRA_GLOBS_DIR"
+            bash-utils setGlobEnv KIRA_TOOLS_SRC "$UTILS_DESTINATION"
+            bash-utils setGlobPath "/usr/local/bin"
+
+            local AUTOLOAD_SET=$(bash-utils getLastLineByPrefix "source $UTILS_DESTINATION" /etc/profile 2> /dev/null || echo "-1")
+
+            if [[ $AUTOLOAD_SET -lt 0 ]] ; then
+                echo "source $UTILS_DESTINATION || echo \"ERROR: Failed to load kira bash-utils from '$UTILS_DESTINATION'\"" >> /etc/profile
+            fi
+
+            bash-utils loadGlobEnvs
+
+            echoInfo "INFO: SUCCESS!, Installed kira bash-utils $(bashUtilsVersion)"
+        fi
+    fi
 }
 
 # bash 3 (MAC) compatybility
@@ -27,7 +98,7 @@ function toUpper() {
 }
 
 function isNullOrEmpty() {
-    local val=$(toLower "$1")
+    local val=$(bash-utils toLower "$1")
     if [ -z "$val" ] || [ "$val" == "null" ] || [ "$val" == "nil" ] ; then echo "true" ; else echo "false" ; fi
 }
 
@@ -36,7 +107,7 @@ function delWhitespaces() {
 }
 
 function isNullOrWhitespaces() {
-    isNullOrEmpty $(delWhitespaces "$1")
+    isNullOrEmpty $(bash-utils delWhitespaces "$1")
 }
 
 function isKiraAddress() {
@@ -45,6 +116,14 @@ function isKiraAddress() {
 
 function isTxHash() {
     if ($(isNullOrEmpty "$1")) ; then echo "false" ; else [[ "$1" =~ $REGEX_TXHASH ]] && echo "true" || echo "false" ; fi
+}
+
+function isSHA256() {
+    if ($(isNullOrEmpty "$1")) ; then echo "false" ; else [[ "$1" =~ $REGEX_SHA256 ]] && echo "true" || echo "false" ; fi
+}
+
+function isMD5() {
+    if ($(isNullOrEmpty "$1")) ; then echo "false" ; else [[ "$1" =~ $REGEX_MD5 ]] && echo "true" || echo "false" ; fi
 }
 
 function isDns() {
@@ -61,9 +140,9 @@ function isPublicIp() {
 
 function isDnsOrIp() {
     if ($(isNullOrEmpty "$1")) ; then echo "false" ; else
-        kg_var="false" && ($(isDns "$1")) && kg_var="true"
-        [ "$kg_var" != "true" ] && ($(isIp "$1")) && kg_var="true"
-        echo $kg_var
+        local VAR="false" && ($(isDns "$1")) && VAR="true"
+        [ "$VAR" != "true" ] && ($(isIp "$1")) && VAR="true"
+        echo $VAR
     fi
 }
 
@@ -72,8 +151,8 @@ function isInteger() {
 }
 
 function isBoolean() {
-    if ($(isNullOrEmpty "$1")) ; then echo "false" ; else
-        local val=$(toLower "$1")
+    if ($(bash-utils isNullOrEmpty "$1")) ; then echo "false" ; else
+        local val=$(bash-utils toLower "$1")
         if [ "$val" == "false" ] || [ "$val" == "true" ] ; then echo "true"
         else echo "false" ; fi
     fi
@@ -84,7 +163,7 @@ function isNodeId() {
 }
 
 function isNumber() {
-     if ($(isNullOrEmpty "$1")) ; then echo "false" ; else [[ "$1" =~ $REGEX_NUMBER ]] && echo "true" || echo "false" ; fi
+     if ($(bash-utils isNullOrEmpty "$1")) ; then echo "false" ; else [[ "$1" =~ $REGEX_NUMBER ]] && echo "true" || echo "false" ; fi
 }
 
 function isNaturalNumber() {
@@ -104,49 +183,57 @@ function isPort() {
 }
 
 function isMnemonic() {
-    kg_mnem=$(echo "$1" | xargs 2> /dev/null || echo -n "")
-    kg_count=$(echo "$kg_mnem" | wc -w 2> /dev/null || echo -n "")
-    (! $(isNaturalNumber $kg_count)) && kg_count=0
-    if (( $kg_count % 3 == 0 )) && [[ $kg_count -ge 12 ]] ; then echo "true" ; else echo "false" ; fi
+    local MNEMONIC=$(echo "$1" | xargs 2> /dev/null || echo -n "")
+    local COUNT=$(echo "$MNEMONIC" | wc -w 2> /dev/null || echo -n "")
+    (! $(isNaturalNumber $COUNT)) && COUNT=0
+    if (( $COUNT % 3 == 0 )) && [[ $COUNT -ge 12 ]] ; then echo "true" ; else echo "false" ; fi
+}
+
+function isVersion {
+  [[ "$1" =~ $REGEX_VERSION ]] && echo "true" || echo "false"
 }
 
 function date2unix() {
-    kg_date_tmp="$*" && kg_date_tmp=$(echo "$kg_date_tmp" | xargs 2> /dev/null || echo -n "")
-    if (! $(isNullOrWhitespaces "$kg_date_tmp")) && (! $(isNaturalNumber $kg_date_tmp)) ; then
-        kg_date_tmp=$(date -d "$kg_date_tmp" +"%s" 2> /dev/null || echo "0")
+    local DATE_TMP=""
+    [ -z "$*" ] && DATE_TMP="$(timeout 1 cat 2> /dev/null || echo "")" || DATE_TMP="$*"
+    DATE_TMP=$(echo "$DATE_TMP" | xargs 2> /dev/null || echo -n "")
+    if (! $(isNullOrWhitespaces "$DATE_TMP")) && (! $(isNaturalNumber $DATE_TMP)) ; then
+        DATE_TMP=$(date -d "$DATE_TMP" +"%s" 2> /dev/null || echo "0")
     fi
 
-    ($(isNaturalNumber "$kg_date_tmp")) && echo "$kg_date_tmp" || echo "0"
+    ($(isNaturalNumber "$DATE_TMP")) && echo "$DATE_TMP" || echo "0"
 }
 
 function isPortOpen() {
-    kg_addr=$1 && kg_port=$2 && kg_timeout=$3
-    (! $(isNaturalNumber $kg_timeout)) && kg_timeout=1
-    if (! $(isDnsOrIp $kg_addr)) || (! $(isPort $kg_port)) ; then echo "false"
-    elif timeout $kg_timeout nc -z $kg_addr $kg_port ; then echo "true"
+    local ADDRESS=$1
+    local PORT=$2
+    local TIMEOUT=$3
+    (! $(isNaturalNumber $TIMEOUT)) && TIMEOUT=1
+    if (! $(isDnsOrIp $ADDRESS)) || (! $(isPort $PORT)) ; then echo "false"
+    elif timeout $TIMEOUT nc -z $ADDRESS $PORT ; then echo "true"
     else echo "false" ; fi
 }
 
 function fileSize() {
-    kg_bytes=$(stat -c%s $1 2> /dev/null || echo -n "")
-    ($(isNaturalNumber "$kg_bytes")) && echo "$kg_bytes" || echo -n "0"
+    local BYTES=$(stat -c%s $1 2> /dev/null || echo -n "")
+    ($(isNaturalNumber "$BYTES")) && echo "$BYTES" || echo -n "0"
 }
 
 function isFileEmpty() {
-    if [ -z "$1" ] || [ ! -f $1 ] || [ ! -s $1 ] ; then echo "true" ; else
-        kg_PREFIX_AND_SUFFIX=$(echo "$(head -c 64 $1 2>/dev/null || echo '')$(tail -c 64 $1 2>/dev/null || echo '')" | tr -d '\011\012\013\014\015\040' 2>/dev/null || echo -n "")
-        if [ ! -z "$kg_PREFIX_AND_SUFFIX" ] ; then
-            echo "false"
-        else
-            kg_TEXT=$(cat $1 | tr -d '\011\012\013\014\015\040' 2>/dev/null || echo -n "")
-            [ -z "$kg_TEXT" ] && echo "true" || echo "false"
-        fi
+    local FILE="$1"
+    if [ -z "$FILE" ] || [ ! -f "$FILE" ] || [ ! -s "$FILE" ] ; then echo "true" ; else
+        local TEXT=$(head -c 64 "$FILE" 2>/dev/null | tr -d '\0\011\012\013\014\015\040' 2>/dev/null || echo '')
+        [ -z "$TEXT" ] && TEXT=$(tail -c 64 "$FILE" 2>/dev/null | tr -d '\0\011\012\013\014\015\040' 2>/dev/null || echo '')
+        [ -z "$TEXT" ] && TEXT=$(cat $FILE | tr -d '\0\011\012\013\014\015\040' 2>/dev/null || echo -n "")
+        [ ! -z "$TEXT" ] && echo "false" || echo "true"
     fi
 }
 
 # Example use case: [[ $(versionToNumber "v0.0.0.3") -lt $(versionToNumber "v1.0.0.2") ]] && echo true || echo false
 function versionToNumber() {
-    local version=$(echo "$1" | grep -o '[^-]*$' 2> /dev/null || echo "v0.0.0.0")
+    local version=""
+    [ -z "$1" ] && version="$(timeout 1 cat 2> /dev/null || echo "")" || version="$1"
+    version=$(echo "$version" | tr -d [a-z,A-Z] | sed "s/-././g" | sed "s/+/./g" | sed "s/-//g" | tr -d ' ')
     local major=$(echo $version | cut -d. -f1 | sed 's/[^0-9]*//g' 2> /dev/null || echo "0") && (! $(isNaturalNumber "$major")) && major=0
     local minor=$(echo $version | cut -d. -f2 | sed 's/[^0-9]*//g' 2> /dev/null || echo "0") && (! $(isNaturalNumber "$minor")) && minor=0
     local micro=$(echo $version | cut -d. -f3 | sed 's/[^0-9]*//g' 2> /dev/null || echo "0") && (! $(isNaturalNumber "$micro")) && micro=0
@@ -175,14 +262,198 @@ function md5() {
     fi
 }
 
+function strLength() {
+    local result=""
+    [ -z "$1" ] && result="0" || result=$(echo "$1" | awk '{print length}') || result=-1
+    if ($(isNumber "$result")) ; then
+        echo $result
+    else
+        echo -1
+    fi
+}
+
+function strStartsWith() {
+    local string="$1"
+    local prefix="$2"
+    local string_len=$(strLength "$string")
+    local prefix_len=$(strLength "$prefix")
+    if [[ $prefix_len -eq $string_len ]] && [[ $string_len -ge 1 ]] ; then
+        [ "$string" == "$prefix" ] && echo "true" && return 0 || echo "false" && return 0
+    elif [[ $prefix_len -le $string_len ]] && [[ $prefix_len -ge 1 ]] && [[ $string_len -ge 1 ]] ; then
+        local substr="${string:0:$prefix_len}"
+        [ "$substr" == "$prefix" ] && echo "true" && return 0 || echo "false" && return 0
+    fi
+    echo "false"
+}
+
+function strEndsWith() {
+    local string="$1"
+    local suffix="$2"
+    local string_len=$(strLength "$string")
+    local suffix_len=$(strLength "$suffix")
+    if [[ $suffix_len -eq $string_len ]] && [[ $string_len -ge 1 ]] ; then
+        [ "$string" == "$suffix" ] && echo "true" && return 0 || echo "false" && return 0
+    elif [[ $suffix_len -le $string_len ]] && [[ $suffix_len -ge 1 ]] && [[ $string_len -ge 1 ]] ; then
+        local n="-${suffix_len}"
+        local substr="${string:$n}"
+        [ "$substr" == "$suffix" ] && echo "true" && return 0 || echo "false" && return 0
+    fi
+    echo "false"
+}
+
+# Allows to safely download file from external resources by hash verification or cosign file signature
+# In the case where cosign verification is used the "<url>.sig" URL must exist
+# safeWget <file> <url> <hash>
+# safeWget <file> <url> <pubkey-path>
+# safeWget <file> <url> <hash>,<hash>,<hash>...
+function safeWget() {
+    local OUT_PATH=$1
+    local FILE_URL=$2
+    local EXPECTED_HASH=$3
+
+    # we need to use MD5 for TMP files to ensure that we download the file again if URL changes
+    local OUT_NAME=$(echo "$OUT_PATH" | md5)
+    local TMP_DIR=/tmp/downloads
+    local TMP_PATH="$TMP_DIR/${OUT_NAME}"
+
+    local SIG_URL="${FILE_URL}.sig"
+    local TMP_PATH_SIG="$TMP_DIR/${OUT_NAME}.sig"
+
+    mkdir -p "$TMP_DIR"
+    rm -fv "$TMP_PATH_SIG"
+
+    local FILE_HASH=$(sha256 $TMP_PATH)
+    local EXPECTED_HASH_ARR=($(echo "$EXPECTED_HASH" | tr ',' '\n'))
+    local COSIGN_PUB_KEY=""
+    if (! $(isSHA256 "${EXPECTED_HASH_ARR[0]}")) ; then
+        COSIGN_PUB_KEY="$EXPECTED_HASH" && EXPECTED_HASH=""
+        if ($(isCommand cosign)) && (! $(isFileEmpty $COSIGN_PUB_KEY)) ; then
+            echoWarn "WARNING: Checksum was not provided, checking if a signature file is available..."
+            # assume pubkey was provided instead of checksum
+            wget "$SIG_URL" -O $TMP_PATH_SIG
+        else
+            echoErr "ERROR: Cosign tool is not installed or public key was not found in '$COSIGN_PUB_KEY'"
+            return 1
+        fi
+    else
+        echoInfo "INFO: One of the following checksums will be used to verify file integrity: '${EXPECTED_HASH_ARR[*]}'"
+    fi
+
+    local COSIGN_VERIFIED="false"
+    if (! $(isFileEmpty $COSIGN_PUB_KEY)) && (! $(isFileEmpty $TMP_PATH)) ; then
+        echoInfo "INFO: Using cosign to verify temporary file integrity..."
+        COSIGN_VERIFIED="true"  
+        cosign verify-blob --key="$COSIGN_PUB_KEY" --signature="$TMP_PATH_SIG" "$TMP_PATH" || COSIGN_VERIFIED="false"
+
+        if [ "$COSIGN_VERIFIED" == "true" ] ; then
+            echoInfo "INFO: Cosign successfully verified integrity of an already existing temporary file"
+            EXPECTED_HASH="$FILE_HASH"
+        else
+            echoInfo "INFO: Cosign failed to verify temporary file integrity"
+            EXPECTED_HASH=""
+        fi
+    fi
+
+    EXPECTED_HASH_ARR=($(echo "$EXPECTED_HASH" | tr ',' '\n'))
+    local HASH_MATCH="false"
+    for hash in "${EXPECTED_HASH_ARR[@]}" ; do
+        if [ "$FILE_HASH" == "$hash" ] && ($(isSHA256 "$hash")); then
+            HASH_MATCH="true"
+            echoInfo "INFO: No need to download, file with the hash '$FILE_HASH' was already found in the '$TMP_DIR' directory"
+            [ "$TMP_PATH" != "$OUT_PATH" ] && cp -fv $TMP_PATH $OUT_PATH
+            break
+        fi
+    done
+    
+    if [ "$HASH_MATCH" == "false" ] ; then
+        rm -fv $OUT_PATH
+        wget "$FILE_URL" -O $TMP_PATH
+        [ "$TMP_PATH" != "$OUT_PATH" ] && cp -fv $TMP_PATH $OUT_PATH
+        FILE_HASH=$(sha256 $OUT_PATH)
+    fi
+
+    COSIGN_VERIFIED="false"
+    if [ "$HASH_MATCH" == "false" ] && (! $(isFileEmpty $COSIGN_PUB_KEY)) && (! $(isFileEmpty $OUT_PATH)) ; then
+
+
+        echoInfo "INFO: Using cosign to verify final file integrity..."
+        COSIGN_VERIFIED="true"
+        cosign verify-blob --key="$COSIGN_PUB_KEY" --signature="$TMP_PATH_SIG" "$OUT_PATH" || COSIGN_VERIFIED="false"
+
+        if [ "$COSIGN_VERIFIED" == "true" ] ; then
+            echoInfo "INFO: Cosign successfully verified integrity of downloaded file"
+            EXPECTED_HASH="$FILE_HASH"
+        else
+            echoInfo "INFO: Cosign failed to verify integrity of downloaded file"
+            EXPECTED_HASH="cosign"
+        fi
+    fi
+
+    EXPECTED_HASH_ARR=($(echo "$EXPECTED_HASH" | tr ',' '\n'))
+    HASH_MATCH="false"
+    for hash in "${EXPECTED_HASH_ARR[@]}" ; do
+        if [ "$FILE_HASH" == "$hash" ] && ($(isSHA256 "$hash")) ; then
+            HASH_MATCH="true"
+            break
+        fi
+    done
+
+    if ($(isFileEmpty $OUT_PATH)) ; then
+        echoErr "ERROR: Failed download from '$FILE_URL', file is exmpty or was NOT found!"
+        return 1
+    elif [ "$HASH_MATCH" != "true" ] ; then
+        rm -fv $OUT_PATH || echoErr "ERROR: Failed to delete '$OUT_PATH'"
+        echoErr "ERROR: Safe download filed: '$FILE_URL' -x-> '$OUT_PATH'"
+        echoErr "ERROR: Expected hash (one of): '${EXPECTED_HASH_ARR[*]}', but got '$FILE_HASH'"
+        return 1
+    else
+        echoInfo "INFO: Safe download suceeded: '$FILE_URL' ---> '$(realpath $OUT_PATH)'"
+    fi
+}
+
+function getCpuCores() {
+    local CORES=$(cat /proc/cpuinfo | grep processor | wc -l 2> /dev/null || echo "0")
+    ($(isNaturalNumber "$CORES")) && echo $CORES || echo "0"
+}
+
+function getRamTotal() {
+    local MEMORY=$(grep MemTotal /proc/meminfo | awk '{print $2}' || echo "0")
+    ($(isNaturalNumber "$MEMORY")) && echo $MEMORY || echo "0"
+}
+
+# allowed modes: 'default', 'short', 'long'
+function getArch() {
+    local mode="$1" && mode="$(bash-utils toLower $mode)"
+    local ARCH=$(uname -m)
+    if [[ "$ARCH" == *"arm"* ]] || [[ "$ARCH" == *"aarch"* ]] ; then
+        echo "arm64"
+    elif [[ "$ARCH" == *"x64"* ]] || [[ "$ARCH" == *"x86_64"* ]] || [[ "$ARCH" == *"amd64"* ]] || [[ "$ARCH" == *"amd"* ]] ; then
+        if [ "$mode" == "short" ] ; then
+            echo "x64"
+        else
+            echo "amd64"
+        fi
+    else
+        echo "$ARCH"
+    fi
+}
+
+function getArchX() {
+    echo $(bash-utils getArch 'short')
+}
+
+function getPlatform() {
+    echo "$(delWhitespaces $(bash-utils toLower $(uname)))"
+}
+
 function tryMkDir {
     for kg_var in "$@" ; do
         kg_var=$(echo "$kg_var" | tr -d '\011\012\013\014\015\040' 2>/dev/null || echo -n "")
         [ -z "$kg_var" ] && continue
-        [ "$(toLower "$kg_var")" == "-v" ] && continue
+        [ "$(bash-utils toLower "$kg_var")" == "-v" ] && continue
         
         if [ -f "$kg_var" ] ; then
-            if [ "$(toLower "$1")" == "-v" ] ; then
+            if [ "$(bash-utils toLower "$1")" == "-v" ] ; then
                 rm -f "$kg_var" 2> /dev/null || : 
                 [ ! -f "$kg_var" ] && echo "removed file '$kg_var'" || echo "failed to remove file '$kg_var'"
             else
@@ -190,7 +461,7 @@ function tryMkDir {
             fi
         fi
 
-        if [ "$(toLower "$1")"== "-v" ]  ; then
+        if [ "$(bash-utils toLower "$1")" == "-v" ]  ; then
             [ ! -d "$kg_var" ] && mkdir -p "$var" 2> /dev/null || :
             [ -d "$kg_var" ] && echo "created directory '$kg_var'" || echo "failed to create direcotry '$kg_var'"
         elif [ ! -d "$kg_var" ] ; then
@@ -290,9 +561,9 @@ function jsonEdit() {
     local VALUE="$2"
     [ ! -z "$3" ] && FIN=$(realpath $3 2> /dev/null || echo -n "")
     [ ! -z "$4" ] && FOUT=$(realpath $4 2> /dev/null || echo -n "")
-    [ "$(toLower "$VALUE")" == "null" ] && VALUE="None"
-    [ "$(toLower "$VALUE")" == "true" ] && VALUE="True"
-    [ "$(toLower "$VALUE")" == "false" ] && VALUE="False"
+    [ "$(bash-utils toLower "$VALUE")" == "null" ] && VALUE="None"
+    [ "$(bash-utils toLower "$VALUE")" == "true" ] && VALUE="True"
+    [ "$(bash-utils toLower "$VALUE")" == "false" ] && VALUE="False"
     if [ ! -z "$INPUT" ] ; then
         for k in ${INPUT//./ } ; do
             k=$(echo $k | xargs 2> /dev/null || echo -n "") && [ -z "$k" ] && continue
@@ -321,9 +592,9 @@ function jsonObjEdit() {
     [ ! -z "$2" ] && FVAL=$(realpath $2 2> /dev/null || echo -n "")
     [ ! -z "$3" ] && FIN=$(realpath $3 2> /dev/null || echo -n "")
     [ ! -z "$4" ] && FOUT=$(realpath $4 2> /dev/null || echo -n "")
-    [ "$(toLower "$VALUE")" == "null" ] && VALUE="None"
-    [ "$(toLower "$VALUE")" == "true" ] && VALUE="True"
-    [ "$(toLower "$VALUE")" == "false" ] && VALUE="False"
+    [ "$(bash-utils toLower "$VALUE")" == "null" ] && VALUE="None"
+    [ "$(bash-utils toLower "$VALUE")" == "true" ] && VALUE="True"
+    [ "$(bash-utils toLower "$VALUE")" == "false" ] && VALUE="False"
     if [ ! -z "$INPUT" ] ; then
         for k in ${INPUT//./ } ; do
             k=$(echo $k | xargs 2> /dev/null || echo -n "") && [ -z "$k" ] && continue
@@ -361,7 +632,7 @@ function urlContentLength() {
 }
 
 function globName() {
-    echo $(echo "$(toLower "$1")" | tr -d '\011\012\013\014\015\040' | md5sum | awk '{ print $1 }')
+    echo $(echo "$(bash-utils toLower "$1")" | tr -d '\011\012\013\014\015\040' | md5sum | awk '{ print $1 }')
     return 0
 }
 
@@ -377,14 +648,14 @@ function globFile() {
 
 function globGet() {
     local FILE=$(globFile "$1" "$2")
-    [[ -s FILE ]] && cat $FILE || echo ""
+    [[ -s "$FILE" ]] && cat $FILE || echo ""
     return 0
 }
 
 # threadsafe global get
 function globGetTS() {
     local FILE=$(globFile "$1" "$2")
-    [[ -s "$FILE" ]] && sem --id "$1" "cat $FILE" || echo ""
+    [ -s "$FILE" ] && sem --id "$1" "cat $FILE" || echo ""
     return 0
 }
 
@@ -539,7 +810,7 @@ function isCommand {
 
 function isServiceActive {
     local ISACT=$(systemctl is-active "$1" 2> /dev/null || echo "inactive")
-    [ "$(toLower "$ISACT")" == "active" ] && echo "true" || echo "false"
+    [ "$(bash-utils toLower "$ISACT")" == "active" ] && echo "true" || echo "false"
 }
 
 # returns 0 if failure, otherwise natural number in microseconds
@@ -563,10 +834,10 @@ function pressToContinue {
             local kg_OPTION=""
             local FOUND=false
             read -n 1 -s kg_OPTION
-            kg_OPTION=$(toLower "$kg_OPTION")
+            kg_OPTION=$(bash-utils toLower "$kg_OPTION")
             for kg_var in "$@" ; do
                 kg_var=$(echo "$kg_var" | tr -d '\011\012\013\014\015\040' 2>/dev/null || echo -n "")
-                [ "$(toLower "$kg_var")" == "$kg_OPTION" ] && globSet OPTION "$kg_OPTION" && FOUND=true && break
+                [ "$(bash-utils toLower "$kg_var")" == "$kg_OPTION" ] && globSet OPTION "$kg_OPTION" && FOUND=true && break
             done
             [ "$FOUND" == "true" ] && break
         done
@@ -631,6 +902,25 @@ function echol() {
     grep -n "$1" $0 |  sed "s/echo_line_no//" 
 }
 
+function getNLineBySubStr() {
+    local INDEX=$1
+    local SUBSTR=$2
+    local FILE=$3
+    INDEX="$((INDEX-1))"
+    if ($(isNullOrWhitespaces "$SUBSTR")) || ($(isNullOrWhitespaces "$FILE")) || [ ! -f $FILE ] ; then echo "-1" ; else
+        SUBSTR=${SUBSTR//"="/"\="}
+        SUBSTR=${SUBSTR//"/"/"\/"}
+        SUBSTR=${SUBSTR//"["/"\["}
+        SUBSTR=${SUBSTR//"*"/"\*"}
+        local lines=$(sed -n "/${SUBSTR}/=" $FILE)
+        if ($(isNullOrWhitespaces "$lines")) ; then echo "-1" ; else
+            local lineArr=($(echo $lines))
+            local lineNr=${lineArr[$INDEX]}
+            ($(isNaturalNumber "$lineNr")) && echo "$lineNr" || echo "-1"
+        fi
+    fi
+}
+
 # for now this funciton is only intended for env variables discovery
 function getNLineByPrefix() {
     local INDEX=$1
@@ -651,8 +941,16 @@ function getNLineByPrefix() {
     fi
 }
 
+function getLastLineByPSubStr() {
+    getNLineBySubStr "0" "$1" "$2"
+}
+
 function getLastLineByPrefix() {
     getNLineByPrefix "0" "$1" "$2"
+}
+
+function getFirstLineBySubStr() {
+    getNLineBySubStr "1" "$1" "$2"
 }
 
 function getFirstLineByPrefix() {
@@ -663,8 +961,230 @@ function setLineByNumber() {
     local INDEX=$1
     local TEXT=$2
     local FILE=$3
+    [ ! -f "$FILE" ] && echoErr "ERROR: File '$FILE' does NOT exist, nothing can be set!"
     sed -i"" "$INDEX c\
 $TEXT" $FILE
+}
+
+function setNLineBySubStr() {
+    local INDEX=$1
+    local SUBSTR=$2
+    local TEXT=$3
+    local FILE=$4
+    local LINE=$(getNLineBySubStr "$INDEX" "$SUBSTR" "$FILE")
+    if [[ $LINE -ge 0 ]] ; then
+        setLineByNumber "$LINE" "$TEXT" "$FILE"
+        echo "true"
+    else
+        echo "false"
+    fi
+}
+
+function setNLineByPrefix() {
+    local INDEX=$1
+    local PREFIX=$2
+    local TEXT=$3
+    local FILE=$4
+    local LINE=$(getNLineByPrefix "$INDEX" "$PREFIX" "$FILE")
+    if [[ $LINE -ge 0 ]] ; then
+        setLineByNumber "$LINE" "$TEXT" "$FILE"
+        echo "true"
+    else
+        echo "false"
+    fi
+}
+
+function setLastLineBySubStr() {
+    setNLineBySubStr "0" "$1" "$2" "$3"
+}
+
+function setLastLineByPrefix() {
+    setNLineByPrefix "0" "$1" "$2" "$3"
+}
+
+function setFirstLineBySubStr() {
+    setNLineBySubStr "1" "$1" "$2" "$3"
+}
+
+function setFirstLineByPrefix() {
+    setNLineByPrefix "1" "$1" "$2" "$3"
+}
+
+function setLastLineBySubStrOrAppend() {
+    local SUBSTR=$1
+    local TEXT=$2
+    local FILE=$3
+    [ ! -f "$FILE" ] && echoErr "ERROR: File '$FILE' does NOT exist, nothing can be set!"
+    local ADDED=$(setLastLineBySubStr "$SUBSTR" "$TEXT" "$FILE")
+    if [ "$ADDED" == "false" ] ; then
+        echo "$TEXT" >> $FILE
+    elif [ "$ADDED" != "true" ] ; then
+        echoErr "ERROR: Failed to set line or apped to '$FILE'"
+        return 1
+    fi
+}
+
+function setLastLineByPrefixOrAppend() {
+    local PREFIX=$1
+    local TEXT=$2
+    local FILE=$3
+    [ ! -f "$FILE" ] && echoErr "ERROR: File '$FILE' does NOT exist, nothing can be set!"
+    local ADDED=$(setLastLineByPrefix "$PREFIX" "$TEXT" "$FILE")
+    if [ "$ADDED" == "false" ] ; then
+        echo "$TEXT" >> $FILE
+    elif [ "$ADDED" != "true" ] ; then
+        echoErr "ERROR: Failed to set line or apped to '$FILE'"
+        return 1
+    fi
+}
+
+function getFirstLineByPrefixAfterPrefix() {
+    local tag="$1"
+    local prefix="$2"
+    local file="$3"
+
+    local result=0
+    local index=0
+    local min_line=0
+    (! $(bash-utils isNullOrWhitespaces "$tag")) && \
+     min_line=$(bash-utils getFirstLineByPrefix "$tag" "$file")
+
+    if [[ $min_line -le -1 ]] ; then
+        result="-1"
+    else
+        while [[ result -le min_line ]] ; do
+            index="$((index+1))"
+            result=$(bash-utils getNLineByPrefix $index "$prefix" "$file")
+            [[ $result -le -1 ]] && break
+        done
+    fi
+
+    echo "$result"
+}
+
+# Gets var names by index, e.g. getTomlVarName 36 ./example.toml -> [<tag>] <name>
+function getTomlVarName() {
+    local index=$1
+    local file=$2
+    local tag="[base]"
+    local name=""
+    local cnt=0
+    local line=""
+    mapfile rows < $file
+    for row in "${rows[@]}"; do
+       line=$(echo "$row" | tr -d '\011\012\013\014\015\040')
+       if [[ $line = \[*\] ]] ; then
+           tag="$line"
+           continue
+       elif  [ -z "$line" ] || [[ $line = \#* ]] ; then
+            continue
+       elif [[ $line = *=* ]] ; then
+           name=$(echo "$line" | cut -d= -f1 | xargs)
+           if  [ ! -z "$name" ] ; then
+               cnt="$((cnt+1))"
+               [[ $cnt -eq $index ]] && echo "$tag $name" && break
+           fi
+       fi
+    done
+}
+
+# getTomlVarNames ./example.toml
+function getTomlVarNames() {
+    local file=$1
+    local tag="[base]"
+    local name=""
+    local result=""
+    local cnt=0
+    local line=""
+    mapfile rows < $file
+    for row in "${rows[@]}"; do
+       line=$(echo "$row" | tr -d '\011\012\013\014\015\040')
+       if [[ $line = \[*\] ]] ; then
+           tag="$line"
+           continue
+       elif  [ -z "$line" ] || [[ $line = \#* ]] ; then 
+            continue
+       elif [[ $line = *=* ]] ; then
+           name=$(echo "$line" | cut -d= -f1 | xargs)
+           [ ! -z "$name" ] && echo "$tag $name"
+       fi
+    done
+}
+
+# setTomlVar <tag> <name> <value> <file>
+function setTomlVar() {
+    local VAR_TAG=$(echo "$1" | tr -d '\011\012\013\014\015\040\133\135' | xargs)
+    local VAR_NAME=$(delWhitespaces "$2")
+    local VAR_VALUE="$3"
+    local VAR_FILE=$4
+
+    [ ! -z "$VAR_TAG" ] && VAR_TAG="[${VAR_TAG}]"
+    [ "$VAR_TAG" == "[base]" ] && echoWarn "WARNING: Base tag detected!" && VAR_TAG=""
+    
+    ([ -z "$VAR_FILE" ] || [ ! -f $VAR_FILE ]) && \
+     echoErr "ERROR: File '$VAR_FILE' does NOT exist, can't upsert '$VAR_NAME' variable" && return 1
+    
+    local MIN_LINE_NR=$(getFirstLineByPrefixAfterPrefix "" "$VAR_TAG" "$VAR_FILE")
+    local LINE_NR=$(getFirstLineByPrefixAfterPrefix "$VAR_TAG" "$VAR_NAME =" "$VAR_FILE")
+    local MAX_LINE_NR=$(getFirstLineByPrefixAfterPrefix "$VAR_TAG" "[" "$VAR_FILE")
+    ( [[ $LINE_NR -le 0 ]] || ( [[ $MAX_LINE_NR -gt 0 ]] && [[ $LINE_NR -ge $MAX_LINE_NR ]] ) ) && \
+     echoErr "ERROR: File '$VAR_FILE' does NOT contain a variable name '$VAR_NAME' occuring afer the tag '$VAR_TAG' (line $MIN_LINE_NR), but before the next tag (line $MAX_LINE_NR)" && \
+     LINE_NR=-1 && return 1
+
+    if [ ! -z "$VAR_NAME" ] && [ -f $VAR_FILE ] && [ $LINE_NR -ge 1 ] ; then
+        
+        if ($(isNullOrWhitespaces "$VAR_VALUE")) ; then
+            echoWarn "WARNING: Brackets will be added, value '$VAR_VALUE' is empty or a seq. of whitespaces"
+            VAR_VALUE="\"$VAR_VALUE\""
+        elif ( ($(strStartsWith "$VAR_VALUE" "\"")) && ($(strEndsWith "$VAR_VALUE" "\"")) ) ; then
+            : # nothing to do, quotes already present
+        elif ( (! $(strStartsWith "$VAR_VALUE" "[")) || (! $(strEndsWith "$VAR_VALUE" "]")) ) ; then
+            if  ($(isSubStr "$VAR_VALUE" " ")) ; then
+                echoWarn "WARNING: Brackets will be added, value '$VAR_VALUE' contains whitespaces"
+                VAR_VALUE="\"$VAR_VALUE\""
+            elif ( (! $(isBoolean "$VAR_VALUE")) && (! $(isNumber "$VAR_VALUE")) ) ; then
+                echoWarn "WARNING: Brackets will be added, value '$VAR_VALUE' in nither a number or boolean"
+                VAR_VALUE="\"$VAR_VALUE\""       
+            fi
+        fi
+
+        echoInfo "INFO: Updating '$VAR_TAG' '$VAR_NAME' with value '$VAR_VALUE' in the file '$VAR_FILE' at line '$LINE_NR'"
+        setLineByNumber "$LINE_NR" "$VAR_NAME = $VAR_VALUE" "$VAR_FILE"
+        return 0
+    else
+        echoErr "ERROR: Failed to set variable '$VAR_NAME' in '$VAR_FILE'"
+        return 1
+    fi
+}
+
+# setVar <name> <value> <file>
+function setVar() {
+    local VAR_NAME=$(delWhitespaces "$1")
+    local VAR_VALUE=$2
+    local VAR_FILE=$3
+    
+    ([ -z "$VAR_FILE" ] || [ ! -f $VAR_FILE ]) && echoErr "ERROR: File '$VAR_FILE' does NOT exist, can't usert '$VAR_NAME' variable"
+    
+    if [ ! -z "$VAR_NAME" ] && [ -f $VAR_FILE ] ; then
+        local LINE_NR=$(getLastLineByPrefix "${VAR_NAME}=" "$VAR_FILE" 2> /dev/null || echo "-1")
+
+        # add quotes if string has any whitespaces
+        echoInfo "INFO: Appending var '$VAR_NAME' with value '$VAR_VALUE' to file '$VAR_FILE'"
+        if [ -z "$VAR_VALUE" ] || [[ "$VAR_VALUE" = *" "* ]] ; then
+            echo "${VAR_NAME}=\"${VAR_VALUE}\"" >> $VAR_FILE
+        else
+            echo "${VAR_NAME}=${VAR_VALUE}" >> $VAR_FILE
+        fi
+
+        if [[ $LINE_NR -ge 0 ]] ; then
+            echoWarn "WARNING: Wiped old var '$VAR_NAME' at line '$LINE_NR' in the file '$VAR_FILE'"
+            sed -i"" "${LINE_NR}d" $VAR_FILE
+        fi
+        return 0
+    else
+        echoErr "ERROR: Failed to set environment variable '$VAR_NAME' in '$VAR_FILE'"
+        return 1
+    fi
 }
 
 function setEnv() {
@@ -812,3 +1332,45 @@ function setGlobLine() {
 function loadGlobEnvs() {
     . /etc/profile
 }
+
+# crossenvLink "$KIRA_BIN/CDHelper-<arch>/CDHelper" "/usr/local/bin/CDhelper"
+# NOTE: the <arch> tag will be replaced by arm64 & amd64
+function crossenvLink() {
+    local SOURCE_PATH=$1
+    local DESTINATION_PATH=$2
+
+    local FULL_SRC_PATH_ARM64="${SOURCE_PATH/<arch>/arm64}"
+    local FULL_SRC_PATH_AMD64="${SOURCE_PATH/<arch>/amd64}"
+
+    if [ -f $FULL_SRC_PATH_ARM64 ] && [ -f $FULL_SRC_PATH_AMD64 ] ; then
+        cat > $DESTINATION_PATH << EOL
+#!/usr/bin/env bash
+set -e
+
+if [[ "\$(uname -m)" == *"arm"* ]] || [[ "\$(uname -m)" == *"aarch"* ]] ; then
+    if [ -z "$@" ] ; then
+        $FULL_SRC_PATH_ARM64
+    else
+        $FULL_SRC_PATH_ARM64 "\$@"
+    fi
+else
+    if [ -z "$@" ] ; then
+        $FULL_SRC_PATH_AMD64
+    else
+        $FULL_SRC_PATH_AMD64 "\$@"
+    fi
+fi
+EOL
+        chmod -v 555 "$DESTINATION_PATH" "$FULL_SRC_PATH_AMD64" "$FULL_SRC_PATH_ARM64"
+    else
+        [ ! -f $FULL_SRC_PATH_ARM64 ] && echoErr "ERROR: Could NOT find arm64 relese: '$FULL_SRC_PATH_ARM64'" 
+        [ ! -f $FULL_SRC_PATH_AMD64 ] && echoErr "ERROR: Could NOT find amd64 relese: '$FULL_SRC_PATH_AMD64'"
+        return 1
+    fi
+}
+
+# allow to execute finctions directly from file
+if declare -f "$1" > /dev/null ; then
+  # call arguments verbatim
+  "$@"
+fi
