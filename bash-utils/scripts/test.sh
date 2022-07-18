@@ -281,5 +281,41 @@ EOL
  echoNErr "\nERROR: Expected ' ./names_test.toml' to have a hash '$(sha256 ./names_test.toml)', but got '$(sha256 ./expected.toml)':\n$(cat ./names_test.toml)\n" && exit 1 || echoInfo "INFO: Test 1 passed"
 
 #################################################################
+echoWarn "TEST: setLastLineBySubStrOrAppend"
+
+cat > ./test.txt << EOL
+10.1.0.2 registry.local
+10.2.0.2 validator.local
+10.3.0.2 interx.local
+127.0.0.1 localhost
+::1 ip6-localhost ip6-loopback
+fe00::0 ip6-localnet
+ff00::0 ip6-mcastprefix
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+ff02::3 ip6-allhosts
+EOL
+
+setLastLineBySubStrOrAppend "interx.local" "172.16.0.2 interx.local" ./test.txt
+setLastLineBySubStrOrAppend "ip6-allhos" "ff02::4 ip6-allhosts2" ./test.txt
+sort -u ./test.txt -o ./test.txt
+
+cat > ./expected.txt << EOL
+10.1.0.2 registry.local
+10.2.0.2 validator.local
+127.0.0.1 localhost
+172.16.0.2 interx.local
+::1 ip6-localhost ip6-loopback
+fe00::0 ip6-localnet
+ff00::0 ip6-mcastprefix
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+ff02::4 ip6-allhosts2
+EOL
+
+[ "$(sha256 ./test.txt)" != "$(sha256 ./expected.txt)" ] && \
+ echoNErr "\nERROR: Expected ' ./test.txt' to have a hash '$(sha256 ./test.txt)', but got '$(sha256 ./expected.txt)':\n$(cat ./test.txt)\n" && exit 1 || echoInfo "INFO: Test 1 passed"
+
+#################################################################
 
 echoInfo "INFO: Successsfully executed all bash-utils test cases, elapsed $(prettyTime $(timerSpan))"
