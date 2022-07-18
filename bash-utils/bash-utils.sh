@@ -902,6 +902,25 @@ function echol() {
     grep -n "$1" $0 |  sed "s/echo_line_no//" 
 }
 
+function getNLineBySubStr() {
+    local INDEX=$1
+    local SUBSTR=$2
+    local FILE=$3
+    INDEX="$((INDEX-1))"
+    if ($(isNullOrWhitespaces "$SUBSTR")) || ($(isNullOrWhitespaces "$FILE")) || [ ! -f $FILE ] ; then echo "-1" ; else
+        SUBSTR=${SUBSTR//"="/"\="}
+        SUBSTR=${SUBSTR//"/"/"\/"}
+        SUBSTR=${SUBSTR//"["/"\["}
+        SUBSTR=${SUBSTR//"*"/"\*"}
+        local lines=$(sed -n "/${SUBSTR}/=" $FILE)
+        if ($(isNullOrWhitespaces "$lines")) ; then echo "-1" ; else
+            local lineArr=($(echo $lines))
+            local lineNr=${lineArr[$INDEX]}
+            ($(isNaturalNumber "$lineNr")) && echo "$lineNr" || echo "-1"
+        fi
+    fi
+}
+
 # for now this funciton is only intended for env variables discovery
 function getNLineByPrefix() {
     local INDEX=$1
@@ -922,8 +941,16 @@ function getNLineByPrefix() {
     fi
 }
 
+function getLastLineByPSubStr() {
+    getNLineBySubStr "0" "$1" "$2"
+}
+
 function getLastLineByPrefix() {
     getNLineByPrefix "0" "$1" "$2"
+}
+
+function getFirstLineBySubStr() {
+    getNLineBySubStr "1" "$1" "$2"
 }
 
 function getFirstLineByPrefix() {
@@ -937,6 +964,20 @@ function setLineByNumber() {
     [ ! -f "$FILE" ] && echoErr "ERROR: File '$FILE' does NOT exist, nothing can be set!"
     sed -i"" "$INDEX c\
 $TEXT" $FILE
+}
+
+function setNLineBySubStr() {
+    local INDEX=$1
+    local SUBSTR=$2
+    local TEXT=$3
+    local FILE=$4
+    local LINE=$(getNLineBySubStr "$INDEX" "$SUBSTR" "$FILE")
+    if [[ $LINE -ge 0 ]] ; then
+        setLineByNumber "$LINE" "$TEXT" "$FILE"
+        echo "true"
+    else
+        echo "false"
+    fi
 }
 
 function setNLineByPrefix() {
@@ -953,12 +994,34 @@ function setNLineByPrefix() {
     fi
 }
 
+function setLastLineBySubStr() {
+    setNLineBySubStr "0" "$1" "$2" "$3"
+}
+
 function setLastLineByPrefix() {
     setNLineByPrefix "0" "$1" "$2" "$3"
 }
 
+function setFirstLineBySubStr() {
+    setNLineBySubStr "1" "$1" "$2" "$3"
+}
+
 function setFirstLineByPrefix() {
     setNLineByPrefix "1" "$1" "$2" "$3"
+}
+
+function setLastLineBySubStrOrAppend() {
+    local SUBSTR=$1
+    local TEXT=$2
+    local FILE=$3
+    [ ! -f "$FILE" ] && echoErr "ERROR: File '$FILE' does NOT exist, nothing can be set!"
+    local ADDED=$(setLastLineBySubStr "$SUBSTR" "$TEXT" "$FILE")
+    if [ "$ADDED" == "false" ] ; then
+        echo "$TEXT" >> $FILE
+    elif [ "$ADDED" != "true" ] ; then
+        echoErr "ERROR: Failed to set line or apped to '$FILE'"
+        return 1
+    fi
 }
 
 function setLastLineByPrefixOrAppend() {
