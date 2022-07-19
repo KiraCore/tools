@@ -47,6 +47,14 @@ if [[ $(timerSpan) -lt 3 ]] ; then
 fi
 
 #################################################################
+echoWarn "TEST: bashUtilsVersion"
+ver=$(bashUtilsVersion)
+ver_expected=$(../scripts/version.sh)
+
+[ "$ver" != "$ver_expected" ] && \
+ echoErr "ERROR: Verison check failed, expected 'bashUtilsVersion' to return '$ver_expected', but got '$ver'" && exit 1 || echoInfo "INFO: Test 1 passed"
+
+#################################################################
 echoWarn "TEST: SHA & MD5"
 TEST_FILE=/tmp/testfile.tmp
 echo "Hello World" > $TEST_FILE
@@ -298,6 +306,7 @@ EOL
 
 setLastLineBySubStrOrAppend "interx.local" "172.16.0.2 interx.local" ./test.txt
 setLastLineBySubStrOrAppend "ip6-allhos" "ff02::4 ip6-allhosts2" ./test.txt
+setLastLineBySubStrOrAppend "ip6-mcastprefix" "" ./test.txt
 sort -u ./test.txt -o ./test.txt
 
 cat > ./expected.txt << EOL
@@ -307,7 +316,6 @@ cat > ./expected.txt << EOL
 172.16.0.2 interx.local
 ::1 ip6-localhost ip6-loopback
 fe00::0 ip6-localnet
-ff00::0 ip6-mcastprefix
 ff02::1 ip6-allnodes
 ff02::2 ip6-allrouters
 ff02::4 ip6-allhosts2

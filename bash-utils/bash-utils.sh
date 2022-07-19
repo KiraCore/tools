@@ -21,7 +21,7 @@ function bashUtilsVersion() {
 # this is default installation script for utils
 # ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
 function bashUtilsSetup() {
-    local BASH_UTILS_VERSION="v0.2.14"
+    local BASH_UTILS_VERSION="v0.2.16"
     if [ "$1" == "version" ] ; then
         echo "$BASH_UTILS_VERSION"
         return 0
@@ -532,6 +532,35 @@ function jsonParse() {
     fi
 }
 
+function jsonAttributes() {
+    local FIN="$1"
+    if [ ! -z "$FIN" ] ; then
+        if (! $(isFileEmpty "$FIN")) ; then
+            python3 -c "
+import json,sys;
+def ptrintAttributes(root, obj):
+    for key in obj:
+        val=obj[key]
+        if str(type(val)) == \"<class 'dict'>\":
+            ptrintAttributes(root + '.' + key, val)
+        else:
+            print((root + '.' + key)[1:])
+f=open('$FIN','r');obj=json.load(f);ptrintAttributes('', obj);f.close()"
+        fi
+    else
+        cat | python3 -c "
+import json,sys;
+def ptrintAttributes(root, obj):
+    for key in obj:
+        val=obj[key]
+        if str(type(val)) == \"<class 'dict'>\":
+            ptrintAttributes(root + '.' + key, val)
+        else:
+            print((root + '.' + key)[1:])
+obj=json.load(sys.stdin); ptrintAttributes('', obj)"
+    fi
+}
+
 function isFileJson() {
     if (! $(isFileEmpty "$1")) ; then
         jsonParse "" "$1" &> /dev/null && echo "true" || echo "false"
@@ -962,8 +991,14 @@ function setLineByNumber() {
     local TEXT=$2
     local FILE=$3
     [ ! -f "$FILE" ] && echoErr "ERROR: File '$FILE' does NOT exist, nothing can be set!"
-    sed -i"" "$INDEX c\
+    if [ -z "$TEXT" ] ; then
+        # delete line if text is empty
+        sed -i"" "${INDEX}d" $FILE
+    else
+        # set line if text is NOT eopty
+        sed -i"" "$INDEX c\
 $TEXT" $FILE
+    fi
 }
 
 function setNLineBySubStr() {
@@ -1143,7 +1178,7 @@ function setTomlVar() {
                 echoWarn "WARNING: Brackets will be added, value '$VAR_VALUE' contains whitespaces"
                 VAR_VALUE="\"$VAR_VALUE\""
             elif ( (! $(isBoolean "$VAR_VALUE")) && (! $(isNumber "$VAR_VALUE")) ) ; then
-                echoWarn "WARNING: Brackets will be added, value '$VAR_VALUE' in nither a number or boolean"
+                echoWarn "WARNING: Brackets will be added, value '$VAR_VALUE' in neither a number or boolean"
                 VAR_VALUE="\"$VAR_VALUE\""       
             fi
         fi
