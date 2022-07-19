@@ -1,5 +1,5 @@
 Features:
-* Added a range of `set by SubStr` functions to bash-utils
+* Added `jsonAttributes` function to bash-utils
 
 
 
