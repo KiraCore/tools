@@ -4,7 +4,7 @@ set +x
 . /etc/profile
 set -x
 
-. ./bash-utils/bash-utils.sh
+. ../bash-utils/bash-utils.sh
 . ./bip39/scripts/build.sh
 . ./scripts/build.sh
 
