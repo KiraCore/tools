@@ -5,8 +5,6 @@ set +x
 set -x
 
 . ../bash-utils/bash-utils.sh
-. ./bip39/scripts/build.sh
-. ./scripts/build.sh
 
 BIN_bip39gen="${GOBIN}/bip39gen"
 
