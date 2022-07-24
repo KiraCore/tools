@@ -323,6 +323,16 @@ EOL
 
 [ "$(sha256 ./test.txt)" != "$(sha256 ./expected.txt)" ] && \
  echoNErr "\nERROR: Expected ' ./test.txt' to have a hash '$(sha256 ./test.txt)', but got '$(sha256 ./expected.txt)':\n$(cat ./test.txt)\n" && exit 1 || echoInfo "INFO: Test 1 passed"
+#################################################################
+echoWarn "TEST: getArgs"
+
+getArgs -test1="test 1" --test_2="te\st 2" -t3='t3' -e="t 4" --p="test5" -z=" \"  :)"
+
+RES="${test1}${test_2}${t3}${e}${p}${z}"
+RES_EXP="test 1te\st 2t3t 4test5 \"  :)"
+
+[ "$RES" != "$RES_EXP" ] && \
+ echoErr "ERROR: Expected args parsing result to be '$RES_EXP', but got '$RES'" && exit 1 || echoInfo "INFO: Test 1 passed"
 
 #################################################################
 
