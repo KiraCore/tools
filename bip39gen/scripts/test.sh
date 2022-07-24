@@ -8,6 +8,7 @@ set -x
 . ./bip39/scripts/build.sh
 . ./scripts/build.sh
 
+cd $GOBIN
 
 ENTROPY=$(sha256 "daring collect artist first six arena brown design park syrup jump pluck")
 MNEMONIC_TEST_1=$(bip39gen mnemonic -l 12 -e "$ENTROPY")
