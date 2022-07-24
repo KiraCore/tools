@@ -21,7 +21,7 @@ function bashUtilsVersion() {
 # this is default installation script for utils
 # ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
 function bashUtilsSetup() {
-    local BASH_UTILS_VERSION="v0.2.16"
+    local BASH_UTILS_VERSION="v0.2.17"
     if [ "$1" == "version" ] ; then
         echo "$BASH_UTILS_VERSION"
         return 0
@@ -263,13 +263,10 @@ function md5() {
 }
 
 function strLength() {
+    [ "$1" == "-e" ] && echo "2" && return 0
     local result=""
     [ -z "$1" ] && result="0" || result=$(echo "$1" | awk '{print length}') || result=-1
-    if ($(isNumber "$result")) ; then
-        echo $result
-    else
-        echo -1
-    fi
+    ($(isNumber "$result")) && echo $result || echo -1
 }
 
 function strStartsWith() {
@@ -299,6 +296,25 @@ function strEndsWith() {
         [ "$substr" == "$suffix" ] && echo "true" && return 0 || echo "false" && return 0
     fi
     echo "false"
+}
+
+# getArgs --test="lol1" --tes-t="lol-l" --test2="lol 2" -e=ok -t=ok2
+function getArgs() {
+    for arg in "$@" ; do
+        ($(strStartsWith "$arg" "-")) && (! $(strStartsWith "$arg" "--")) && arg="-${arg}"
+        if ($(strStartsWith "$arg" "--")) && [[ "$arg" == *"="* ]] ; then
+            local arg_len=$(strLength "$arg")
+            local prefix=$(echo $arg | cut -d'=' -f1)
+            local prefix_len=$(strLength "$prefix")
+            local n="-$((arg_len - prefix_len - 1))"
+            local val="${arg:$n}"
+            local key=$(echo "$prefix" | tr -d '-')
+            eval $key="'$val'"
+        else
+            echoErr "ERROR: Invalid argument '$arg', missing '--' and/or '=' operators"
+            return 1
+        fi
+    done
 }
 
 # Allows to safely download file from external resources by hash verification or cosign file signature

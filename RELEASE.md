@@ -1,5 +1,5 @@
 Features:
-* Added `jsonAttributes` function to bash-utils
+* Added `getArgs` function to bash-utils
 
 
 
