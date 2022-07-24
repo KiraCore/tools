@@ -37,6 +37,7 @@ const codeSuccess int = 0
 const codeFail int = 1
 const BlockchainChannel = byte(0x40)
 const PexChannel = byte(0x00)
+const TmConnectVersion = "v0.1.5"
 
 func makeTimestamp() int64 {
 	return time.Now().UnixNano() / int64(time.Millisecond)
@@ -66,6 +67,13 @@ func main() {
 		RunE:  cmdNodeId,
 	}
 
+	var versionCommand = &cobra.Command{
+		Use:   "version",
+		Short: "version",
+		Long:  "Get TMCONNECT version",
+		RunE:  cmdVersion,
+	}
+
 	var networkCommand = &cobra.Command{
 		Use:   "network [options]",
 		Short: "network",
@@ -91,6 +99,7 @@ func main() {
 	rootCmd.AddCommand(handshakeCommand)
 	rootCmd.AddCommand(idCommand)
 	rootCmd.AddCommand(networkCommand)
+	rootCmd.AddCommand(versionCommand)
 
 	rootCmd.Execute()
 }
@@ -200,6 +209,11 @@ func connect(
 		Code:   codeSuccess,
 		Result: string(peerNodeInfo.ID()),
 	}
+}
+
+func cmdVersion(cmd *cobra.Command, args []string) error {
+	fmt.Print(TmConnectVersion)
+	return nil
 }
 
 func cmdHandshake(cmd *cobra.Command, args []string) error {
