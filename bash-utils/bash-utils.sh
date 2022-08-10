@@ -679,7 +679,8 @@ function jsonObjEdit() {
 }
 
 function isURL() {
-    if ($(isNullOrEmpty "$1")) ; then echo "false" ; else ( [[ "$1" =~ $REGEX_URL1 ]] ||  [[ "$1" =~ $REGEX_URL2 ]]  ) && echo "true" || echo "false" ; fi
+    if ($(isNullOrEmpty "$1")) || ($(isVersion "$1")) ; then echo "false" ; 
+    else ( [[ "$1" =~ $REGEX_URL1 ]] || [[ "$1" =~ $REGEX_URL2 ]]  ) && echo "true" || echo "false" ; fi
 }
 
 # e.g. urlExists "18.168.78.192:11000/download/peers.txt" 10
