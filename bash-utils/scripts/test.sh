@@ -344,9 +344,23 @@ CID_e1="bafybeigrf2dwtpjkiovnigysyto3d55of6qkdikx6d65onrqnfzwgdkfa"
 
 (! $(isCID $CID_0)) && echoErr "ERROR: Expected '$CID_0' to be a valid CID, but got false response" && exit 1 || echoInfo "INFO: Test 1 passed"
 (! $(isCID $CID_1)) && echoErr "ERROR: Expected '$CID_1' to be a valid CID, but got false response" && exit 1 || echoInfo "INFO: Test 2 passed"
-(! $(isCID $CID_e0)) && echoErr "ERROR: Expected '$CID_e0' to be an invalid CID, but got true response" && exit 1 || echoInfo "INFO: Test 3 passed"
-(! $(isCID $CID_e1)) && echoErr "ERROR: Expected '$CID_e1' to be an invalid CID, but got true response" && exit 1 || echoInfo "INFO: Test 4 passed"
-(! $(isCID "")) && echoErr "ERROR: Expected '' to be an invalid CID, but got true response" && exit 1 || echoInfo "INFO: Test 5 passed"
+($(isCID $CID_e0)) && echoErr "ERROR: Expected '$CID_e0' to be an invalid CID, but got true response" && exit 1 || echoInfo "INFO: Test 3 passed"
+($(isCID $CID_e1)) && echoErr "ERROR: Expected '$CID_e1' to be an invalid CID, but got true response" && exit 1 || echoInfo "INFO: Test 4 passed"
+($(isCID "")) && echoErr "ERROR: Expected '' to be an invalid CID, but got true response" && exit 1 || echoInfo "INFO: Test 5 passed"
+
+#################################################################
+echoWarn "TEST: isURL"
+
+URL_0="https://github.com/KiraCore/tools/runs/7763984248?check_suite_focus=true"
+URL_1="ghcr.io/kiracore/docker/base-image:v0.11.4"
+URL_e0="v0.11.4"
+URL_e1="http://ghcrio"
+
+(! $(isURL $URL_0)) && echoErr "ERROR: Expected '$URL_0' to be a valid URL, but got false response" && exit 1 || echoInfo "INFO: Test 1 passed"
+(! $(isURL $URL_1)) && echoErr "ERROR: Expected '$URL_1' to be a valid URL, but got false response" && exit 1 || echoInfo "INFO: Test 2 passed"
+($(isURL $URL_e0)) && echoErr "ERROR: Expected '$URL_e0' to be an invalid URL, but got true response" && exit 1 || echoInfo "INFO: Test 3 passed"
+($(isURL $URL_e1)) && echoErr "ERROR: Expected '$URL_e1' to be an invalid URL, but got true response" && exit 1 || echoInfo "INFO: Test 4 passed"
+($(isURL "")) && echoErr "ERROR: Expected '' to be an invalid URL, but got true response" && exit 1 || echoInfo "INFO: Test 5 passed"
 
 #################################################################
 

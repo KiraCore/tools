@@ -14,7 +14,8 @@ REGEX_KIRA="^(kira)[a-zA-Z0-9]{39}$"
 REGEX_VERSION="^(v?)([0-9]+)\.([0-9]+)\.([0-9]+)(-?)([a-zA-Z]+)?(\.?([0-9]+)?)$"
 REGEX_CID="^(Qm[1-9A-HJ-NP-Za-km-z]{44,}|b[A-Za-z2-7]{58,}|B[A-Z2-7]{58,}|z[1-9A-HJ-NP-Za-km-z]{48,}|F[0-9A-F]{50,})$"
 # NOTE: Important! in the REGEX_URL the ' quote character must be used instead of ", do NOT modify this string
-REGEX_URL='^(https?|ftp|file)://[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[-A-Za-z0-9\+&@#/%=~_|]\.[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[-A-Za-z0-9\+&@#/%=~_|]$'
+REGEX_URL1='[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[-A-Za-z0-9\+&@#/%=~_|]\.[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[-A-Za-z0-9\+&@#/%=~_|]$'
+REGEX_URL2="^(https?|ftp|file)://$REGEX_URL1"
 
 function bashUtilsVersion() {
     bashUtilsSetup "version" 2> /dev/null || bash-utils bashUtilsSetup "version"
@@ -197,10 +198,6 @@ function isVersion {
 
 function isCID() {
     if ($(isNullOrEmpty "$1")) ; then echo "false" ; else [[ "$1" =~ $REGEX_CID ]] && echo "true" || echo "false" ; fi
-}
-
-function isURL() {
-    if ($(isNullOrEmpty "$1")) ; then echo "false" ; else [[ "$1" =~ $REGEX_URL ]] && echo "true" || echo "false" ; fi
 }
 
 function date2unix() {
@@ -681,17 +678,23 @@ function jsonObjEdit() {
     fi
 }
 
-# e.g. urlExists "18.168.78.192:11000/download/peers.txt"
+function isURL() {
+    if ($(isNullOrEmpty "$1")) ; then echo "false" ; else ( [[ "$1" =~ $REGEX_URL1 ]] ||  [[ "$1" =~ $REGEX_URL2 ]]  ) && echo "true" || echo "false" ; fi
+}
+
+# e.g. urlExists "18.168.78.192:11000/download/peers.txt" 10
 function urlExists() {
+    local timeout="$2" && (! $(isNaturalNumber $timeout)) && timeout=10
     if ($(isNullOrEmpty "$1")) ; then echo "false"
-    elif curl -r0-0 --fail --silent "$1" >/dev/null; then echo "true"
+    elif curl -r0-0 --fail --silent -m $timeout "$1" >/dev/null; then echo "true"
     else echo "false" ; fi
 }
 
 # TODO: Investigate 0 output
-# urlContentLength 18.168.78.192:11000/api/snapshot
+# urlContentLength 18.168.78.192:11000/api/snapshot 10
 function urlContentLength() {
-    local VAL=$(curl --fail $1 --dump-header /dev/fd/1 --silent 2> /dev/null | grep -i Content-Length -m 1 2> /dev/null | awk '{print $2}' 2> /dev/null || echo -n "")
+    local timeout="$2" && (! $(isNaturalNumber $timeout)) && timeout=10
+    local VAL=$(curl --fail $1 --dump-header /dev/fd/1 --silent -m $timeout  2> /dev/null | grep -i Content-Length -m 1 2> /dev/null | awk '{print $2}' 2> /dev/null || echo -n "")
     # remove invisible whitespace characters
     VAL=$(echo ${VAL%$'\r'})
     (! $(isNaturalNumber $VAL)) && VAL=0
