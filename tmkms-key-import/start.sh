@@ -7,7 +7,7 @@ SECRET__KMS_KEY_OUT=$3
 NODE_KEY_OUT=$4
 NODE_ID_OUT=$5
 
-[ -z "$MNEMONIC" ] && MNEMONIC=$(hd-wallet-derive --gen-words=24 --gen-key --format=jsonpretty -g | jq '.[0].mnemonic')
+[ -z "$MNEMONIC" ] && MNEMONIC=$(bip39gen mnemonic --verbose=false --length=24)
 [ -z "$PRIV_VALIDATOR_KEY_OUT" ] && PRIV_VALIDATOR_KEY_OUT="$PWD/priv_validator_key.json"
 [ -z "$SECRET__KMS_KEY_OUT" ] && SECRET__KMS_KEY_OUT="$PWD/signing.key"
 
