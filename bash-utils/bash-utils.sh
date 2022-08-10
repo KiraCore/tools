@@ -322,16 +322,18 @@ function strEndsWith() {
 function getArgs() {
     for arg in "$@" ; do
         ($(strStartsWith "$arg" "-")) && (! $(strStartsWith "$arg" "--")) && arg="-${arg}"
-        if ($(strStartsWith "$arg" "--")) && [[ "$arg" == *"="* ]] ; then
+        if ($(strStartsWith "$arg" "--")) && [[ "$arg" == *"="* ]] && [[ "$arg" != "--="* ]] && [[ "$arg" != "-="* ]] ; then
             local arg_len=$(strLength "$arg")
             local prefix=$(echo $arg | cut -d'=' -f1)
             local prefix_len=$(strLength "$prefix")
             local n="-$((arg_len - prefix_len - 1))"
             local val="${arg:$n}"
+            prefix="$(echo $prefix  | sed -z 's/^-*//')"
             local key=$(echo "$prefix" | tr '-' '_')
+            echoInfo "$key='$val'"
             eval $key="'$val'"
         else
-            echoErr "ERROR: Invalid argument '$arg', missing '--' and/or '=' operators"
+            echoErr "ERROR: Invalid argument '$arg', missing name, '--' and/or '=' operators"
             return 1
         fi
     done

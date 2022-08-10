@@ -2,9 +2,9 @@ name: Build, Test & Publish
 
 on:
   push:
-    branches: [ v*.*.*, release/v*.*.*, feature/*, master, dev, latest, testnet-*, mainnet-*, kira-* ]
+    branches: [ release/v*.*.*, feature/*, master, dev, latest, testnet-*, mainnet-*, kira-* ]
   pull_request:
-    branches: [ v*.*.*, release/v*.*.*, bugfix/*, master, dev, latest, testnet-*, mainnet-*, kira-* ]
+    branches: [ release/v*.*.*, bugfix/*, master, dev, latest, testnet-*, mainnet-*, kira-* ]
 jobs:
   build-amd64:
     name: AMD64 - Repo Test & Build

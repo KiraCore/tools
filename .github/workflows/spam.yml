@@ -2,7 +2,7 @@ name: Clean spam PRs
 
 on:
   pull_request:
-    branches: [ master, dev, latest, v*.*.*, release/v*.*.*, feature/*, bugfix/* ]
+    branches: [ master, dev, latest, release/v*.*.*, feature/*, bugfix/* ]
 
 jobs:
   # isolate signing & repo cloning from docker image
