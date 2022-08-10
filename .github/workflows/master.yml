@@ -2,7 +2,7 @@ name: release/v*.*.* -PR-> master
 
 on:
   push:
-    branches: [ v*.*.*, release/v*.*.* ]
+    branches: [ release/v*.*.* ]
 
 # git ls-remote <URL> | head -1 | sed "s/HEAD//"
 jobs:
