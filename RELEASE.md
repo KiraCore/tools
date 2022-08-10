@@ -1,5 +1,5 @@
 Features:
-* Added `getArgs` function to bash-utils
+* Added `isURL, isCID, isSameFile` function to bash-utils
 
 
 

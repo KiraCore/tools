@@ -326,13 +326,27 @@ EOL
 #################################################################
 echoWarn "TEST: getArgs"
 
-getArgs -test1="test 1" --test_2="te\st 2" -t3='t3' -e="t 4" --p="test5" -z=" \"  :)"
+getArgs -test1="test 1" --test_2="te\st 2" -t3='t3' -e="t 4" --p="test5" -z=" \"  :)" --l-ol=lol
 
-RES="${test1}${test_2}${t3}${e}${p}${z}"
-RES_EXP="test 1te\st 2t3t 4test5 \"  :)"
+RES="${test1}${test_2}${t3}${e}${p}${z}${l_ol}"
+RES_EXP="test 1te\st 2t3t 4test5 \"  :)lol"
 
 [ "$RES" != "$RES_EXP" ] && \
  echoErr "ERROR: Expected args parsing result to be '$RES_EXP', but got '$RES'" && exit 1 || echoInfo "INFO: Test 1 passed"
+
+#################################################################
+echoWarn "TEST: isCID"
+
+CID_0="QmcRD4wkPPi6dig81r5sLj9Zm1gDCL4zgpEj9CfuRrGbzF"
+CID_1="bafybeigrf2dwtpjkiovnigysyto3d55opf6qkdikx6d65onrqnfzwgdkfa"
+CID_e0="pmcRD4wkPPi6dig81r5sLj9Zm1gDCL4zgpEj9CfuRrGbzF"
+CID_e1="bafybeigrf2dwtpjkiovnigysyto3d55of6qkdikx6d65onrqnfzwgdkfa"
+
+(! $(isCID $CID_0)) && echoErr "ERROR: Expected '$CID_0' to be a valid CID, but got false response" && exit 1 || echoInfo "INFO: Test 1 passed"
+(! $(isCID $CID_1)) && echoErr "ERROR: Expected '$CID_1' to be a valid CID, but got false response" && exit 1 || echoInfo "INFO: Test 2 passed"
+(! $(isCID $CID_e0)) && echoErr "ERROR: Expected '$CID_e0' to be an invalid CID, but got true response" && exit 1 || echoInfo "INFO: Test 3 passed"
+(! $(isCID $CID_e1)) && echoErr "ERROR: Expected '$CID_e1' to be an invalid CID, but got true response" && exit 1 || echoInfo "INFO: Test 4 passed"
+(! $(isCID "")) && echoErr "ERROR: Expected '' to be an invalid CID, but got true response" && exit 1 || echoInfo "INFO: Test 5 passed"
 
 #################################################################
 

@@ -12,7 +12,9 @@ REGEX_NUMBER="^[+-]?([0-9]*[.])?([0-9]+)?$"
 REGEX_PUBLIC_IP='^([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?<!172\.(16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31))(?<!127)(?<!^10)(?<!^0)\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?<!192\.168)(?<!172\.(16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31))\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?<!\.255$)(?<!\b255.255.255.0\b)(?<!\b255.255.255.242\b)$'
 REGEX_KIRA="^(kira)[a-zA-Z0-9]{39}$"
 REGEX_VERSION="^(v?)([0-9]+)\.([0-9]+)\.([0-9]+)(-?)([a-zA-Z]+)?(\.?([0-9]+)?)$"
-
+REGEX_CID="^(Qm[1-9A-HJ-NP-Za-km-z]{44,}|b[A-Za-z2-7]{58,}|B[A-Z2-7]{58,}|z[1-9A-HJ-NP-Za-km-z]{48,}|F[0-9A-F]{50,})$"
+# NOTE: Important! in the REGEX_URL the ' quote character must be used instead of ", do NOT modify this string
+REGEX_URL='^(https?|ftp|file)://[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[-A-Za-z0-9\+&@#/%=~_|]\.[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[-A-Za-z0-9\+&@#/%=~_|]$'
 
 function bashUtilsVersion() {
     bashUtilsSetup "version" 2> /dev/null || bash-utils bashUtilsSetup "version"
@@ -21,7 +23,7 @@ function bashUtilsVersion() {
 # this is default installation script for utils
 # ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
 function bashUtilsSetup() {
-    local BASH_UTILS_VERSION="v0.2.17"
+    local BASH_UTILS_VERSION="v0.2.18"
     if [ "$1" == "version" ] ; then
         echo "$BASH_UTILS_VERSION"
         return 0
@@ -193,6 +195,14 @@ function isVersion {
   [[ "$1" =~ $REGEX_VERSION ]] && echo "true" || echo "false"
 }
 
+function isCID() {
+    if ($(isNullOrEmpty "$1")) ; then echo "false" ; else [[ "$1" =~ $REGEX_CID ]] && echo "true" || echo "false" ; fi
+}
+
+function isURL() {
+    if ($(isNullOrEmpty "$1")) ; then echo "false" ; else [[ "$1" =~ $REGEX_URL ]] && echo "true" || echo "false" ; fi
+}
+
 function date2unix() {
     local DATE_TMP=""
     [ -z "$*" ] && DATE_TMP="$(timeout 1 cat 2> /dev/null || echo "")" || DATE_TMP="$*"
@@ -226,6 +236,16 @@ function isFileEmpty() {
         [ -z "$TEXT" ] && TEXT=$(tail -c 64 "$FILE" 2>/dev/null | tr -d '\0\011\012\013\014\015\040' 2>/dev/null || echo '')
         [ -z "$TEXT" ] && TEXT=$(cat $FILE | tr -d '\0\011\012\013\014\015\040' 2>/dev/null || echo -n "")
         [ ! -z "$TEXT" ] && echo "false" || echo "true"
+    fi
+}
+
+function isSameFile() {
+    local FILE1="$1"
+    local FILE2="$2"
+    if [ ! -z $FILE1 ] && [ -f $FILE1 ] && [ ! -z $FILE2 ] && [ -f $FILE2 ] ; then
+        echo $(cmp --silent $FILE1 $FILE2 && echo "true" || echo "false")
+    else
+        echo "false"
     fi
 }
 
@@ -308,7 +328,7 @@ function getArgs() {
             local prefix_len=$(strLength "$prefix")
             local n="-$((arg_len - prefix_len - 1))"
             local val="${arg:$n}"
-            local key=$(echo "$prefix" | tr -d '-')
+            local key=$(echo "$prefix" | tr '-' '_')
             eval $key="'$val'"
         else
             echoErr "ERROR: Invalid argument '$arg', missing '--' and/or '=' operators"
