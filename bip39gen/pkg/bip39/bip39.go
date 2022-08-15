@@ -135,7 +135,7 @@ func BitStringToByte(bitString string) []byte {
 			bitCounter++
 		}
 	}
-	fmt.Println(len(dst))
+
 	return dst
 }
 func HexStringToByte(hexString string) []byte {
@@ -300,7 +300,6 @@ func (m *Mnemonic) Generate() Mnemonic {
 	m.hash = GenHashFromByteSlice(m.rawEntropy)
 	var entropyAndChecksumBits []byte
 
-	fmt.Printf("len: %v\n", len(m.rawEntropy))
 	m.checksumBits = ByteSliceToBitSlice(m.hash)[:(len(m.rawEntropy)*8)/32]
 
 	entropyAndChecksumBits = append(entropyAndChecksumBits, ByteSliceToBitSlice(m.rawEntropy)...)
