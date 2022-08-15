@@ -1,6 +1,6 @@
 ## Mnemonics Generator
 
-KIRA `bip39gen` CLI tool based on [go-bip39](https://github.com/tyler-smith) library, allowing for generation of mnemonics with external, user provided entropy. If no external entropy is provided then default entropy provided by the `bip39` lib rng gets mixed (XOR'ed) with SHA256 of the UUID for some extra security :)
+KIRA `bip39saifu` independent CLI tool, allowing for generation of mnemonics with external, user provided entropy as well as known entropy which can be provided as a bit string.
 
 ### Example
 

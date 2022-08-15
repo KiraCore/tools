@@ -1,4 +1,4 @@
-package wordlists
+package bip39
 
 import (
 	"fmt"
@@ -6,21 +6,29 @@ import (
 	"strings"
 )
 
+// The wordlist to use
+var WordList = EnglishWordList
+
+var ReverseWordMap map[string]int = map[string]int{}
+
 func init() {
+	for i, v := range WordList {
+		ReverseWordMap[v] = i
+	}
+
 	// Ensure word list is correct
 	// $ wget https://raw.githubusercontent.com/bitcoin/bips/master/bip-0039/english.txt
 	// $ crc32 english.txt
 	// c1dbd296
-	checksum := crc32.ChecksumIEEE([]byte(english))
+	checksum := crc32.ChecksumIEEE([]byte(englishWordList))
 	if fmt.Sprintf("%x", checksum) != "c1dbd296" {
-		panic("english checksum invalid")
+		panic("englishWordList checksum invalid")
 	}
 }
 
-// English is a slice of mnemonic words taken from the bip39 specification
-// https://raw.githubusercontent.com/bitcoin/bips/master/bip-0039/english.txt
-var English = strings.Split(strings.TrimSpace(english), "\n")
-var english = `abandon
+// Language-specific wordlists
+var EnglishWordList = strings.Split(strings.TrimSpace(englishWordList), "\n")
+var englishWordList = `abandon
 ability
 able
 about
