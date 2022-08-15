@@ -5,7 +5,7 @@ set -x
 
 cd ./bip39gen || echo "Already in the root dir"
 
-. ../../bash-utils/bash-utils.sh
+. ../bash-utils/bash-utils.sh
 
 go test -v -coverprofile=coverage.out ./...
 go tool cover -html=coverage.out
