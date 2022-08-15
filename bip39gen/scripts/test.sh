@@ -3,7 +3,7 @@ set -e
 set -x
 . /etc/profile
 
-cd ./bip39 || echo "Already in the root dir"
+cd ./bip39gen || echo "Already in the root dir"
 
 . ../../bash-utils/bash-utils.sh
 
