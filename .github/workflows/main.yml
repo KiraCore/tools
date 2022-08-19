@@ -75,7 +75,7 @@ jobs:
               set -x
               echo "(current dir): $PWD" && ls -l ./
               tar xvf ./src.tar.gz
-              chmod -Rv 555 ./scripts ./bash-utils ./tmconnect/scripts ./tmkms-key-import/scripts ./validator-key-gen/scripts ./bash-utils/scripts ./bip39gen/scripts ./bip39gen/bip39/scripts ./ipfs-api/scripts
+              chmod -Rv 555 ./scripts ./bash-utils ./tmconnect/scripts ./tmkms-key-import/scripts ./validator-key-gen/scripts ./bash-utils/scripts ./bip39gen/scripts ./bip39gen/scripts ./ipfs-api/scripts
               chmod -Rv 666 ./RELEASE.md 
               export SOURCE_BRANCH=${{ env.SOURCE_BRANCH }}
               make test
@@ -166,7 +166,7 @@ jobs:
             run: |
               set -x
               echo "(current dir): $PWD" && ls -l ./
-              chmod -Rv 555 ./scripts ./bash-utils ./tmconnect/scripts ./tmkms-key-import/scripts ./validator-key-gen/scripts ./bip39gen/scripts ./bip39gen/bip39/scripts ./ipfs-api/scripts
+              chmod -Rv 555 ./scripts ./bash-utils ./tmconnect/scripts ./tmkms-key-import/scripts ./validator-key-gen/scripts ./bip39gen/scripts ./bip39gen/scripts ./ipfs-api/scripts
               export SOURCE_BRANCH=${{ env.SOURCE_BRANCH }}
               make test
               make build

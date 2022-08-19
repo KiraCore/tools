@@ -24,7 +24,7 @@ function bashUtilsVersion() {
 # this is default installation script for utils
 # ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
 function bashUtilsSetup() {
-    local BASH_UTILS_VERSION="v0.2.18"
+    local BASH_UTILS_VERSION="v0.2.19"
     if [ "$1" == "version" ] ; then
         echo "$BASH_UTILS_VERSION"
         return 0

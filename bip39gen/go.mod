@@ -1,17 +1,16 @@
-module bip32cli
+module github.com/kiracore/tools/bip39saifu
 
-go 1.17
+go 1.18
 
 require (
-	github.com/KiraCore/go-bip39 v1.1.0
-	github.com/google/uuid v1.3.0
-	github.com/spf13/cobra v1.4.0
+	github.com/spf13/cobra v1.5.0
+	github.com/stretchr/testify v1.8.0
 )
 
 require (
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/KiraCore/go-bip39 v1.1.0 => ./bip39
