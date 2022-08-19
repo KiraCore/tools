@@ -6,4 +6,3 @@ Features:
 * Added user entropy input :: BIP39Gen
 * Added hex input for both raw and user input :: BIP39Gen
 * Added vector tests BIP39 compliant
-

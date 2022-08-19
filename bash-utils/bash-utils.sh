@@ -12,7 +12,10 @@ REGEX_NUMBER="^[+-]?([0-9]*[.])?([0-9]+)?$"
 REGEX_PUBLIC_IP='^([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?<!172\.(16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31))(?<!127)(?<!^10)(?<!^0)\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?<!192\.168)(?<!172\.(16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31))\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?<!\.255$)(?<!\b255.255.255.0\b)(?<!\b255.255.255.242\b)$'
 REGEX_KIRA="^(kira)[a-zA-Z0-9]{39}$"
 REGEX_VERSION="^(v?)([0-9]+)\.([0-9]+)\.([0-9]+)(-?)([a-zA-Z]+)?(\.?([0-9]+)?)$"
-
+REGEX_CID="^(Qm[1-9A-HJ-NP-Za-km-z]{44,}|b[A-Za-z2-7]{58,}|B[A-Z2-7]{58,}|z[1-9A-HJ-NP-Za-km-z]{48,}|F[0-9A-F]{50,})$"
+# NOTE: Important! in the REGEX_URL the ' quote character must be used instead of ", do NOT modify this string
+REGEX_URL1='[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[-A-Za-z0-9\+&@#/%=~_|]\.[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[-A-Za-z0-9\+&@#/%=~_|]$'
+REGEX_URL2="^(https?|ftp|file)://$REGEX_URL1"
 
 function bashUtilsVersion() {
     bashUtilsSetup "version" 2> /dev/null || bash-utils bashUtilsSetup "version"
@@ -193,6 +196,10 @@ function isVersion {
   [[ "$1" =~ $REGEX_VERSION ]] && echo "true" || echo "false"
 }
 
+function isCID() {
+    if ($(isNullOrEmpty "$1")) ; then echo "false" ; else [[ "$1" =~ $REGEX_CID ]] && echo "true" || echo "false" ; fi
+}
+
 function date2unix() {
     local DATE_TMP=""
     [ -z "$*" ] && DATE_TMP="$(timeout 1 cat 2> /dev/null || echo "")" || DATE_TMP="$*"
@@ -226,6 +233,16 @@ function isFileEmpty() {
         [ -z "$TEXT" ] && TEXT=$(tail -c 64 "$FILE" 2>/dev/null | tr -d '\0\011\012\013\014\015\040' 2>/dev/null || echo '')
         [ -z "$TEXT" ] && TEXT=$(cat $FILE | tr -d '\0\011\012\013\014\015\040' 2>/dev/null || echo -n "")
         [ ! -z "$TEXT" ] && echo "false" || echo "true"
+    fi
+}
+
+function isSameFile() {
+    local FILE1="$1"
+    local FILE2="$2"
+    if [ ! -z $FILE1 ] && [ -f $FILE1 ] && [ ! -z $FILE2 ] && [ -f $FILE2 ] ; then
+        echo $(cmp --silent $FILE1 $FILE2 && echo "true" || echo "false")
+    else
+        echo "false"
     fi
 }
 
@@ -263,13 +280,10 @@ function md5() {
 }
 
 function strLength() {
+    [ "$1" == "-e" ] && echo "2" && return 0
     local result=""
     [ -z "$1" ] && result="0" || result=$(echo "$1" | awk '{print length}') || result=-1
-    if ($(isNumber "$result")) ; then
-        echo $result
-    else
-        echo -1
-    fi
+    ($(isNumber "$result")) && echo $result || echo -1
 }
 
 function strStartsWith() {
@@ -299,6 +313,27 @@ function strEndsWith() {
         [ "$substr" == "$suffix" ] && echo "true" && return 0 || echo "false" && return 0
     fi
     echo "false"
+}
+
+# getArgs --test="lol1" --tes-t="lol-l" --test2="lol 2" -e=ok -t=ok2
+function getArgs() {
+    for arg in "$@" ; do
+        ($(strStartsWith "$arg" "-")) && (! $(strStartsWith "$arg" "--")) && arg="-${arg}"
+        if ($(strStartsWith "$arg" "--")) && [[ "$arg" == *"="* ]] && [[ "$arg" != "--="* ]] && [[ "$arg" != "-="* ]] ; then
+            local arg_len=$(strLength "$arg")
+            local prefix=$(echo $arg | cut -d'=' -f1)
+            local prefix_len=$(strLength "$prefix")
+            local n="-$((arg_len - prefix_len - 1))"
+            local val="${arg:$n}"
+            prefix="$(echo $prefix  | sed -z 's/^-*//')"
+            local key=$(echo "$prefix" | tr '-' '_')
+            echoInfo "$key='$val'"
+            eval $key="'$val'"
+        else
+            echoErr "ERROR: Invalid argument '$arg', missing name, '--' and/or '=' operators"
+            return 1
+        fi
+    done
 }
 
 # Allows to safely download file from external resources by hash verification or cosign file signature
@@ -643,17 +678,24 @@ function jsonObjEdit() {
     fi
 }
 
-# e.g. urlExists "18.168.78.192:11000/download/peers.txt"
+function isURL() {
+    if ($(isNullOrEmpty "$1")) || ($(isVersion "$1")) ; then echo "false" ; 
+    else ( [[ "$1" =~ $REGEX_URL1 ]] || [[ "$1" =~ $REGEX_URL2 ]]  ) && echo "true" || echo "false" ; fi
+}
+
+# e.g. urlExists "18.168.78.192:11000/download/peers.txt" 10
 function urlExists() {
+    local timeout="$2" && (! $(isNaturalNumber $timeout)) && timeout=10
     if ($(isNullOrEmpty "$1")) ; then echo "false"
-    elif curl -r0-0 --fail --silent "$1" >/dev/null; then echo "true"
+    elif curl -r0-0 --fail --silent -m $timeout "$1" >/dev/null; then echo "true"
     else echo "false" ; fi
 }
 
 # TODO: Investigate 0 output
-# urlContentLength 18.168.78.192:11000/api/snapshot
+# urlContentLength 18.168.78.192:11000/api/snapshot 10
 function urlContentLength() {
-    local VAL=$(curl --fail $1 --dump-header /dev/fd/1 --silent 2> /dev/null | grep -i Content-Length -m 1 2> /dev/null | awk '{print $2}' 2> /dev/null || echo -n "")
+    local timeout="$2" && (! $(isNaturalNumber $timeout)) && timeout=10
+    local VAL=$(curl --fail $1 --dump-header /dev/fd/1 --silent -m $timeout  2> /dev/null | grep -i Content-Length -m 1 2> /dev/null | awk '{print $2}' 2> /dev/null || echo -n "")
     # remove invisible whitespace characters
     VAL=$(echo ${VAL%$'\r'})
     (! $(isNaturalNumber $VAL)) && VAL=0
