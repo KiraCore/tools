@@ -1,0 +1,420 @@
+name: Build, Test & Publish
+
+on:
+  push:
+    branches: [ release/v*.*.*, feature/*, master, dev, latest, testnet-*, mainnet-*, kira-* ]
+  pull_request:
+    branches: [ release/v*.*.*, bugfix/*, master, dev, latest, testnet-*, mainnet-*, kira-* ]
+jobs:
+  build-amd64:
+    name: AMD64 - Repo Test & Build
+    runs-on: [ self-hosted, github-actions-amd64-runner-2 ]
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      pull-requests: write
+    container: 
+      image: ghcr.io/kiracore/docker/base-image:v0.11.2
+    steps:
+          # Work around https://github.com/actions/checkout/issues/760
+          - name: Add safe.directory
+            run: |
+              git config --global --add safe.directory /github/workspace
+              git config --global --add safe.directory $PWD
+          # ref.: https://github.com/actions/checkout, v3.0.0
+          - name: Checkout repository
+            uses: actions/checkout@a12a3943b4bdde767164f792f33f40b04645d846
+          - name: Extract branch name on push
+            if: github.event_name == 'push'
+            shell: bash
+            run: |
+              echo "SOURCE_BRANCH=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
+              echo "DESTINATION_BRANCH=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
+          - name: Extract branch name on pull request
+            if: github.event_name == 'pull_request'
+            env:
+              REF_BRANCH: ${{ github.event.pull_request.head.ref }}
+              BASE_REF_BRANCH: ${{ github.base_ref }}
+            shell: bash
+            run: |
+              echo "SOURCE_BRANCH=$(echo ${{ env.REF_BRANCH }})" >> $GITHUB_ENV
+              echo "DESTINATION_BRANCH=$(echo ${{ env.BASE_REF_BRANCH }})" >> $GITHUB_ENV
+          - name: Archive src, install latest bash-utils and setup envs
+            run: |
+              set -x
+              set -e
+              WORK_DIR=$PWD
+              echo "(current dir): $WORK_DIR" && ls -l ./
+              cd ../ && tar -czvf src.tar.gz -C ./tools . && cp ./src.tar.gz ./tools/src.tar.gz
+              cd $WORK_DIR
+              chmod -Rv 555 ./scripts ./bash-utils
+              ./bash-utils/bash-utils.sh bashUtilsSetup
+              RELEASE_VER="$(./scripts/version.sh)" && echo "RELEASE_VER=$RELEASE_VER" >> $GITHUB_ENV
+              REPOSITORY_NAME="${{ github.event.repository.name }}" && echo "REPOSITORY_NAME=$REPOSITORY_NAME" >> $GITHUB_ENV
+              git ls-remote https://github.com/kiracore/$REPOSITORY_NAME | egrep -q "refs/tags/${RELEASE_VER}$" && echo "RELEASE_EXISTS=true" >> $GITHUB_ENV || echo "RELEASE_EXISTS=false" >> $GITHUB_ENV
+              if [[ "$RELEASE_VER" =~ $VERSION_REGEX ]] && [[ "$SOURCE_BRANCH" =~ $VERSION_REGEX ]] && [ "$SOURCE_BRANCH" != "$RELEASE_VER" ] ; then 
+                echo "ERROR: Version branch name MUST be the same as the app version, run scripts/version.sh to check app version!" 
+                exit 1
+              else
+                echo "INFO: Variables setup succeeded"
+              fi
+          - name: Print debug data before build
+            run: |
+              set -x
+              echo "Bash Utils version: $(bash-utils bashUtilsVersion)"
+              echo "     Source branch: ${{ env.SOURCE_BRANCH }}"
+              echo "Destination branch: ${{ env.DESTINATION_BRANCH }}"
+              echo "        Event name: ${{ github.event_name }}"
+              echo "   Repository name: ${{ env.REPOSITORY_NAME }}"
+              echo "   Release version: ${{ env.RELEASE_VER }}"
+              echo "    Release exists: ${{ env.RELEASE_EXISTS }}"
+              go version
+          - name: Testing & Building TOOLS
+            run: |
+              set -x
+              echo "(current dir): $PWD" && ls -l ./
+              tar xvf ./src.tar.gz
+              chmod -Rv 555 ./scripts ./bash-utils ./tmconnect/scripts ./tmkms-key-import/scripts ./validator-key-gen/scripts ./bash-utils/scripts ./bip39gen/scripts ./bip39gen/scripts ./ipfs-api/scripts
+              chmod -Rv 666 ./RELEASE.md 
+              export SOURCE_BRANCH=${{ env.SOURCE_BRANCH }}
+              make test
+              make build
+              tmconnect version
+          - name: Publishing TOOLS binaries
+            shell: bash
+            run: |
+              set -x
+              make publish
+              touch ./RELEASE.md
+              cp -fv ./RELEASE.md ./bin/RELEASE.md
+              cp -fv ./src.tar.gz ./bin/source-code.tar.gz
+              tar -czvf tools-bin-amd64.tar.gz -C ./bin .
+          - name: Uploading artifacts
+            uses: actions/upload-artifact@v3.0.0
+            with:
+              name: tools-bin-amd64
+              path: ./tools-bin-amd64.tar.gz
+  build-arm64:
+    name: ARM64 - Repo Test & Build
+    runs-on: [ self-hosted, github-actions-arm64-runner-1 ]
+    needs: [build-amd64]
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      pull-requests: write
+    container: 
+      image: ghcr.io/kiracore/docker/base-image:v0.11.2
+    steps:
+          # Work around https://github.com/actions/checkout/issues/760
+          - name: Add safe.directory
+            run: |
+              git config --global --add safe.directory /github/workspace
+              git config --global --add safe.directory $PWD
+          # ref.: https://github.com/actions/checkout, v3.0.0
+          - name: Checkout repository
+            uses: actions/checkout@a12a3943b4bdde767164f792f33f40b04645d846
+          - name: Extract branch name on push
+            if: github.event_name == 'push'
+            shell: bash
+            run: |
+              echo "SOURCE_BRANCH=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
+              echo "DESTINATION_BRANCH=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
+          - name: Extract branch name on pull request
+            if: github.event_name == 'pull_request'
+            env:
+              REF_BRANCH: ${{ github.event.pull_request.head.ref }}
+              BASE_REF_BRANCH: ${{ github.base_ref }}
+            shell: bash
+            run: |
+              echo "SOURCE_BRANCH=$(echo ${{ env.REF_BRANCH }})" >> $GITHUB_ENV
+              echo "DESTINATION_BRANCH=$(echo ${{ env.BASE_REF_BRANCH }})" >> $GITHUB_ENV
+          - name: Setup ENV variables & install bash-utils
+            run: |
+              set -x
+              set -e
+              WORK_DIR=$PWD
+              echo "(current dir): $WORK_DIR" && ls -l ./
+              cd $WORK_DIR
+              chmod -Rv 555 ./scripts ./bash-utils
+              ./bash-utils/bash-utils.sh bashUtilsSetup
+              RELEASE_VER="$(./scripts/version.sh)" && echo "RELEASE_VER=$RELEASE_VER" >> $GITHUB_ENV
+              REPOSITORY_NAME="${{ github.event.repository.name }}" && echo "REPOSITORY_NAME=$REPOSITORY_NAME" >> $GITHUB_ENV
+              git ls-remote https://github.com/kiracore/$REPOSITORY_NAME | egrep -q "refs/tags/${RELEASE_VER}$" && echo "RELEASE_EXISTS=true" >> $GITHUB_ENV || echo "RELEASE_EXISTS=false" >> $GITHUB_ENV
+              if [[ "$RELEASE_VER" =~ $VERSION_REGEX ]] && [[ "$SOURCE_BRANCH" =~ $VERSION_REGEX ]] && [ "$SOURCE_BRANCH" != "$RELEASE_VER" ] ; then 
+                echo "ERROR: Version branch name MUST be the same as the app version, run scripts/version.sh to check app version!" 
+                exit 1
+              else
+                echo "INFO: Variables setup succeeded"
+              fi
+          - name: Print debug data before build
+            run: |
+              echo "Bash Utils version: $(bash-utils bashUtilsVersion)"
+              echo "     Source branch: ${{ env.SOURCE_BRANCH }}"
+              echo "Destination branch: ${{ env.DESTINATION_BRANCH }}"
+              echo "        Event name: ${{ github.event_name }}"
+              echo "   Repository name: ${{ env.REPOSITORY_NAME }}"
+              echo "   Release version: ${{ env.RELEASE_VER }}"
+              echo "    Release exists: ${{ env.RELEASE_EXISTS }}"
+          - name: Download AMD64 artifacts
+            # ref.: https://github.com/actions/download-artifact, v3.0.0
+            uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741
+            with:
+              name: tools-bin-amd64
+          - name: Testing & Building TOOLS
+            run: |
+              set -x
+              echo "(current dir): $PWD" && ls -l ./
+              chmod -Rv 555 ./scripts ./bash-utils ./tmconnect/scripts ./tmkms-key-import/scripts ./validator-key-gen/scripts ./bip39gen/scripts ./bip39gen/scripts ./ipfs-api/scripts
+              export SOURCE_BRANCH=${{ env.SOURCE_BRANCH }}
+              make test
+              make build
+              tmconnect version
+          - name: Publishing TOOLS binaries
+            shell: bash
+            run: |
+              make publish
+              tar xvf ./tools-bin-amd64.tar.gz -C ./bin
+              chmod -Rv 555 ./bin && chmod -v 666 ./bin/RELEASE.md
+              echo -e "\n\r\n\r\`\`\`" >> ./bin/RELEASE.md
+              echo -e "                   Release Versions: $RELEASE_VER" >> ./bin/RELEASE.md
+              echo -e "                  Release Date Time: $(date --rfc-2822)" >> ./bin/RELEASE.md
+              echo "         tmconnect-darwin-amd64.deb: sha256:$(sha256sum ./bin/tmconnect-darwin-amd64.deb  | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "         tmconnect-darwin-arm64.deb: sha256:$(sha256sum ./bin/tmconnect-darwin-arm64.deb  | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "          tmconnect-linux-amd64.deb: sha256:$(sha256sum ./bin/tmconnect-linux-amd64.deb   | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "          tmconnect-linux-arm64.deb: sha256:$(sha256sum ./bin/tmconnect-linux-arm64.deb   | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "        tmconnect-windows-amd64.exe: sha256:$(sha256sum ./bin/tmconnect-windows-amd64.exe | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "        tmconnect-windows-arm64.exe: sha256:$(sha256sum ./bin/tmconnect-windows-arm64.exe | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "       tmkms-key-import-linux-amd64: sha256:$(sha256sum ./bin/tmkms-key-import-linux-amd64 | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "       tmkms-key-import-linux-arm64: sha256:$(sha256sum ./bin/tmkms-key-import-linux-arm64 | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo " validator-key-gen-darwin-amd64.deb: sha256:$(sha256sum ./bin/validator-key-gen-darwin-amd64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo " validator-key-gen-darwin-arm64.deb: sha256:$(sha256sum ./bin/validator-key-gen-darwin-arm64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "  validator-key-gen-linux-amd64.deb: sha256:$(sha256sum ./bin/validator-key-gen-linux-amd64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "  validator-key-gen-linux-arm64.deb: sha256:$(sha256sum ./bin/validator-key-gen-linux-arm64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "validator-key-gen-windows-amd64.exe: sha256:$(sha256sum ./bin/validator-key-gen-windows-amd64.exe | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "validator-key-gen-windows-arm64.exe: sha256:$(sha256sum ./bin/validator-key-gen-windows-arm64.exe | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "          bip39gen-darwin-amd64.deb: sha256:$(sha256sum ./bin/bip39gen-darwin-amd64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "          bip39gen-darwin-arm64.deb: sha256:$(sha256sum ./bin/bip39gen-darwin-arm64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "           bip39gen-linux-amd64.deb: sha256:$(sha256sum ./bin/bip39gen-linux-amd64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "           bip39gen-linux-arm64.deb: sha256:$(sha256sum ./bin/bip39gen-linux-arm64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "         bip39gen-windows-amd64.exe: sha256:$(sha256sum ./bin/bip39gen-windows-amd64.exe | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "         bip39gen-windows-arm64.exe: sha256:$(sha256sum ./bin/bip39gen-windows-arm64.exe | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "          ipfs-api-darwin-amd64.deb: sha256:$(sha256sum ./bin/ipfs-api-darwin-amd64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "          ipfs-api-darwin-arm64.deb: sha256:$(sha256sum ./bin/ipfs-api-darwin-arm64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "           ipfs-api-linux-amd64.deb: sha256:$(sha256sum ./bin/ipfs-api-linux-amd64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "           ipfs-api-linux-arm64.deb: sha256:$(sha256sum ./bin/ipfs-api-linux-arm64.deb | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "         ipfs-api-windows-amd64.exe: sha256:$(sha256sum ./bin/ipfs-api-windows-amd64.exe | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "         ipfs-api-windows-arm64.exe: sha256:$(sha256sum ./bin/ipfs-api-windows-arm64.exe | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "                      bash-utils.sh: sha256:$(sha256sum ./bin/bash-utils.sh | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo "                 source-code.tar.gz: sha256:$(sha256sum ./bin/source-code.tar.gz | awk '{ print $1 }')" >> ./bin/RELEASE.md
+              echo -e "\`\`\`"   >> ./bin/RELEASE.md
+              tar -czvf tools-bin-arm64.tar.gz -C ./bin .
+          - name: Uploading artifacts
+            uses: actions/upload-artifact@v3.0.0
+            with:
+              name: tools-bin-arm64
+              path: ./tools-bin-arm64.tar.gz
+  release:
+    name: Create Release
+    runs-on: ubuntu-20.04
+    needs: [build-arm64]
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+      pull-requests: write
+    steps:
+            # ref.: https://github.com/sigstore/cosign-installer, v2.2.0
+          - name: Install cosign
+            uses: sigstore/cosign-installer@d6a3abf1bdea83574e28d40543793018b6035605
+            with:
+              cosign-release: 'v1.7.2'
+          - name: Download AMD64 artifacts
+            # ref.: https://github.com/actions/download-artifact, v3.0.0
+            uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741
+            with:
+              name: tools-bin-amd64
+          - name: Download ARM64 artifacts
+            # ref.: https://github.com/actions/download-artifact, v3.0.0
+            uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741
+            with:
+              name: tools-bin-arm64
+          - name: Inspecting & organizing artifacts
+            run: |
+              echo "(current dir): $PWD" && ls -l ./
+              tar xvf ./tools-bin-arm64.tar.gz && echo "(current dir): $PWD" && ls -l ./ && chmod -Rv 555 ./
+              tar xvf ./tools-bin-amd64.tar.gz && echo "(current dir): $PWD" && ls -l ./ && chmod -Rv 555 ./
+              RELEASE_VER=$(cat ./RELEASE.md | tac | grep -Fn -m 1 'Release Versions: ' | rev | cut -d ":" -f1 | rev | xargs | tr -dc '[:alnum:]\-\.' || echo '')
+              echo "RELEASE_VER=$RELEASE_VER" >> $GITHUB_ENV
+              RELEASE_BRANCH="release/$RELEASE_VER" && echo "RELEASE_BRANCH=$RELEASE_BRANCH" >> $GITHUB_ENV
+              REPOSITORY_NAME="${{ github.event.repository.name }}"
+              echo "REPOSITORY_NAME=$REPOSITORY_NAME" >> $GITHUB_ENV
+              git ls-remote https://github.com/kiracore/$REPOSITORY_NAME | egrep -q "refs/tags/${RELEASE_VER}$" && echo "RELEASE_EXISTS=true" >> $GITHUB_ENV || echo "RELEASE_EXISTS=false" >> $GITHUB_ENV
+              [[ "$RELEASE_VER" == *"-rc"* ]] && echo "PRE_RELEASE=true" >> $GITHUB_ENV || echo "PRE_RELEASE=false" >> $GITHUB_ENV
+          # Branch name is also a version of the release
+          # ref: https://stackoverflow.com/questions/58033366/how-to-get-the-current-branch-within-github-actions
+          - name: Extract branch name on push
+            if: github.event_name == 'push'
+            shell: bash
+            run: |
+              echo "SOURCE_BRANCH=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
+              echo "DESTINATION_BRANCH=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
+          - name: Extract branch name on pull request
+            if: github.event_name == 'pull_request'
+            env:
+              REF_BRANCH: ${{ github.event.pull_request.head.ref }}
+              BASE_REF_BRANCH: ${{ github.base_ref }}
+            shell: bash
+            run: |
+              echo "SOURCE_BRANCH=$(echo ${{ env.REF_BRANCH }})" >> $GITHUB_ENV
+              echo "DESTINATION_BRANCH=$(echo ${{ env.BASE_REF_BRANCH }})" >> $GITHUB_ENV
+          - name: Print debug data before publishing
+            run: |
+              echo " Source branch: ${{ env.SOURCE_BRANCH }}"
+              echo "  Dest. branch: ${{ env.DESTINATION_BRANCH }}"
+              echo "     Repo Name: ${{ env.REPOSITORY_NAME }}"
+              echo "    Event name: ${{ github.event_name }}"
+              echo "  Release ver.: ${{ env.RELEASE_VER }}"
+              echo "Release branch: ${{ env.RELEASE_BRANCH }}"
+              echo "Release exists: ${{ env.RELEASE_EXISTS }}"
+              echo "   Pre-release: ${{ env.PRE_RELEASE }}"
+          - name: Reject on error
+            # ref.: https://github.com/andrewslotin/rummelsnuff, v1.1.0
+            uses: andrewslotin/rummelsnuff@a0c9c1929f44eefff922aced1ee4dd64eddf12d6
+            if: ${{ failure() }}
+            with:
+              spam_label: "Build Errors"
+              close_spam_prs: "yes"
+              access_token: ${{ secrets.GITHUB_TOKEN }}
+          - name: Signing release files
+            if: |
+              github.event_name == 'push' &&
+              ( env.RELEASE_EXISTS == false || env.RELEASE_EXISTS == 'false' ) &&
+              ( startsWith(env.SOURCE_BRANCH, 'release/v') && contains(env.SOURCE_BRANCH, '.') )
+            shell: bash
+            env:
+              KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+              COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+            run: |
+              echo "$KEY" > ../cosign.key
+              for FILE in *; do FILE_NAME=$(basename $FILE); cosign sign-blob --key=../cosign.key --output-signature=./${FILE_NAME}.sig ./$FILE_NAME; done
+              rm -fv ../cosign.key
+          # ref: https://github.com/softprops/action-gh-release, v0.1.14
+          # Release on merge only (push action) - this should run only once
+          - name: Publish release
+            if: |
+              github.event_name == 'push' &&
+              ( env.RELEASE_EXISTS == false || env.RELEASE_EXISTS == 'false' ) &&
+              ( startsWith(env.SOURCE_BRANCH, 'release/v') && contains(env.SOURCE_BRANCH, '.') )
+            uses: softprops/action-gh-release@1e07f4398721186383de40550babbdf2b84acfc5
+            with:
+              target_commitish: ${{ github.sha }}
+              body_path: RELEASE.md
+              tag_name: ${{ env.RELEASE_VER }}
+              name: ${{ env.RELEASE_VER }}
+              prerelease: ${{ env.PRE_RELEASE }}
+              draft: false
+              fail_on_unmatched_files: true
+              files: |
+                ./tmconnect-linux-amd64.deb
+                ./tmconnect-linux-amd64.deb.sig
+                ./tmconnect-darwin-amd64.deb
+                ./tmconnect-darwin-amd64.deb.sig
+                ./tmconnect-windows-amd64.exe
+                ./tmconnect-windows-amd64.exe.sig
+                ./tmkms-key-import-linux-amd64
+                ./tmkms-key-import-linux-amd64.sig
+                ./validator-key-gen-linux-amd64.deb
+                ./validator-key-gen-linux-amd64.deb.sig
+                ./validator-key-gen-windows-amd64.exe
+                ./validator-key-gen-windows-amd64.exe.sig
+                ./validator-key-gen-darwin-amd64.deb
+                ./validator-key-gen-darwin-amd64.deb.sig
+                ./bip39gen-linux-amd64.deb
+                ./bip39gen-linux-amd64.deb.sig
+                ./bip39gen-windows-amd64.exe
+                ./bip39gen-windows-amd64.exe.sig
+                ./bip39gen-darwin-amd64.deb
+                ./bip39gen-darwin-amd64.deb.sig
+                ./tmconnect-linux-arm64.deb
+                ./tmconnect-linux-arm64.deb.sig
+                ./tmconnect-darwin-arm64.deb
+                ./tmconnect-darwin-arm64.deb.sig
+                ./tmconnect-windows-arm64.exe
+                ./tmconnect-windows-arm64.exe.sig
+                ./tmkms-key-import-linux-arm64
+                ./tmkms-key-import-linux-arm64.sig
+                ./validator-key-gen-linux-arm64.deb
+                ./validator-key-gen-linux-arm64.deb.sig
+                ./validator-key-gen-windows-arm64.exe
+                ./validator-key-gen-windows-arm64.exe.sig
+                ./validator-key-gen-darwin-arm64.deb
+                ./validator-key-gen-darwin-arm64.deb.sig
+                ./bip39gen-linux-arm64.deb
+                ./bip39gen-linux-arm64.deb.sig
+                ./bip39gen-windows-arm64.exe
+                ./bip39gen-windows-arm64.exe.sig
+                ./bip39gen-darwin-arm64.deb
+                ./bip39gen-darwin-arm64.deb.sig
+                ./ipfs-api-linux-arm64.deb
+                ./ipfs-api-linux-arm64.deb.sig
+                ./ipfs-api-windows-arm64.exe
+                ./ipfs-api-windows-arm64.exe.sig
+                ./ipfs-api-darwin-arm64.deb
+                ./ipfs-api-darwin-arm64.deb.sig
+                ./ipfs-api-linux-amd64.deb
+                ./ipfs-api-linux-amd64.deb.sig
+                ./ipfs-api-windows-amd64.exe
+                ./ipfs-api-windows-amd64.exe.sig
+                ./ipfs-api-darwin-amd64.deb
+                ./ipfs-api-darwin-amd64.deb.sig
+                ./bash-utils.sh
+                ./bash-utils.sh.sig
+                ./source-code.tar.gz
+                ./source-code.tar.gz.sig
+          - name: Cleanup all resources
+            if: always()
+            shell: bash
+            run: |
+              shred -vzn 3 ../cosign.key || echo "WARNING: Failed to shred key file"
+              rm -fv ../cosign.key
+              rm -rfv ./*
+              echo "(current dir): $PWD" && ls -l ./
+          # ref.: https://github.com/hmarr/auto-approve-action, v2.1.0
+          - name: Approve pull request on success
+            uses: hmarr/auto-approve-action@5d04a5ca6da9aeb8ca9f31a5239b96fc3e003029
+            if: |
+              ( github.event_name == 'pull_request' ) &&
+              ( env.SOURCE_BRANCH == env.RELEASE_BRANCH || env.DESTINATION_BRANCH == env.RELEASE_BRANCH )
+            with:
+              github-token: "${{ secrets.GITHUB_TOKEN }}"
+          # Work around https://github.com/actions/checkout/issues/760
+          - name: Add safe.directory
+            run: |
+              git config --global --add safe.directory /github/workspace
+              git config --global --add safe.directory $PWD
+          # ref.: https://github.com/actions/checkout, v3.0.0
+          - name: Checkout repository
+            uses: actions/checkout@a12a3943b4bdde767164f792f33f40b04645d846
+          - name: Create PR from a version branch to latest
+            # ref. repo-sync/pull-request is broken, using cea2aj/pull-request instead
+            uses: cea2aj/pull-request@84eb0c3478f13651e5649367941b867ca02d7926
+            if: |
+              github.event_name == 'push' &&
+              ( startsWith(env.SOURCE_BRANCH, 'release/v') && contains(env.SOURCE_BRANCH, '.') )
+            with:
+              github_token: ${{ secrets.REPO_ACCESS }}
+              source_branch: ${{ env.SOURCE_BRANCH }}
+              destination_branch: 'latest'
+              pr_title: "${{ env.SOURCE_BRANCH }} -> latest" 
+              pr_label: "kira-automation,automerge"
+              pr_allow_empty: true
+          - name: Auto-merge version branch to latest branch
+            uses: pascalgn/automerge-action@04dfc9eae2586d19b7362d4f6413c48135d9c25a
+            if: github.event_name == 'pull_request' && env.DESTINATION_BRANCH == 'latest' &&
+              ( startsWith(env.SOURCE_BRANCH, 'release/v') && contains(env.SOURCE_BRANCH, '.') )
+            env:
+              MERGE_LABELS: "automerge"
+              GITHUB_TOKEN: "${{ secrets.REPO_ACCESS }}"
+              LOG: "TRACE"
