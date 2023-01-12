@@ -376,6 +376,8 @@ function safeWget() {
     local EXPECTED_HASH_ARR=($(echo "$EXPECTED_HASH" | tr ',' '\n'))
     local EXPECTED_HASH_FIRST="${EXPECTED_HASH_ARR[0]}"
     local COSIGN_PUB_KEY=""
+    local PUB_URL=""
+    local DOWNLOAD_SUCCESS="false"
 
     if (! $(isCommand cosign)) ; then
         echoErr "ERROR: Cosign tool is not installed, please install version v1.13.1 or later."
@@ -387,25 +389,24 @@ function safeWget() {
             echoInfo "INFO: Detected IPFS CID, searching available gatewys..."
             COSIGN_PUB_KEY="$TMP_PATH_PUB"
 
-            local DOWNLOAD_SUCCESS="false"
-            local PUB_URL="https://gateway.ipfs.io/ipfs/${EXPECTED_HASH_FIRST}"
-            if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [ $(urlContentLength "$PUB_URL" 12) -gt 100 ] ) ; then
-                ( wget "$PUB_URL" -O "$COSIGN_PUB_KEY" && DOWNLOAD_SUCCESS="true" ) || echoWarn "WARNING: Faild download from gateway.ipfs.io :("
+            PUB_URL="https://gateway.ipfs.io/ipfs/${EXPECTED_HASH_FIRST}"
+            if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" 12) -gt 100 ]] ) ; then
+                wget "$PUB_URL" -O "$COSIGN_PUB_KEY" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from gateway.ipfs.io :("
             fi
 
             PUB_URL="https://dweb.link/ipfs/${EXPECTED_HASH_FIRST}"
-            if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [ $(urlContentLength "$PUB_URL" 12) -gt 100 ] ) ; then
-                ( wget "$PUB_URL" -O "$COSIGN_PUB_KEY" && DOWNLOAD_SUCCESS="true" ) || echoWarn "WARNING: Faild download from dweb.link :("
+            if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" 12) -gt 100 ]] ) ; then
+                wget "$PUB_URL" -O "$COSIGN_PUB_KEY" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from dweb.link :("
             fi
 
             PUB_URL="https://ipfs.joaoleitao.org/ipfs/${EXPECTED_HASH_FIRST}" 
-            if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [ $(urlContentLength "$PUB_URL" 12) -gt 100 ] ) ; then
-                ( wget "$PUB_URL" -O "$COSIGN_PUB_KEY" && DOWNLOAD_SUCCESS="true" ) || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
+            if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" 12) -gt 100 ]] ) ; then
+                wget "$PUB_URL" -O "$COSIGN_PUB_KEY" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
             fi
 
             PUB_URL="https://ipfs.kira.network/ipfs/${EXPECTED_HASH_FIRST}"
-            if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [ $(urlContentLength "$PUB_URL" 24) -gt 100 ] ) ; then
-                ( wget "$PUB_URL" -O "$COSIGN_PUB_KEY" && DOWNLOAD_SUCCESS="true" ) || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
+            if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" 24) -gt 100 ]] ) ; then
+                wget "$PUB_URL" -O "$COSIGN_PUB_KEY" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
             fi
 
             if ( [ "$DOWNLOAD_SUCCESS" != "true" ] || [ ! -f "$COSIGN_PUB_KEY" ] ) ; then
