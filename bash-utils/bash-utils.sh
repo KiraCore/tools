@@ -385,11 +385,13 @@ function safeWget() {
     if (! $(isSHA256 "$EXPECTED_HASH_FIRST")) ; then
         if ($(isCID "$EXPECTED_HASH_FIRST")) ; then
             echoInfo "INFO: Detected IPFS CID, searching available gatewys..."
-            if ($(urlExists "https://gateway.ipfs.io/ipfs/${EXPECTED_HASH_FIRST}" 4)) ; then
+            if ($(urlExists "https://gateway.ipfs.io/ipfs/${EXPECTED_HASH_FIRST}" 12)) ; then
                 PUB_URL="https://gateway.ipfs.io/ipfs/${EXPECTED_HASH_FIRST}"
-            elif ($(urlExists "https://dweb.link/ipfs/${EXPECTED_HASH_FIRST}" 8)) ; then
+            elif ($(urlExists "https://dweb.link/ipfs/${EXPECTED_HASH_FIRST}" 12)) ; then
                 PUB_URL="https://dweb.link/ipfs/${EXPECTED_HASH_FIRST}"
-            elif ($(urlExists "https://ipfs.kira.network/ipfs/${EXPECTED_HASH_FIRST}" 4)) ; then
+            elif ($(urlExists "https://ipfs.joaoleitao.org/ipfs/${EXPECTED_HASH_FIRST}" 12)) ; then
+                PUB_URL="https://ipfs.joaoleitao.org/ipfs/${EXPECTED_HASH_FIRST}"
+            elif ($(urlExists "https://ipfs.kira.network/ipfs/${EXPECTED_HASH_FIRST}" 24)) ; then
                 PUB_URL="https://ipfs.kira.network/ipfs/${EXPECTED_HASH_FIRST}"
             else
                 echoErr "ERROR: Failed to locate public key file '$EXPECTED_HASH_FIRST' on any public IPFS gateway :("
