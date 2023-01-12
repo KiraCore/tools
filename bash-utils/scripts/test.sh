@@ -92,6 +92,11 @@ echoWarn "TEST: safeWget"
 rm -fv /usr/local/bin/cosign_amd64 /usr/local/bin/cosign_arm64
 rm -rfv /tmp/downloads
 
+# safe fetch with public key from IPFS and grab default sig file
+TEST_FILE="/tmp/bash-utils.sh.tmp"
+safeWget "$TEST_FILE" https://github.com/KiraCore/tools/releases/download/v0.2.20/bash-utils.sh QmeqFDLGfwoWgCy2ZEFXerVC5XW8c5xgRyhK5bLArBr2ue
+FILE_SHA256=$(sha256 $TEST_FILE) && EXPECTED_FILE_SHA256="0b1d5565448a94c5e7717d11c11150b4dd7992ac2227dd253067420102ce5c71"
+
 safeWget /usr/local/bin/cosign_arm64 "https://github.com/sigstore/cosign/releases/download/v1.7.2/cosign-$(getPlatform)-arm64" \
     "2448231e6bde13722aad7a17ac00789d187615a24c7f82739273ea589a42c94b,80f80f3ef5b9ded92aa39a9dd8e028f5b942a3b6964f24c47b35e7f6e4d18907"
 safeWget /usr/local/bin/cosign_amd64 "https://github.com/sigstore/cosign/releases/download/v1.7.2/cosign-$(getPlatform)-amd64" \
