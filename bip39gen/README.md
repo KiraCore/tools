@@ -2,7 +2,7 @@
 
 KIRA `bip39gen` is an independent CLI tool, allowing for generation of mnemonics with external, user provided entropy as well as known entropy which can be provided as string or hex (specify --hex flag). Opposed to other mnemonic generators this tool provides explicit, human readable proof of the correct key generation and mixing with the human provided entropy (if such is specified).
 
-### Example
+### Use example
 
 ```bash
 > bip39gen mnemonic --verbose=true --length=12
@@ -36,10 +36,10 @@ Mnemonic words:
 conduct rally road affair harvest evil zone despair immune pyramid define order
 ```
 
-### Setup
+### Setup from binary file
 
 ```bash
-TOOLS_VERSION="v0.3.21"
+TOOLS_VERSION="v0.3.0"
 
 # Quick-Install bash-utils or see root repository README file for secure download
 FILE_NAME="bash-utils.sh" && \
@@ -48,5 +48,9 @@ FILE_NAME="bash-utils.sh" && \
  echoInfo "INFO: Installed bash-utils $(bash-utils bashUtilsVersion)"
 
 # Install bip39gen for platform specific system & verify signature file
-safeWget /bin/bip39gen "https://github.com/KiraCore/tools/releases/download/$TOOLS_VERSION/bip39gen-$(getPlatform)-$(getArch).deb" "QmeqFDLGfwoWgCy2ZEFXerVC5XW8c5xgRyhK5bLArBr2ue"
+safeWget ./bip39gen.deb \
+ "https://github.com/KiraCore/tools/releases/download/$TOOLS_VERSION/bip39gen-$(getPlatform)-$(getArch).deb" \
+ "QmeqFDLGfwoWgCy2ZEFXerVC5XW8c5xgRyhK5bLArBr2ue" && rm -rfv ./bip39gen && \
+ dpkg-deb -x ./bip39gen.deb ./bip39gen && cp -fv ./bip39gen/bin/bip39gen /usr/local/bin/bip39gen && \
+ chmod +x "/usr/local/bin/bip39gen" && rm -rfv ./bip39gen ./bip39gen.deb
 ```
