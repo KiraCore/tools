@@ -24,7 +24,7 @@ function bashUtilsVersion() {
 # this is default installation script for utils
 # ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
 function bashUtilsSetup() {
-    local BASH_UTILS_VERSION="v0.3.21"
+    local BASH_UTILS_VERSION="v0.3.0"
     local COSIGN_VERSION="v1.13.1"
     if [ "$1" == "version" ] ; then
         echo "$BASH_UTILS_VERSION"
@@ -376,6 +376,8 @@ function safeWget() {
     local EXPECTED_HASH_ARR=($(echo "$EXPECTED_HASH" | tr ',' '\n'))
     local EXPECTED_HASH_FIRST="${EXPECTED_HASH_ARR[0]}"
     local COSIGN_PUB_KEY=""
+    local PUB_URL=""
+    local DOWNLOAD_SUCCESS="false"
 
     if (! $(isCommand cosign)) ; then
         echoErr "ERROR: Cosign tool is not installed, please install version v1.13.1 or later."
@@ -385,19 +387,32 @@ function safeWget() {
     if (! $(isSHA256 "$EXPECTED_HASH_FIRST")) ; then
         if ($(isCID "$EXPECTED_HASH_FIRST")) ; then
             echoInfo "INFO: Detected IPFS CID, searching available gatewys..."
-            if ($(urlExists "https://gateway.ipfs.io/ipfs/${EXPECTED_HASH_FIRST}" 4)) ; then
-                PUB_URL="https://gateway.ipfs.io/ipfs/${EXPECTED_HASH_FIRST}"
-            elif ($(urlExists "https://dweb.link/ipfs/${EXPECTED_HASH_FIRST}" 8)) ; then
-                PUB_URL="https://dweb.link/ipfs/${EXPECTED_HASH_FIRST}"
-            elif ($(urlExists "https://ipfs.kira.network/ipfs/${EXPECTED_HASH_FIRST}" 4)) ; then
-                PUB_URL="https://ipfs.kira.network/ipfs/${EXPECTED_HASH_FIRST}"
-            else
-                echoErr "ERROR: Failed to locate public key file '$EXPECTED_HASH_FIRST' on any public IPFS gateway :("
-                return 1
+            COSIGN_PUB_KEY="$TMP_PATH_PUB"
+
+            PUB_URL="https://gateway.ipfs.io/ipfs/${EXPECTED_HASH_FIRST}"
+            if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" 12) -gt 100 ]] ) ; then
+                wget "$PUB_URL" -O "$COSIGN_PUB_KEY" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from gateway.ipfs.io :("
             fi
 
-            COSIGN_PUB_KEY="$TMP_PATH_PUB"
-            wget "$PUB_URL" -O "$COSIGN_PUB_KEY"
+            PUB_URL="https://dweb.link/ipfs/${EXPECTED_HASH_FIRST}"
+            if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" 12) -gt 100 ]] ) ; then
+                wget "$PUB_URL" -O "$COSIGN_PUB_KEY" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from dweb.link :("
+            fi
+
+            PUB_URL="https://ipfs.joaoleitao.org/ipfs/${EXPECTED_HASH_FIRST}" 
+            if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" 12) -gt 100 ]] ) ; then
+                wget "$PUB_URL" -O "$COSIGN_PUB_KEY" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
+            fi
+
+            PUB_URL="https://ipfs.kira.network/ipfs/${EXPECTED_HASH_FIRST}"
+            if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" 24) -gt 100 ]] ) ; then
+                wget "$PUB_URL" -O "$COSIGN_PUB_KEY" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
+            fi
+
+            if ( [ "$DOWNLOAD_SUCCESS" != "true" ] || [ ! -f "$COSIGN_PUB_KEY" ] ) ; then
+                echoErr "ERROR: Failed to locate or download public key file '$EXPECTED_HASH_FIRST' from any public IPFS gateway :("
+                return 1
+            fi
         elif (! $(isFileEmpty "$EXPECTED_HASH_FIRST")) ; then
             echoInfo "INFO: Detected public key file"
             COSIGN_PUB_KEY="$EXPECTED_HASH_FIRST"

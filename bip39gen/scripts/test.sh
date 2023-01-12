@@ -25,7 +25,7 @@ MNEMONIC_TEST_2=$($BIN_bip39gen mnemonic -l 12 -e "$ENTROPY")
 # Test correctness of raw entropy to match results from https://iancoleman.io/bip39/
 SEED_MNEMONIC="eagle gap major artwork napkin hover gate illness ball distance awful mountain salute guard scare edit scorpion praise trust potato cotton crazy unique result"
 # 9fc82e0a6f3ed36b25a667e7426fec137820ad489cbfbf45f01bc932ce5c6837
-ENTROPY_256="$(echo -n "$SEED_MNEMONIC" | sha256)"
+ENTROPY_256="$(echo -n "$SEED_MNEMONIC" | tr '[:upper:]' '[:lower:]' | sha256)"
 MNEMONIC_TEST_1=$(bip39gen mnemonic --length=24 --raw-entropy="$ENTROPY_256" --verbose=false --hex=true)
 MNEMONIC_TEST_2="panther door little taxi unfold remain notable smooth trap beach wild cheap link find carbon obey satisfy convince alone mystery coconut comfort patch undo"
 
