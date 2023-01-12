@@ -24,7 +24,8 @@ function bashUtilsVersion() {
 # this is default installation script for utils
 # ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
 function bashUtilsSetup() {
-    local BASH_UTILS_VERSION="v0.2.20"
+    local BASH_UTILS_VERSION="v0.3.21"
+    local COSIGN_VERSION="v1.13.1"
     if [ "$1" == "version" ] ; then
         echo "$BASH_UTILS_VERSION"
         return 0
@@ -84,6 +85,17 @@ function bashUtilsSetup() {
             bash-utils loadGlobEnvs
 
             echoInfo "INFO: SUCCESS!, Installed kira bash-utils $(bashUtilsVersion)"
+        fi
+
+        if (! $(isCommand cosign)) ; then
+            echoWarn "WARNING: Cosign tool is not installed, setting up $COSIGN_VERSION..."
+            if [[ "$(uname -m)" == *"ar"* ]] ; then ARCH="arm64"; else ARCH="amd64" ; fi && \
+             PLATFORM=$(uname) && FILE_NAME=$(echo "cosign-${PLATFORM}-${ARCH}" | tr '[:upper:]' '[:lower:]') && \
+             TMP_FILE="/tmp/${FILE_NAME}.tmp" && rm -fv "$TMP_FILE" && \
+             wget https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/$FILE_NAME -O "$TMP_FILE" && \
+             chmod +x -v "$TMP_FILE" && mv -fv "$TMP_FILE" /usr/local/bin/cosign
+
+             cosign version
         fi
     fi
 }
@@ -341,6 +353,7 @@ function getArgs() {
 # safeWget <file> <url> <hash>
 # safeWget <file> <url> <pubkey-path>
 # safeWget <file> <url> <hash>,<hash>,<hash>...
+# safeWget <file> <url> <CID>
 function safeWget() {
     local OUT_PATH=$1
     local FILE_URL=$2
@@ -351,23 +364,50 @@ function safeWget() {
     local TMP_DIR=/tmp/downloads
     local TMP_PATH="$TMP_DIR/${OUT_NAME}"
 
+    local PUB_URL=""
     local SIG_URL="${FILE_URL}.sig"
     local TMP_PATH_SIG="$TMP_DIR/${OUT_NAME}.sig"
+    local TMP_PATH_PUB="$TMP_DIR/${OUT_NAME}.pub"
 
     mkdir -p "$TMP_DIR"
-    rm -fv "$TMP_PATH_SIG"
+    rm -fv "$TMP_PATH_SIG" "$TMP_PATH_PUB"
 
     local FILE_HASH=$(sha256 $TMP_PATH)
     local EXPECTED_HASH_ARR=($(echo "$EXPECTED_HASH" | tr ',' '\n'))
+    local EXPECTED_HASH_FIRST="${EXPECTED_HASH_ARR[0]}"
     local COSIGN_PUB_KEY=""
-    if (! $(isSHA256 "${EXPECTED_HASH_ARR[0]}")) ; then
-        COSIGN_PUB_KEY="$EXPECTED_HASH" && EXPECTED_HASH=""
-        if ($(isCommand cosign)) && (! $(isFileEmpty $COSIGN_PUB_KEY)) ; then
-            echoWarn "WARNING: Checksum was not provided, checking if a signature file is available..."
-            # assume pubkey was provided instead of checksum
+
+    if (! $(isCommand cosign)) ; then
+        echoErr "ERROR: Cosign tool is not installed, please install version v1.13.1 or later."
+        return 1
+    fi
+
+    if (! $(isSHA256 "$EXPECTED_HASH_FIRST")) ; then
+        if ($(isCID "$EXPECTED_HASH_FIRST")) ; then
+            echoInfo "INFO: Detected IPFS CID, searching available gatewys..."
+            if ($(urlExists "https://gateway.ipfs.io/ipfs/${EXPECTED_HASH_FIRST}" 4)) ; then
+                PUB_URL="https://gateway.ipfs.io/ipfs/${EXPECTED_HASH_FIRST}"
+            elif ($(urlExists "https://dweb.link/ipfs/${EXPECTED_HASH_FIRST}" 8)) ; then
+                PUB_URL="https://dweb.link/ipfs/${EXPECTED_HASH_FIRST}"
+            elif ($(urlExists "https://ipfs.kira.network/ipfs/${EXPECTED_HASH_FIRST}" 4)) ; then
+                PUB_URL="https://ipfs.kira.network/ipfs/${EXPECTED_HASH_FIRST}"
+            else
+                echoErr "ERROR: Failed to locate public key file '$EXPECTED_HASH_FIRST' on any public IPFS gateway :("
+                return 1
+            fi
+
+            COSIGN_PUB_KEY="$TMP_PATH_PUB"
+            wget "$PUB_URL" -O "$COSIGN_PUB_KEY"
+        elif (! $(isFileEmpty "$EXPECTED_HASH_FIRST")) ; then
+            echoInfo "INFO: Detected public key file"
+            COSIGN_PUB_KEY="$EXPECTED_HASH_FIRST"
+        fi
+
+        if (! $(isFileEmpty $COSIGN_PUB_KEY)) || ($(urlExists "$COSIGN_PUB_KEY")) ; then
+            echoInfo "WARNING: Attempting to fetch signature file..."
             wget "$SIG_URL" -O $TMP_PATH_SIG
         else
-            echoErr "ERROR: Cosign tool is not installed or public key was not found in '$COSIGN_PUB_KEY'"
+            echoErr "ERROR: Public key was not found in '$COSIGN_PUB_KEY'"
             return 1
         fi
     else
@@ -375,7 +415,7 @@ function safeWget() {
     fi
 
     local COSIGN_VERIFIED="false"
-    if (! $(isFileEmpty $COSIGN_PUB_KEY)) && (! $(isFileEmpty $TMP_PATH)) ; then
+    if ( (! $(isFileEmpty $COSIGN_PUB_KEY)) || ($(urlExists "${COSIGN_PUB_KEY}" 1)) ) && (! $(isFileEmpty $TMP_PATH)) ; then
         echoInfo "INFO: Using cosign to verify temporary file integrity..."
         COSIGN_VERIFIED="true"  
         cosign verify-blob --key="$COSIGN_PUB_KEY" --signature="$TMP_PATH_SIG" "$TMP_PATH" || COSIGN_VERIFIED="false"
