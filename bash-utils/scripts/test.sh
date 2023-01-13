@@ -88,6 +88,26 @@ if ($(isMD5 "$FILE_MD5")) || [ "$FILE_MD5" != "$EXPECTED_FILE_MD5" ] ; then
 fi
 
 #################################################################
+echoWarn "TEST: ipfsGet"
+
+TEST_FILE="/tmp/test.file"
+rm -fv $TEST_FILE
+ipfsGet "$TEST_FILE" "QmNPG6RQSDa6jKqaPbNDyP9iM9CRxmv1kaHaPMCw2aQceb"
+
+if ($(isFileEmpty $TEST_FILE)); then
+    echoErr "ERROR: Expected public ipfs file 'QmNPG6RQSDa6jKqaPbNDyP9iM9CRxmv1kaHaPMCw2aQceb' to NOT be empty"
+    exit 1
+fi
+
+rm -fv $TEST_FILE
+ipfsGet "$TEST_FILE" "QmNPG6RQSDa6jKqaPbNDyP9iM9CRxmv1kaHaPMCw2aQcec" || :
+
+if (! $(isFileEmpty $TEST_FILE)); then
+    echoErr "ERROR: Expected non existent file to be empty when attempted to be downloaded from IPFS"
+    exit 1
+fi
+
+#################################################################
 echoWarn "TEST: safeWget"
 rm -fv /usr/local/bin/cosign_amd64 /usr/local/bin/cosign_arm64
 rm -rfv /tmp/downloads

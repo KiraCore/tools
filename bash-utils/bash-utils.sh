@@ -24,7 +24,7 @@ function bashUtilsVersion() {
 # this is default installation script for utils
 # ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
 function bashUtilsSetup() {
-    local BASH_UTILS_VERSION="v0.3.0"
+    local BASH_UTILS_VERSION="v0.3.1"
     local COSIGN_VERSION="v1.13.1"
     if [ "$1" == "version" ] ; then
         echo "$BASH_UTILS_VERSION"
@@ -348,6 +348,54 @@ function getArgs() {
     done
 }
 
+# Given file CID downloads content from a known public IPFS gateway
+function ipfsGet() {
+    local FILE_CID=$1
+    local OUT_PATH=$2
+    local PUB_URL=""
+
+    local TIMEOUT=60
+
+    if ($(isCID "$FILE_CID")) ; then
+        echoInfo "INFO: Cleaning up '$OUT_PATH' and searching for available gatewys..."
+
+        PUB_URL="https://gateway.ipfs.io/ipfs/${FILE_CID}"
+        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $TIMEOUT) -gt 1 ]] ) ; then
+            wget "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from gateway.ipfs.io :("
+        fi
+
+        PUB_URL="https://dweb.link/ipfs/${FILE_CID}"
+        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $TIMEOUT) -gt 1 ]] ) ; then
+            wget "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from dweb.link :("
+        fi
+
+        PUB_URL="https://ipfs.joaoleitao.org/ipfs/${FILE_CID}" 
+        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $TIMEOUT) -gt 1 ]] ) ; then
+            wget "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
+        fi
+
+        PUB_URL="https://ipfs.kira.network/ipfs/${FILE_CID}"
+        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $TIMEOUT) -gt 1 ]] ) ; then
+            wget "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
+        fi
+
+        PUB_URL="https://ipfs.snggle.com/ipfs/${FILE_CID}"
+        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $TIMEOUT) -gt 1 ]] ) ; then
+            wget "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
+        fi
+
+        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] || [ ! -f "$OUT_PATH" ] ) ; then
+            echoErr "ERROR: Failed to locate or download '$FILE_CID' file from any public IPFS gateway :("
+            return 1
+        else
+            echoInfo "INFO: Success, file '$FILE_CID' was downloaded to '$OUT_PATH' from '$PUB_URL'"
+        fi
+    else
+        echoErr "ERROR: Specified file CID '$FILE_CID' is NOT valid"
+        return 1
+    fi
+}
+
 # Allows to safely download file from external resources by hash verification or cosign file signature
 # In the case where cosign verification is used the "<url>.sig" URL must exist
 # safeWget <file> <url> <hash>
@@ -388,28 +436,9 @@ function safeWget() {
         if ($(isCID "$EXPECTED_HASH_FIRST")) ; then
             echoInfo "INFO: Detected IPFS CID, searching available gatewys..."
             COSIGN_PUB_KEY="$TMP_PATH_PUB"
+            ipfsGet "$EXPECTED_HASH_FIRST" "$COSIGN_PUB_KEY"
 
-            PUB_URL="https://gateway.ipfs.io/ipfs/${EXPECTED_HASH_FIRST}"
-            if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" 12) -gt 100 ]] ) ; then
-                wget "$PUB_URL" -O "$COSIGN_PUB_KEY" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from gateway.ipfs.io :("
-            fi
-
-            PUB_URL="https://dweb.link/ipfs/${EXPECTED_HASH_FIRST}"
-            if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" 12) -gt 100 ]] ) ; then
-                wget "$PUB_URL" -O "$COSIGN_PUB_KEY" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from dweb.link :("
-            fi
-
-            PUB_URL="https://ipfs.joaoleitao.org/ipfs/${EXPECTED_HASH_FIRST}" 
-            if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" 12) -gt 100 ]] ) ; then
-                wget "$PUB_URL" -O "$COSIGN_PUB_KEY" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
-            fi
-
-            PUB_URL="https://ipfs.kira.network/ipfs/${EXPECTED_HASH_FIRST}"
-            if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" 24) -gt 100 ]] ) ; then
-                wget "$PUB_URL" -O "$COSIGN_PUB_KEY" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
-            fi
-
-            if ( [ "$DOWNLOAD_SUCCESS" != "true" ] || [ ! -f "$COSIGN_PUB_KEY" ] ) ; then
+            if ($(isFileEmpty $COSIGN_PUB_KEY)); then
                 echoErr "ERROR: Failed to locate or download public key file '$EXPECTED_HASH_FIRST' from any public IPFS gateway :("
                 return 1
             fi
@@ -937,6 +966,10 @@ function isCommand {
 function isServiceActive {
     local ISACT=$(systemctl is-active "$1" 2> /dev/null || echo "inactive")
     [ "$(bash-utils toLower "$ISACT")" == "active" ] && echo "true" || echo "false"
+}
+
+function isWSL {
+    echo "$(isSubStr "$(uname -a)" "microsoft-standard-WSL")"
 }
 
 # returns 0 if failure, otherwise natural number in microseconds
