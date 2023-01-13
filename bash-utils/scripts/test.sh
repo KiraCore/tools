@@ -388,5 +388,73 @@ URL_e1="http://ghcrio"
 ($(isURL "")) && echoErr "ERROR: Expected '' to be an invalid URL, but got true response" && exit 1 || echoInfo "INFO: Test 5 passed"
 
 #################################################################
+echoWarn "TEST: strShort"
+
+TEST_S0="1234567890"
+TEST_S1="$(strShort "$TEST_S0" 1)"
+TEST_S2="1...0"
+[ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed string shorting, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 1 passed"
+
+TEST_S1="$(strShort "$TEST_S0" 3)"
+TEST_S2="123...890"
+[ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed string shorting, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 2 passed"
+
+TEST_S1="$(strShort "$TEST_S0" 20)"
+[ "$TEST_S1" != "$TEST_S0" ] && echoErr "ERROR: Failed string shorting, got '$TEST_S1', expected '$TEST_S0'" && exit 1 ||  echoInfo "INFO: Test 3 passed"
+
+#################################################################
+echoWarn "TEST: strFixL"
+
+TEST_S0="1234567890"
+TEST_S1="| $(strFixL "$TEST_S0" 15) |"
+TEST_S2="| 1234567890      |"
+[ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed L padding T1, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 1 passed"
+
+TEST_S0="123456789423432523523523"
+TEST_S1="| $(strFixL "$TEST_S0" 15) |"
+TEST_S2="| 123456...523523 |"
+[ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed L padding T2, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 2 passed"
+
+TEST_S1="| $(strFixL "$TEST_S0" 16) |"
+TEST_S2="| 1234567...523523 |"
+[ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed L padding T3, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 3 passed"
+
+#################################################################
+echoWarn "TEST: strFixR"
+
+TEST_S0="1234567890"
+TEST_S1="| $(strFixR "$TEST_S0" 15) |"
+TEST_S2="|      1234567890 |"
+[ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed R padding T1, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 1 passed"
+
+TEST_S0="123456789423432523523523"
+TEST_S1="| $(strFixR "$TEST_S0" 15) |"
+TEST_S2="| 123456...523523 |"
+[ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed R padding T2, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 2 passed"
+
+TEST_S1="| $(strFixR "$TEST_S0" 16) |"
+TEST_S2="| 1234567...523523 |"
+[ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed R padding T3, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 3 passed"
+
+#################################################################
+echoWarn "TEST: strFixC"
+
+TEST_S0="123456789"
+TEST_S1="| $(strFixC "$TEST_S0" 15) |"
+TEST_S2="|    123456789    |"
+[ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed C padding, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 1 passed"
+
+TEST_S0="123456789423432523523523"
+TEST_S1="| $(strFixC "$TEST_S0" 15) |"
+TEST_S2="| 123456...523523 |"
+[ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed C padding, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 2 passed"
+
+TEST_S0="1234567890"
+TEST_S1="| $(strFixC "$TEST_S0" 15) |"
+TEST_S2="|   1234567890    |"
+[ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed C padding, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 3 passed"
+
+
+#################################################################
 
 echoInfo "INFO: Successsfully executed all bash-utils test cases, elapsed $(prettyTime $(timerSpan))"
