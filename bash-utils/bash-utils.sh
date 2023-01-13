@@ -348,13 +348,15 @@ function getArgs() {
     done
 }
 
+# Host list: https://ipfs.github.io/public-gateway-checker
 # Given file CID downloads content from a known public IPFS gateway
+# ipfsGet <file> <CID>
 function ipfsGet() {
-    local FILE_CID=$1
-    local OUT_PATH=$2
+    local OUT_PATH=$1
+    local FILE_CID=$2
     local PUB_URL=""
 
-    local TIMEOUT=60
+    local TIMEOUT=30
 
     if ($(isCID "$FILE_CID")) ; then
         echoInfo "INFO: Cleaning up '$OUT_PATH' and searching for available gatewys..."
@@ -370,6 +372,11 @@ function ipfsGet() {
         fi
 
         PUB_URL="https://ipfs.joaoleitao.org/ipfs/${FILE_CID}" 
+        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $TIMEOUT) -gt 1 ]] ) ; then
+            wget "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
+        fi
+
+        PUB_URL="https://ipfs.kira.network/ipfs/${FILE_CID}"
         if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $TIMEOUT) -gt 1 ]] ) ; then
             wget "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
         fi
@@ -436,7 +443,7 @@ function safeWget() {
         if ($(isCID "$EXPECTED_HASH_FIRST")) ; then
             echoInfo "INFO: Detected IPFS CID, searching available gatewys..."
             COSIGN_PUB_KEY="$TMP_PATH_PUB"
-            ipfsGet "$EXPECTED_HASH_FIRST" "$COSIGN_PUB_KEY"
+            ipfsGet "$COSIGN_PUB_KEY" "$EXPECTED_HASH_FIRST"
 
             if ($(isFileEmpty $COSIGN_PUB_KEY)); then
                 echoErr "ERROR: Failed to locate or download public key file '$EXPECTED_HASH_FIRST' from any public IPFS gateway :("
