@@ -201,7 +201,13 @@ function isMnemonic() {
     local MNEMONIC=$(echo "$1" | xargs 2> /dev/null || echo -n "")
     local COUNT=$(echo "$MNEMONIC" | wc -w 2> /dev/null || echo -n "")
     (! $(isNaturalNumber $COUNT)) && COUNT=0
-    if (( $COUNT % 3 == 0 )) && [[ $COUNT -ge 12 ]] ; then echo "true" ; else echo "false" ; fi
+
+    # Ensure that string only contains words
+    if [[ $MNEMONIC =~ ^[[:alpha:][:space:]]*$ ]] ; then
+        if (( $COUNT % 3 == 0 )) && [[ $COUNT -ge 12 ]] ; then echo "true" ; else echo "false" ; fi
+    else
+        echo "false"
+    fi
 }
 
 function isVersion {
