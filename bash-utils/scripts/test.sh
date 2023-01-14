@@ -405,45 +405,52 @@ TEST_S1="$(strShort "$TEST_S0" 20)"
 #################################################################
 echoWarn "TEST: strFixL"
 
-TEST_S1="| $(strFixL "123456789" 15) |"
+TEST_S0="1234567890"
+TEST_S1="| $(strFixL "$TEST_S0" 15) |"
 TEST_S2="| 123456789       |"
-[ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed L padding, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 1 passed"
+[ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed L padding T1, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 1 passed"
 
-TEST_S1="| $(strFixL "123456789423432523523523" 15) |"
+TEST_S0="123456789423432523523523"
+TEST_S1="| $(strFixL "$TEST_S0" 15) |"
 TEST_S2="| 123456...523523 |"
-[ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed L padding, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 2 passed"
+[ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed L padding T2, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 2 passed"
 
-TEST_S1="| $(strFixL "123456789423432523523523" 16) |"
+TEST_S1="| $(strFixL "$TEST_S0" 16) |"
 TEST_S2="| 1234567...523523 |"
-[ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed L padding, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 3 passed"
+[ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed L padding T3, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 3 passed"
 
 #################################################################
 echoWarn "TEST: strFixR"
 
-TEST_S1="| $(strFixR "123456789" 15) |"
+TEST_S0="1234567890"
+TEST_S1="| $(strFixR "$TEST_S0" 15) |"
 TEST_S2="|       123456789 |"
-[ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed L padding, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 1 passed"
+[ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed R padding T1, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 1 passed"
 
-TEST_S1="| $(strFixR "123456789423432523523523" 15) |"
+TEST_S0="123456789423432523523523"
+TEST_S1="| $(strFixR "$TEST_S0" 15) |"
 TEST_S2="| 123456...523523 |"
-[ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed L padding, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 2 passed"
+[ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed R padding T2, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 2 passed"
 
-TEST_S1="| $(strFixR "123456789423432523523523" 16) |"
+TEST_S1="| $(strFixR "$TEST_S0" 16) |"
 TEST_S2="| 1234567...523523 |"
-[ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed L padding, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 3 passed"
+[ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed R padding T3, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 3 passed"
 
 #################################################################
 echoWarn "TEST: strFixC"
 
-TEST_S1="| $(strFixC "123456789" 15) |"
+TEST_S0="123456789"
+TEST_S1="| $(strFixC "$TEST_S0" 15) |"
 TEST_S2="|    123456789    |"
 [ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed C padding, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 1 passed"
 
-TEST_S1="| $(strFixC "123456789423432523523523" 15) |"
+TEST_S0="123456789423432523523523"
+TEST_S1="| $(strFixC "$TEST_S0" 15) |"
 TEST_S2="| 123456...523523 |"
 [ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed C padding, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 2 passed"
 
-TEST_S1="| $(strFixC "1234567890" 15) |"
+TEST_S0="1234567890"
+TEST_S1="| $(strFixC "$TEST_S0" 15) |"
 TEST_S2="|   1234567890    |"
 [ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed C padding, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 3 passed"
 
