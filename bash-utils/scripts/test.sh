@@ -407,7 +407,7 @@ echoWarn "TEST: strFixL"
 
 TEST_S0="1234567890"
 TEST_S1="| $(strFixL "$TEST_S0" 15) |"
-TEST_S2="| 123456789       |"
+TEST_S2="| 1234567890      |"
 [ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed L padding T1, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 1 passed"
 
 TEST_S0="123456789423432523523523"
@@ -424,7 +424,7 @@ echoWarn "TEST: strFixR"
 
 TEST_S0="1234567890"
 TEST_S1="| $(strFixR "$TEST_S0" 15) |"
-TEST_S2="|       123456789 |"
+TEST_S2="|      1234567890 |"
 [ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed R padding T1, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 1 passed"
 
 TEST_S0="123456789423432523523523"
