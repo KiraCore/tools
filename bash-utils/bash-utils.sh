@@ -309,7 +309,7 @@ function strFirstN() {
     local string="$1"
     local n="$2" && (! $(isNaturalNumber $n)) && n=3
     local string_len=$(strLength "$string")
-    [[ $string_len -le $n ]] && echo "$string" ||  echo "${string:0:n}"
+    [[ $string_len -le $n ]] && echo "$string" || echo "${string:0:n}"
 }
 
 function strLastN() {
@@ -373,7 +373,7 @@ strRepeat(){
 # e.g.: echo "| $(strFixL "123456789" 15) |" -> | 123456789       |
 function strFixL() {
     local string="$1"
-    local max_len="$2" && ( (! $(isNaturalNumber $trim_len)) || [[ $trim_len -le 0 ]]  ) && max_len=0
+    local max_len="$2" && ( (! $(isNaturalNumber $max_len)) || [[ $max_len -le 0 ]]  ) && max_len=0
     local separator="$3" && [ -z "$separator" ] && separator="."
     local filler="$4" && [ -z "$filler" ] && filler=" " && filler=$(strRepeat "$filler" $max_len)
     echo "$(strFirstN "$(strShortN "$string" $max_len "$separator")$filler" $max_len)"
@@ -383,7 +383,7 @@ function strFixL() {
 # e.g.: echo "| $(strFixR "123456789" 15) |" -> |       123456789 |
 function strFixR() {
     local string="$1"
-    local max_len="$2" && ( (! $(isNaturalNumber $trim_len)) || [[ $trim_len -le 0 ]]  ) && max_len=0
+    local max_len="$2" && ( (! $(isNaturalNumber $max_len)) || [[ $max_len -le 0 ]]  ) && max_len=0
     local separator="$3" && [ -z "$separator" ] && separator="."
     local filler="$4" && [ -z "$filler" ] && filler=" " && filler=$(strRepeat "$filler" $max_len)
     echo "$(strLastN "${filler}$(strShortN "$string" $max_len "$separator")" $max_len)"
@@ -393,7 +393,7 @@ function strFixR() {
 # e.g.: echo "| $(strFixC "123456789" 15) |" -> |    123456789    |
 function strFixC() {
     local string="$1"
-    local max_len="$2" && ( (! $(isNaturalNumber $trim_len)) || [[ $trim_len -le 0 ]]  ) && max_len=0
+    local max_len="$2" && ( (! $(isNaturalNumber $max_len)) || [[ $max_len -le 0 ]]  ) && max_len=0
     local separator="$3" && [ -z "$separator" ] && separator="."
     local filler="$4" && [ -z "$filler" ] && filler=" "
     local filler_extr=$(strRepeat "$filler" $max_len)
