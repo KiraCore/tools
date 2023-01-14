@@ -390,18 +390,17 @@ URL_e1="http://ghcrio"
 #################################################################
 echoWarn "TEST: strShort"
 
-TEST_S0="123456789"
+TEST_S0="1234567890"
 TEST_S1="$(strShort "$TEST_S0" 1)"
-TEST_S2="1...9"
+TEST_S2="1...0"
 [ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed string shorting, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 1 passed"
 
 TEST_S1="$(strShort "$TEST_S0" 3)"
-TEST_S2="123...789"
+TEST_S2="123...890"
 [ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed string shorting, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 2 passed"
 
 TEST_S1="$(strShort "$TEST_S0" 20)"
-TEST_S2="123456789"
-[ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed string shorting, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 3 passed"
+[ "$TEST_S1" != "$TEST_S0" ] && echoErr "ERROR: Failed string shorting, got '$TEST_S1', expected '$TEST_S0'" && exit 1 ||  echoInfo "INFO: Test 3 passed"
 
 #################################################################
 echoWarn "TEST: strFixL"
