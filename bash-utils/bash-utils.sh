@@ -53,10 +53,11 @@ function bashUtilsSetup() {
             bash-utils echoErr "ERROR: utils source was NOT found"
             return 1
         else
-            mkdir -p "/usr/local/bin"
+            mkdir -p "/usr/local/bin" "/bin"
             cp -fv "$UTILS_SOURCE" "$UTILS_DESTINATION"
             cp -fv "$UTILS_SOURCE" "/usr/local/bin/bash-utils"
-            chmod -v 555 "$UTILS_DESTINATION" "/usr/local/bin/bash-utils"
+            cp -fv "$UTILS_SOURCE" "/usr/local/bin/bu"
+            chmod +x "$UTILS_DESTINATION" "/usr/local/bin/bash-utils" "/bin/bu"
 
             local SUDOUSER="${SUDO_USER}" && [ "$SUDOUSER" == "root" ] && SUDOUSER=""
             local USERNAME="${USER}" && [ "$USERNAME" == "root" ] && USERNAME=""
@@ -75,6 +76,7 @@ function bashUtilsSetup() {
             bash-utils setGlobEnv KIRA_GLOBS_DIR "$KIRA_GLOBS_DIR"
             bash-utils setGlobEnv KIRA_TOOLS_SRC "$UTILS_DESTINATION"
             bash-utils setGlobPath "/usr/local/bin"
+            bash-utils setGlobPath "/bin"
 
             local AUTOLOAD_SET=$(bash-utils getLastLineByPrefix "source $UTILS_DESTINATION" /etc/profile 2> /dev/null || echo "-1")
 
@@ -82,8 +84,7 @@ function bashUtilsSetup() {
                 echo "source $UTILS_DESTINATION || echo \"ERROR: Failed to load kira bash-utils from '$UTILS_DESTINATION'\"" >> /etc/profile
             fi
 
-            bash-utils loadGlobEnvs
-
+            bu loadGlobEnvs
             echoInfo "INFO: SUCCESS!, Installed kira bash-utils $(bashUtilsVersion)"
         fi
 
@@ -302,6 +303,110 @@ function strLength() {
     local result=""
     [ -z "$1" ] && result="0" || result=$(echo "$1" | awk '{print length}') || result=-1
     ($(isNumber "$result")) && echo $result || echo -1
+}
+
+function strFirstN() {
+    local string="$1"
+    local n="$2" && (! $(isNaturalNumber $n)) && n=3
+    local string_len=$(strLength "$string")
+    [[ $string_len -le $n ]] && echo "$string" ||  echo "${string:0:n}"
+}
+
+function strLastN() {
+    local string="$1"
+    local n="$2" && (! $(isNaturalNumber $n)) && n=0
+    local string_len=$(strLength "$string")
+    [[ $string_len -le $n ]] && echo "$string" || echo "${string: -n}"
+}
+
+# shortens string if possible by taking N prefix and N suffix characters and combining it with separator
+# e.g. strShort "123456789" 1 "..."" -> 1...9 
+function strShort() {
+    local string="$1"
+    local trim_len="$2" && ( (! $(isNaturalNumber $trim_len)) || [[ $trim_len -le 0 ]]  ) && trim_len=3
+    local separator="$3" && [ -z "$separator" ] && separator="..."
+    local string_len=$(strLength "$string")
+    local separator_len=$(strLength "$separator")
+    local final_len=$(((trim_len * 2) + separator_len ))
+    [[ $string_len -le $final_len ]] && echo "$string" || echo "$(strFirstN "$string" $trim_len)${separator}$(strLastN "$string" $trim_len)"
+}
+
+# shorten string to exact number of characters with a separator
+# e.g. strShort 123456789" 5 '.' -> 1...9
+function strShortN() {
+    local string="$1"
+    local max_len="$2" && ( (! $(isNaturalNumber $max_len)) || [[ $max_len -le 0 ]]  ) && echo "" && return 0
+    local separator="$3" && ( [ -z "$separator" ] || [[ $(strLength "$separator") -gt 1 ]] ) && separator="." 
+    local string_len=$(strLength "$string")
+    if [[ $max_len -le 0 ]] ; then
+        echo ""
+    elif [[ $max_len -ge $string_len ]] ; then  # same or greater lenght, skip processing
+        echo "$string"
+    elif [[ $max_len -le 1 ]] ; then # if sting can be just a single char then just display separator: '.'
+        echo "$separator"
+    elif [[ $max_len -eq 2 ]] ; then # if sting can be just a single char then just display separator: 'a.'
+        echo "$(strFirstN "$string" 1)$separator"
+    elif [[ $max_len -eq 3 ]] ; then  # if sting can be just 3 char then just display first and last:  'a..'
+        echo "$(strFirstN "$string" 1)${separator}${separator}"
+    elif [[ $max_len -eq 4 ]] ; then # if sting can be just 4 char then just display 1 first and 1 last: 'a..b'
+        echo "$(strFirstN "$string" 1)${separator}${separator}${separator}"
+    else
+        local side_len=$(((max_len - 3) / 2 ))
+        local final_len=$(((side_len * 2) + 3))
+        [[ $final_len -ne $max_len ]] && echo "$(strFirstN "$string" $((side_len + 1)))${separator}${separator}${separator}$(strLastN "$string" $side_len)" || echo "$(strShort "$string" $side_len "${separator}${separator}${separator}")"
+    fi
+}
+
+# repeats string N times
+# e.g.: strRepeat "a" 3 -> aaa
+strRepeat(){
+    local string="$1"
+    local n="$2" && ( (! $(isNaturalNumber $n)) || [[ $n -le 0 ]]  ) && n=0
+    local output=""
+    for i in $(seq 1 $n); do
+      output="$output$string"
+    done
+    echo "$output"
+}
+
+# fixes string to specific length to the left with filler padding
+# e.g.: echo "| $(strFixL "123456789" 15) |" -> | 123456789       |
+function strFixL() {
+    local string="$1"
+    local max_len="$2" && ( (! $(isNaturalNumber $trim_len)) || [[ $trim_len -le 0 ]]  ) && max_len=0
+    local separator="$3" && [ -z "$separator" ] && separator="."
+    local filler="$4" && [ -z "$filler" ] && filler=" " && filler=$(strRepeat "$filler" $max_len)
+    echo "$(strFirstN "$(strShortN "$string" $max_len "$separator")$filler" $max_len)"
+}
+
+# fixes string to specific length to the left with filler padding
+# e.g.: echo "| $(strFixR "123456789" 15) |" -> |       123456789 |
+function strFixR() {
+    local string="$1"
+    local max_len="$2" && ( (! $(isNaturalNumber $trim_len)) || [[ $trim_len -le 0 ]]  ) && max_len=0
+    local separator="$3" && [ -z "$separator" ] && separator="."
+    local filler="$4" && [ -z "$filler" ] && filler=" " && filler=$(strRepeat "$filler" $max_len)
+    echo "$(strLastN "${filler}$(strShortN "$string" $max_len "$separator")" $max_len)"
+}
+
+# fixes string to specific length to the center with filler padding
+# e.g.: echo "| $(strFixC "123456789" 15) |" -> |    123456789    |
+function strFixC() {
+    local string="$1"
+    local max_len="$2" && ( (! $(isNaturalNumber $trim_len)) || [[ $trim_len -le 0 ]]  ) && max_len=0
+    local separator="$3" && [ -z "$separator" ] && separator="."
+    local filler="$4" && [ -z "$filler" ] && filler=" "
+    local filler_extr=$(strRepeat "$filler" $max_len)
+    local string_len=$(strLength "$string")
+
+    if [[ $string_len -ge $max_len ]] ; then
+        echo "$(strFixL "$string" "$max_len" "$separator" "$filler")"
+    else
+        local remaining=$((max_len - string_len))
+        local side_len=$((remaining / 2))
+        local filler_extr=$(strRepeat "$filler" $side_len)
+        [[ $((remaining % 2)) -eq 0 ]] && echo "${filler_extr}${string}${filler_extr}" || echo "${filler_extr}${string}${filler_extr}${filler}"
+    fi
 }
 
 function strStartsWith() {
@@ -997,19 +1102,28 @@ function pingTime() {
     else echo "0" ; fi
 }
 
+# sets global var with user selection, default var name is OPTION
+# e.g.: pressToContinue TEST a b c
 function pressToContinue {
+    local glob_var_name="OPTION"
+    local var_len=0
+    for kg_var in "$@" ; do
+        kg_var=$(echo "$kg_var" | tr -d '\011\012\013\014\015\040' 2>/dev/null || echo -n "")
+        [[ $(strLength "$kg_var") -ge 2 ]] && glob_var_name=$kg_var && break
+    done
+
     if ($(isNullOrEmpty "$1")) ; then
         read -n 1 -s 
-        globSet OPTION ""
+        globSet "$glob_var_name" ""
     else
         while : ; do
-            local kg_OPTION=""
+            local OPTION=""
             local FOUND=false
-            read -n 1 -s kg_OPTION
-            kg_OPTION=$(bash-utils toLower "$kg_OPTION")
+            read -n 1 -s OPTION
+            OPTION=$(bash-utils toLower "$OPTION")
             for kg_var in "$@" ; do
                 kg_var=$(echo "$kg_var" | tr -d '\011\012\013\014\015\040' 2>/dev/null || echo -n "")
-                [ "$(bash-utils toLower "$kg_var")" == "$kg_OPTION" ] && globSet OPTION "$kg_OPTION" && FOUND=true && break
+                [ "$(bash-utils toLower "$kg_var")" == "$OPTION" ] && globSet "$glob_var_name" "$OPTION" && FOUND=true && break
             done
             [ "$FOUND" == "true" ] && break
         done
