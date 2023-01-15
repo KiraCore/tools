@@ -24,7 +24,7 @@ function bashUtilsVersion() {
 # this is default installation script for utils
 # ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
 function bashUtilsSetup() {
-    local BASH_UTILS_VERSION="v0.3.1"
+    local BASH_UTILS_VERSION="v0.3.2"
     local COSIGN_VERSION="v1.13.1"
     if [ "$1" == "version" ] ; then
         echo "$BASH_UTILS_VERSION"
@@ -1143,6 +1143,75 @@ displayAlign() {
         local textRight=$width
         printf "|%-*s|\n" $textRight "$text"
     fi
+}
+
+# print with colours
+# recognisable color types: [bla]ck, [red], [gre]en, [yel]low, [blu], [mag]enta, [cya]n
+# recognisable font types: [bol]d, [dim], [ita]lic, [und]er, [bli]nk, [inv]erse, [str]ike
+# recognisable intensities: [bri]gth (true/1), [dar]k (false/0)
+# e.g.: echoNC "<font>;<foreground>;<bacground>;<fr-intensity>;<bg-intensity>" "test text"
+# e.g.: echoNC "bli;whi;bla;d;b" "test text"
+function echoNC() {
+    local IFS=";"
+    local arr=($1)
+    local font="${arr[0]}"
+    local fgrnd="${arr[1]}"
+    local bgrnd="${arr[2]}"
+    local fint="${arr[3]}"
+    local bint="${arr[4]}"
+    local text="$2"
+
+    ([ -z "$font" ] || [ "$font" == "nor" ] || [ "$font" == "nul" ] || [ "$font" == "true" ]) && font=0
+    [ "$font" == "bol" ] && font=1
+    [ "$font" == "dim" ] && font=2
+    [ "$font" == "ita" ] && font=3
+    [ "$font" == "und" ] && font=4
+    [ "$font" == "bli" ] && font=5
+    [ "$font" == "inv" ] && font=7
+    ( [ "$font" == "str" ] || [ "$font" == "false" ] ) && font=9
+    
+    ([ "$fgrnd" == "bla" ] || [ "$fgrnd" == "false" ])&& fgrnd=30
+    [ "$fgrnd" == "red" ] && fgrnd=31
+    [ "$fgrnd" == "gre" ] && fgrnd=32
+    [ "$fgrnd" == "yel" ] && fgrnd=33
+    [ "$fgrnd" == "blu" ] && fgrnd=34
+    [ "$fgrnd" == "mag" ] && fgrnd=35
+    [ "$fgrnd" == "cya" ] && fgrnd=36
+    ([ -z "$fgrnd" ] || [ "$fgrnd" == "whi" ] || [ "$fgrnd" == "true" ]) && fgrnd=37
+
+    ([ -z "$bgrnd" ] || [ "$bgrnd" == "bla" ] || [ "$fgrnd" == "true" ]) && bgrnd=40
+    [ "$bgrnd" == "red" ] && bgrnd=41
+    [ "$bgrnd" == "gre" ] && bgrnd=42
+    [ "$bgrnd" == "yel" ] && bgrnd=43
+    [ "$bgrnd" == "blu" ] && bgrnd=44
+    [ "$bgrnd" == "mag" ] && bgrnd=45
+    [ "$bgrnd" == "cya" ] && bgrnd=46
+    ([ "$bgrnd" == "whi" ] || [ "$fgrnd" == "false" ]) && bgrnd=47
+
+    if [[ $fgrnd -ge 90 ]] ; then
+        ([ "$fint" == "dar" ] || [ "$fint" == "d" ] || [ "$fint" == "0" ] || [ "$fint" == "false" ]) && \
+        fgrnd=$((fgrnd - 60))
+    fi
+
+    ( [ -z "$fint" ] || [ "$fint" == "bri" ] || [ "$fint" == "b" ] || [ "$fint" == "1" ] || [ "$fint" == "true" ]) && \
+        fgrnd=$((fgrnd + 60))
+
+    ( [ "$bint" == "bri" ] || [ "$bint" == "b" ] || [ "$bint" == "1" ] || [ "$bint" == "true" ]) && \
+        bgrnd=$((bgrnd + 60))
+
+    if [[ $bgrnd -ge 100 ]] ; then
+        ([ "$bint" == "dar" ] || [ "$bint" == "d" ] || [ "$bint" == "0" ] || [ "$bint" == "false" ]) && \
+        bgrnd=$((bgrnd - 60))
+    fi
+
+    echo -en "\e[0m\e[${font};${fgrnd};${bgrnd}m${text}\e[0m"
+}
+function echoC() {
+    echo "$(echoNC "$1" "${2}")"
+}
+
+function echoInfo() {
+    echo -e "\e[0m\e[36;1m${1}\e[0m"
 }
 
 function echoInfo() {
