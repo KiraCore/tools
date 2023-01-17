@@ -10,6 +10,7 @@ REGEX_MD5="^[a-fA-F0-9]{32}$"
 REGEX_INTEGER="^-?[0-9]+$"
 REGEX_NUMBER="^[+-]?([0-9]*[.])?([0-9]+)?$"
 REGEX_PUBLIC_IP='^([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?<!172\.(16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31))(?<!127)(?<!^10)(?<!^0)\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?<!192\.168)(?<!172\.(16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31))\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?<!\.255$)(?<!\b255.255.255.0\b)(?<!\b255.255.255.242\b)$'
+REGEX_CIRD="^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\/([0-9]|[1-2][0-9]|3[0-2])$"
 REGEX_KIRA="^(kira)[a-zA-Z0-9]{39}$"
 REGEX_VERSION="^(v?)([0-9]+)\.([0-9]+)\.([0-9]+)(-?)([a-zA-Z]+)?(\.?([0-9]+)?)$"
 REGEX_CID="^(Qm[1-9A-HJ-NP-Za-km-z]{44,}|b[A-Za-z2-7]{58,}|B[A-Z2-7]{58,}|z[1-9A-HJ-NP-Za-km-z]{48,}|F[0-9A-F]{50,})$"
@@ -24,7 +25,7 @@ function bashUtilsVersion() {
 # this is default installation script for utils
 # ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
 function bashUtilsSetup() {
-    local BASH_UTILS_VERSION="v0.3.2"
+    local BASH_UTILS_VERSION="v0.3.3"
     local COSIGN_VERSION="v1.13.1"
     if [ "$1" == "version" ] ; then
         echo "$BASH_UTILS_VERSION"
@@ -161,6 +162,13 @@ function isDnsOrIp() {
         echo $VAR
     fi
 }
+
+# Notation check "xxx.xxx.xxx.xxx/xx"
+# e.g.: isCIRD 172.22.24.212/20
+function isCIRD() {
+    if ($(isNullOrEmpty "$1")) ; then echo "false" ; else [[ "$1" =~ $REGEX_CIRD ]] && echo "true" || echo "false" ; fi
+}
+
 
 function isInteger() {
     if ($(isNullOrEmpty "$1")) ; then echo "false" ; else [[ $1 =~ $REGEX_INTEGER ]] && echo "true" || echo "false" ; fi
@@ -436,6 +444,14 @@ function strEndsWith() {
         [ "$substr" == "$suffix" ] && echo "true" && return 0 || echo "false" && return 0
     fi
     echo "false"
+}
+
+# splits string by specific character and takes n'th element (indexed starting at 0)
+# e.g.: strSplitTakeN , 2 "a,b,c"
+function strSplitTakeN() {
+    local IFS="$1"
+    local arr=($3)
+    echo "${arr[$2]}"
 }
 
 # getArgs --test="lol1" --tes-t="lol-l" --test2="lol 2" -e=ok -t=ok2
@@ -1145,12 +1161,14 @@ displayAlign() {
     fi
 }
 
-# print with colours
+# print with colours, to restore default use 'tput reset' or 'tput sgr0'
 # recognisable color types: [bla]ck, [red], [gre]en, [yel]low, [blu], [mag]enta, [cya]n
-# recognisable font types: [bol]d, [dim], [ita]lic, [und]er, [bli]nk, [inv]erse, [str]ike
+# recognisable font types: [bol]d, [dim], [ita]lic, [und]er, [bli]nk, [inv]erse, [str]ike, [per]sustent, [sto]re, [res]tore, [cle]ar
 # recognisable intensities: [bri]gth (true/1), [dar]k (false/0)
-# e.g.: echoNC "<font>;<foreground>;<bacground>;<fr-intensity>;<bg-intensity>" "test text"
-# e.g.: echoNC "bli;whi;bla;d;b" "test text"
+# e.g.: echoNC "<font>;<foreground>;<bacground>;<fr-intensity>;<bg-intensity>;<persistent>;<store/restore>" "test text"
+# e.g.: echoNC "bli;whi;bla;d;b;false" "test text"
+# e.g.: echoNC "bli;whi;bla;d;b;false" "test text"
+# echoC "sto;blu" "|---------$(echoC "res;gre" "lol")---------|"
 function echoNC() {
     local IFS=";"
     local arr=($1)
@@ -1159,7 +1177,17 @@ function echoNC() {
     local bgrnd="${arr[2]}"
     local fint="${arr[3]}"
     local bint="${arr[4]}"
+    local persistent="${arr[5]}"
+    local store="${arr[6]}"
     local text="$2"
+
+    ([ -z "$persistent" ] || [ "$persistent" == "false" ] || [ "$persistent" == "0" ]) && persistent="false"
+    ([ "$persistent" == "true" ] || [ "$persistent" == "1" ] || [ "$persistent" == "per" ] || [ "$persistent" == "p" ]) && persistent="true"
+
+    ([ -z "$store" ] || [ "$store" == "false" ] || [ "$store" == "0" ]) && store="false"
+    ([ "$store" == "store" ] || [ "$store" == "sto" ] || [ "$store" == "s" ]) && store="store"
+    ([ "$store" == "restore" ] || [ "$store" == "res" ] || [ "$store" == "r" ]) && store="restore"
+    ([ "$store" == "clear" ] || [ "$store" == "cle" ] || [ "$store" == "c" ]) && store="clear"
 
     ([ -z "$font" ] || [ "$font" == "nor" ] || [ "$font" == "nul" ] || [ "$font" == "true" ]) && font=0
     [ "$font" == "bol" ] && font=1
@@ -1169,6 +1197,10 @@ function echoNC() {
     [ "$font" == "bli" ] && font=5
     [ "$font" == "inv" ] && font=7
     ( [ "$font" == "str" ] || [ "$font" == "false" ] ) && font=9
+    [ "$font" == "per" ] && persistent="true" && font=0
+    [ "$font" == "sto" ] && store="store" && font=0
+    [ "$font" == "res" ] && store="restore" && font=0
+    [ "$font" == "cle" ] && store="clear" && font=0
     
     ([ "$fgrnd" == "bla" ] || [ "$fgrnd" == "false" ])&& fgrnd=30
     [ "$fgrnd" == "red" ] && fgrnd=31
@@ -1204,12 +1236,36 @@ function echoNC() {
         bgrnd=$((bgrnd - 60))
     fi
 
-    echo -en "\e[0m\e[${font};${fgrnd};${bgrnd}m${text}\e[0m"
+    local new_config="${font};${fgrnd};${bgrnd}m"
+
+    if [ "$persistent" == "true" ] ; then
+        echo -en "\e[0m\e[${new_config}${text}"
+    else
+        echo -en "\e[0m\e[${new_config}${text}\e[0m"
+    fi
+
+    if [ "$store" == "store" ] ; then
+        globSet "kg_echoNC_" "$new_config"
+    elif [ "$store" == "restore" ] ; then
+        local old_config="$(globGet "kg_echoNC_")"
+        [ ! -z "$old_config" ] && echo -en "\e[0m\e[${old_config}" || tput sgr0
+    elif [ "$store" == "clear" ] ; then
+        tput sgr0
+    fi
 }
 function echoC() {
     echo "$(echoNC "$1" "${2}")"
 }
 
+# blue popup
+function echoPop() {
+    echo -e "\e[0m\e[94;1m${1}\e[0m"
+}
+# green console log
+function echoLog() {
+    echo -e "\e[0m\e[92;1m${1}\e[0m"
+}
+# light blue info
 function echoInfo() {
     echo -e "\e[0m\e[36;1m${1}\e[0m"
 }
@@ -1233,6 +1289,12 @@ function echoError() {
     echoErr "${1}"
 }
 
+function echoNPop() {
+    echo -en "\e[0m\e[94;1m${1}\e[0m"
+}
+function echoNLog() {
+    echo -en "\e[0m\e[92;1m${1}\e[0m"
+}
 function echoNInfo() {
     echo -en "\e[0m\e[36;1m${1}\e[0m"
 }
@@ -1296,6 +1358,7 @@ function getNLineByPrefix() {
     fi
 }
 
+# getLastLineByPSubStr <prefix> <file>
 function getLastLineByPSubStr() {
     getNLineBySubStr "0" "$1" "$2"
 }
