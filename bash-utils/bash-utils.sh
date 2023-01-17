@@ -25,7 +25,7 @@ function bashUtilsVersion() {
 # this is default installation script for utils
 # ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
 function bashUtilsSetup() {
-    local BASH_UTILS_VERSION="v0.3.2"
+    local BASH_UTILS_VERSION="v0.3.3"
     local COSIGN_VERSION="v1.13.1"
     if [ "$1" == "version" ] ; then
         echo "$BASH_UTILS_VERSION"
@@ -1168,7 +1168,7 @@ displayAlign() {
 # e.g.: echoNC "<font>;<foreground>;<bacground>;<fr-intensity>;<bg-intensity>;<persistent>;<store/restore>" "test text"
 # e.g.: echoNC "bli;whi;bla;d;b;false" "test text"
 # e.g.: echoNC "bli;whi;bla;d;b;false" "test text"
-# echoC "sto;blu" "|---------$(echoC "res;gre" "lolita")-----------------|"
+# echoC "sto;blu" "|---------$(echoC "res;gre" "lol")---------|"
 function echoNC() {
     local IFS=";"
     local arr=($1)
