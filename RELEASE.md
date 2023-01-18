@@ -10,3 +10,4 @@ Features:
 * `pressToContinue` now supports custom glob values
 * bash utils can now be called with a command `bu`
 * improved readme with download example for `bip39gen`
+* added network interface commands: `getNetworkIface, getNetworkIfaces, getLocalIp, getPublicIp`

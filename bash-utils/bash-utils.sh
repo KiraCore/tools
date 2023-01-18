@@ -25,7 +25,7 @@ function bashUtilsVersion() {
 # this is default installation script for utils
 # ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
 function bashUtilsSetup() {
-    local BASH_UTILS_VERSION="v0.3.3"
+    local BASH_UTILS_VERSION="v0.3.4"
     local COSIGN_VERSION="v1.13.1"
     if [ "$1" == "version" ] ; then
         echo "$BASH_UTILS_VERSION"
@@ -475,6 +475,34 @@ function getArgs() {
     done
 }
 
+# get default network interface
+function getNetworkIface() {
+    echo "$(netstat -rn 2> /dev/null | grep -m 1 UG | awk '{print $8}' | xargs 2> /dev/null || echo -n "")"
+}
+
+# get network interfaces
+function getNetworkIfaces() {
+    echo "$(ifconfig | cut -d ' ' -f1 | tr ':' '\n' | awk NF)"
+}
+
+function getPublicIp() {
+    local public_ip=$(dig TXT +short o-o.myaddr.l.google.com @ns1.google.com +time=5 +tries=1 2> /dev/null | awk -F'"' '{ print $2}' 2> /dev/null || echo -n "")
+    ( ! $(isDnsOrIp "$public_ip")) && public_ip=$(dig +short @resolver1.opendns.com myip.opendns.com +time=5 +tries=1 2> /dev/null | awk -F'"' '{ print $1}' 2> /dev/null || echo -n "")
+    ( ! $(isDnsOrIp "$public_ip")) && public_ip=$(dig +short @ns1.google.com -t txt o-o.myaddr.l.google.com -4 2> /dev/null | xargs 2> /dev/null || echo -n "")
+    ( ! $(isDnsOrIp "$public_ip")) && public_ip=$(timeout 3 curl --silent https://ipinfo.io/ip | xargs 2> /dev/null || echo -n "")
+    ( ! $(isDnsOrIp "$public_ip")) && echo "" || echo "$public_ip"
+}
+
+# returns ip of the defined local network interface otherwise checks default
+# .e.g getLocalIp "$(globGet IFACE)"
+function getLocalIp() {
+    local default_iface="$1"
+    [ -z "$default_iface" ] && default_iface=$(getDefaultNetworkIface)
+    local local_ip=$(/sbin/ifconfig "$default_iface" | grep -i mask | awk '{print $2}' | cut -f2 2> /dev/null || echo -n "")
+    ( ! $(isDnsOrIp "$local_ip")) && local_ip=$(hostname -I | awk '{ print $1}' 2> /dev/null || echo "0.0.0.0")
+    ($(isDnsOrIp "$local_ip")) && echo "$local_ip" || echo "0.0.0.0"
+}
+
 # Host list: https://ipfs.github.io/public-gateway-checker
 # Given file CID downloads content from a known public IPFS gateway
 # ipfsGet <file> <CID>
@@ -582,7 +610,7 @@ function safeWget() {
         fi
 
         if (! $(isFileEmpty $COSIGN_PUB_KEY)) || ($(urlExists "$COSIGN_PUB_KEY")) ; then
-            echoInfo "WARNING: Attempting to fetch signature file..."
+            echoWarn "WARNING: Attempting to fetch signature file..."
             wget "$SIG_URL" -O $TMP_PATH_SIG
         else
             echoErr "ERROR: Public key was not found in '$COSIGN_PUB_KEY'"
