@@ -10,6 +10,7 @@ REGEX_MD5="^[a-fA-F0-9]{32}$"
 REGEX_INTEGER="^-?[0-9]+$"
 REGEX_NUMBER="^[+-]?([0-9]*[.])?([0-9]+)?$"
 REGEX_PUBLIC_IP='^([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?<!172\.(16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31))(?<!127)(?<!^10)(?<!^0)\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?<!192\.168)(?<!172\.(16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31))\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?<!\.255$)(?<!\b255.255.255.0\b)(?<!\b255.255.255.242\b)$'
+REGEX_CIRD="^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\/([0-9]|[1-2][0-9]|3[0-2])$"
 REGEX_KIRA="^(kira)[a-zA-Z0-9]{39}$"
 REGEX_VERSION="^(v?)([0-9]+)\.([0-9]+)\.([0-9]+)(-?)([a-zA-Z]+)?(\.?([0-9]+)?)$"
 REGEX_CID="^(Qm[1-9A-HJ-NP-Za-km-z]{44,}|b[A-Za-z2-7]{58,}|B[A-Z2-7]{58,}|z[1-9A-HJ-NP-Za-km-z]{48,}|F[0-9A-F]{50,})$"
@@ -24,7 +25,8 @@ function bashUtilsVersion() {
 # this is default installation script for utils
 # ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
 function bashUtilsSetup() {
-    local BASH_UTILS_VERSION="v0.2.20"
+    local BASH_UTILS_VERSION="v0.3.4"
+    local COSIGN_VERSION="v1.13.1"
     if [ "$1" == "version" ] ; then
         echo "$BASH_UTILS_VERSION"
         return 0
@@ -52,10 +54,11 @@ function bashUtilsSetup() {
             bash-utils echoErr "ERROR: utils source was NOT found"
             return 1
         else
-            mkdir -p "/usr/local/bin"
+            mkdir -p "/usr/local/bin" "/bin"
             cp -fv "$UTILS_SOURCE" "$UTILS_DESTINATION"
             cp -fv "$UTILS_SOURCE" "/usr/local/bin/bash-utils"
-            chmod -v 555 "$UTILS_DESTINATION" "/usr/local/bin/bash-utils"
+            cp -fv "$UTILS_SOURCE" "/usr/local/bin/bu"
+            chmod +x "$UTILS_DESTINATION" "/usr/local/bin/bash-utils" "/bin/bu"
 
             local SUDOUSER="${SUDO_USER}" && [ "$SUDOUSER" == "root" ] && SUDOUSER=""
             local USERNAME="${USER}" && [ "$USERNAME" == "root" ] && USERNAME=""
@@ -74,6 +77,7 @@ function bashUtilsSetup() {
             bash-utils setGlobEnv KIRA_GLOBS_DIR "$KIRA_GLOBS_DIR"
             bash-utils setGlobEnv KIRA_TOOLS_SRC "$UTILS_DESTINATION"
             bash-utils setGlobPath "/usr/local/bin"
+            bash-utils setGlobPath "/bin"
 
             local AUTOLOAD_SET=$(bash-utils getLastLineByPrefix "source $UTILS_DESTINATION" /etc/profile 2> /dev/null || echo "-1")
 
@@ -81,9 +85,19 @@ function bashUtilsSetup() {
                 echo "source $UTILS_DESTINATION || echo \"ERROR: Failed to load kira bash-utils from '$UTILS_DESTINATION'\"" >> /etc/profile
             fi
 
-            bash-utils loadGlobEnvs
-
+            bu loadGlobEnvs
             echoInfo "INFO: SUCCESS!, Installed kira bash-utils $(bashUtilsVersion)"
+        fi
+
+        if (! $(isCommand cosign)) ; then
+            echoWarn "WARNING: Cosign tool is not installed, setting up $COSIGN_VERSION..."
+            if [[ "$(uname -m)" == *"ar"* ]] ; then ARCH="arm64"; else ARCH="amd64" ; fi && \
+             PLATFORM=$(uname) && FILE_NAME=$(echo "cosign-${PLATFORM}-${ARCH}" | tr '[:upper:]' '[:lower:]') && \
+             TMP_FILE="/tmp/${FILE_NAME}.tmp" && rm -fv "$TMP_FILE" && \
+             wget https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/$FILE_NAME -O "$TMP_FILE" && \
+             chmod +x -v "$TMP_FILE" && mv -fv "$TMP_FILE" /usr/local/bin/cosign
+
+             cosign version
         fi
     fi
 }
@@ -149,6 +163,13 @@ function isDnsOrIp() {
     fi
 }
 
+# Notation check "xxx.xxx.xxx.xxx/xx"
+# e.g.: isCIRD 172.22.24.212/20
+function isCIRD() {
+    if ($(isNullOrEmpty "$1")) ; then echo "false" ; else [[ "$1" =~ $REGEX_CIRD ]] && echo "true" || echo "false" ; fi
+}
+
+
 function isInteger() {
     if ($(isNullOrEmpty "$1")) ; then echo "false" ; else [[ $1 =~ $REGEX_INTEGER ]] && echo "true" || echo "false" ; fi
 }
@@ -189,7 +210,13 @@ function isMnemonic() {
     local MNEMONIC=$(echo "$1" | xargs 2> /dev/null || echo -n "")
     local COUNT=$(echo "$MNEMONIC" | wc -w 2> /dev/null || echo -n "")
     (! $(isNaturalNumber $COUNT)) && COUNT=0
-    if (( $COUNT % 3 == 0 )) && [[ $COUNT -ge 12 ]] ; then echo "true" ; else echo "false" ; fi
+
+    # Ensure that string only contains words
+    if [[ $MNEMONIC =~ ^[[:alpha:][:space:]]*$ ]] ; then
+        if (( $COUNT % 3 == 0 )) && [[ $COUNT -ge 12 ]] ; then echo "true" ; else echo "false" ; fi
+    else
+        echo "false"
+    fi
 }
 
 function isVersion {
@@ -286,6 +313,110 @@ function strLength() {
     ($(isNumber "$result")) && echo $result || echo -1
 }
 
+function strFirstN() {
+    local string="$1"
+    local n="$2" && (! $(isNaturalNumber $n)) && n=3
+    local string_len=$(strLength "$string")
+    [[ $string_len -le $n ]] && echo "$string" || echo "${string:0:n}"
+}
+
+function strLastN() {
+    local string="$1"
+    local n="$2" && (! $(isNaturalNumber $n)) && n=0
+    local string_len=$(strLength "$string")
+    [[ $string_len -le $n ]] && echo "$string" || echo "${string: -n}"
+}
+
+# shortens string if possible by taking N prefix and N suffix characters and combining it with separator
+# e.g. strShort "123456789" 1 "..."" -> 1...9 
+function strShort() {
+    local string="$1"
+    local trim_len="$2" && ( (! $(isNaturalNumber $trim_len)) || [[ $trim_len -le 0 ]]  ) && trim_len=3
+    local separator="$3" && [ -z "$separator" ] && separator="..."
+    local string_len=$(strLength "$string")
+    local separator_len=$(strLength "$separator")
+    local final_len=$(((trim_len * 2) + separator_len ))
+    [[ $string_len -le $final_len ]] && echo "$string" || echo "$(strFirstN "$string" $trim_len)${separator}$(strLastN "$string" $trim_len)"
+}
+
+# shorten string to exact number of characters with a separator
+# e.g. strShort 123456789" 5 '.' -> 1...9
+function strShortN() {
+    local string="$1"
+    local max_len="$2" && ( (! $(isNaturalNumber $max_len)) || [[ $max_len -le 0 ]]  ) && echo "" && return 0
+    local separator="$3" && ( [ -z "$separator" ] || [[ $(strLength "$separator") -gt 1 ]] ) && separator="." 
+    local string_len=$(strLength "$string")
+    if [[ $max_len -le 0 ]] ; then
+        echo ""
+    elif [[ $max_len -ge $string_len ]] ; then  # same or greater lenght, skip processing
+        echo "$string"
+    elif [[ $max_len -le 1 ]] ; then # if sting can be just a single char then just display separator: '.'
+        echo "$separator"
+    elif [[ $max_len -eq 2 ]] ; then # if sting can be just a single char then just display separator: 'a.'
+        echo "$(strFirstN "$string" 1)$separator"
+    elif [[ $max_len -eq 3 ]] ; then  # if sting can be just 3 char then just display first and last:  'a..'
+        echo "$(strFirstN "$string" 1)${separator}${separator}"
+    elif [[ $max_len -eq 4 ]] ; then # if sting can be just 4 char then just display 1 first and 1 last: 'a..b'
+        echo "$(strFirstN "$string" 1)${separator}${separator}${separator}"
+    else
+        local side_len=$(((max_len - 3) / 2 ))
+        local final_len=$(((side_len * 2) + 3))
+        [[ $final_len -ne $max_len ]] && echo "$(strFirstN "$string" $((side_len + 1)))${separator}${separator}${separator}$(strLastN "$string" $side_len)" || echo "$(strShort "$string" $side_len "${separator}${separator}${separator}")"
+    fi
+}
+
+# repeats string N times
+# e.g.: strRepeat "a" 3 -> aaa
+strRepeat(){
+    local string="$1"
+    local n="$2" && ( (! $(isNaturalNumber $n)) || [[ $n -le 0 ]]  ) && n=0
+    local output=""
+    for i in $(seq 1 $n); do
+      output="$output$string"
+    done
+    echo "$output"
+}
+
+# fixes string to specific length to the left with filler padding
+# e.g.: echo "| $(strFixL "123456789" 15) |" -> | 123456789       |
+function strFixL() {
+    local string="$1"
+    local max_len="$2" && ( (! $(isNaturalNumber $max_len)) || [[ $max_len -le 0 ]]  ) && max_len=0
+    local separator="$3" && [ -z "$separator" ] && separator="."
+    local filler="$4" && [ -z "$filler" ] && filler=" " && filler=$(strRepeat "$filler" $max_len)
+    echo "$(strFirstN "$(strShortN "$string" $max_len "$separator")$filler" $max_len)"
+}
+
+# fixes string to specific length to the left with filler padding
+# e.g.: echo "| $(strFixR "123456789" 15) |" -> |       123456789 |
+function strFixR() {
+    local string="$1"
+    local max_len="$2" && ( (! $(isNaturalNumber $max_len)) || [[ $max_len -le 0 ]]  ) && max_len=0
+    local separator="$3" && [ -z "$separator" ] && separator="."
+    local filler="$4" && [ -z "$filler" ] && filler=" " && filler=$(strRepeat "$filler" $max_len)
+    echo "$(strLastN "${filler}$(strShortN "$string" $max_len "$separator")" $max_len)"
+}
+
+# fixes string to specific length to the center with filler padding
+# e.g.: echo "| $(strFixC "123456789" 15) |" -> |    123456789    |
+function strFixC() {
+    local string="$1"
+    local max_len="$2" && ( (! $(isNaturalNumber $max_len)) || [[ $max_len -le 0 ]]  ) && max_len=0
+    local separator="$3" && [ -z "$separator" ] && separator="."
+    local filler="$4" && [ -z "$filler" ] && filler=" "
+    local filler_extr=$(strRepeat "$filler" $max_len)
+    local string_len=$(strLength "$string")
+
+    if [[ $string_len -ge $max_len ]] ; then
+        echo "$(strFixL "$string" "$max_len" "$separator" "$filler")"
+    else
+        local remaining=$((max_len - string_len))
+        local side_len=$((remaining / 2))
+        local filler_extr=$(strRepeat "$filler" $side_len)
+        [[ $((remaining % 2)) -eq 0 ]] && echo "${filler_extr}${string}${filler_extr}" || echo "${filler_extr}${string}${filler_extr}${filler}"
+    fi
+}
+
 function strStartsWith() {
     local string="$1"
     local prefix="$2"
@@ -315,6 +446,14 @@ function strEndsWith() {
     echo "false"
 }
 
+# splits string by specific character and takes n'th element (indexed starting at 0)
+# e.g.: strSplitTakeN , 2 "a,b,c"
+function strSplitTakeN() {
+    local IFS="$1"
+    local arr=($3)
+    echo "${arr[$2]}"
+}
+
 # getArgs --test="lol1" --tes-t="lol-l" --test2="lol 2" -e=ok -t=ok2
 function getArgs() {
     for arg in "$@" ; do
@@ -336,11 +475,95 @@ function getArgs() {
     done
 }
 
+# get default network interface
+function getNetworkIface() {
+    echo "$(netstat -rn 2> /dev/null | grep -m 1 UG | awk '{print $8}' | xargs 2> /dev/null || echo -n "")"
+}
+
+# get network interfaces
+function getNetworkIfaces() {
+    echo "$(ifconfig | cut -d ' ' -f1 | tr ':' '\n' | awk NF)"
+}
+
+function getPublicIp() {
+    local public_ip=$(dig TXT +short o-o.myaddr.l.google.com @ns1.google.com +time=5 +tries=1 2> /dev/null | awk -F'"' '{ print $2}' 2> /dev/null || echo -n "")
+    ( ! $(isDnsOrIp "$public_ip")) && public_ip=$(dig +short @resolver1.opendns.com myip.opendns.com +time=5 +tries=1 2> /dev/null | awk -F'"' '{ print $1}' 2> /dev/null || echo -n "")
+    ( ! $(isDnsOrIp "$public_ip")) && public_ip=$(dig +short @ns1.google.com -t txt o-o.myaddr.l.google.com -4 2> /dev/null | xargs 2> /dev/null || echo -n "")
+    ( ! $(isDnsOrIp "$public_ip")) && public_ip=$(timeout 3 curl --silent https://ipinfo.io/ip | xargs 2> /dev/null || echo -n "")
+    ( ! $(isDnsOrIp "$public_ip")) && echo "" || echo "$public_ip"
+}
+
+# returns ip of the defined local network interface otherwise checks default
+# .e.g getLocalIp "$(globGet IFACE)"
+function getLocalIp() {
+    local default_iface="$1"
+    [ -z "$default_iface" ] && default_iface=$(getDefaultNetworkIface)
+    local local_ip=$(/sbin/ifconfig "$default_iface" | grep -i mask | awk '{print $2}' | cut -f2 2> /dev/null || echo -n "")
+    ( ! $(isDnsOrIp "$local_ip")) && local_ip=$(hostname -I | awk '{ print $1}' 2> /dev/null || echo "0.0.0.0")
+    ($(isDnsOrIp "$local_ip")) && echo "$local_ip" || echo "0.0.0.0"
+}
+
+# Host list: https://ipfs.github.io/public-gateway-checker
+# Given file CID downloads content from a known public IPFS gateway
+# ipfsGet <file> <CID>
+function ipfsGet() {
+    local OUT_PATH=$1
+    local FILE_CID=$2
+    local PUB_URL=""
+
+    local TIMEOUT=30
+
+    if ($(isCID "$FILE_CID")) ; then
+        echoInfo "INFO: Cleaning up '$OUT_PATH' and searching for available gatewys..."
+
+        PUB_URL="https://gateway.ipfs.io/ipfs/${FILE_CID}"
+        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $TIMEOUT) -gt 1 ]] ) ; then
+            wget "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from gateway.ipfs.io :("
+        fi
+
+        PUB_URL="https://dweb.link/ipfs/${FILE_CID}"
+        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $TIMEOUT) -gt 1 ]] ) ; then
+            wget "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from dweb.link :("
+        fi
+
+        PUB_URL="https://ipfs.joaoleitao.org/ipfs/${FILE_CID}" 
+        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $TIMEOUT) -gt 1 ]] ) ; then
+            wget "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
+        fi
+
+        PUB_URL="https://ipfs.kira.network/ipfs/${FILE_CID}"
+        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $TIMEOUT) -gt 1 ]] ) ; then
+            wget "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
+        fi
+
+        PUB_URL="https://ipfs.kira.network/ipfs/${FILE_CID}"
+        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $TIMEOUT) -gt 1 ]] ) ; then
+            wget "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
+        fi
+
+        PUB_URL="https://ipfs.snggle.com/ipfs/${FILE_CID}"
+        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $TIMEOUT) -gt 1 ]] ) ; then
+            wget "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
+        fi
+
+        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] || [ ! -f "$OUT_PATH" ] ) ; then
+            echoErr "ERROR: Failed to locate or download '$FILE_CID' file from any public IPFS gateway :("
+            return 1
+        else
+            echoInfo "INFO: Success, file '$FILE_CID' was downloaded to '$OUT_PATH' from '$PUB_URL'"
+        fi
+    else
+        echoErr "ERROR: Specified file CID '$FILE_CID' is NOT valid"
+        return 1
+    fi
+}
+
 # Allows to safely download file from external resources by hash verification or cosign file signature
 # In the case where cosign verification is used the "<url>.sig" URL must exist
 # safeWget <file> <url> <hash>
 # safeWget <file> <url> <pubkey-path>
 # safeWget <file> <url> <hash>,<hash>,<hash>...
+# safeWget <file> <url> <CID>
 function safeWget() {
     local OUT_PATH=$1
     local FILE_URL=$2
@@ -351,23 +574,46 @@ function safeWget() {
     local TMP_DIR=/tmp/downloads
     local TMP_PATH="$TMP_DIR/${OUT_NAME}"
 
+    local PUB_URL=""
     local SIG_URL="${FILE_URL}.sig"
     local TMP_PATH_SIG="$TMP_DIR/${OUT_NAME}.sig"
+    local TMP_PATH_PUB="$TMP_DIR/${OUT_NAME}.pub"
 
     mkdir -p "$TMP_DIR"
-    rm -fv "$TMP_PATH_SIG"
+    rm -fv "$TMP_PATH_SIG" "$TMP_PATH_PUB"
 
     local FILE_HASH=$(sha256 $TMP_PATH)
     local EXPECTED_HASH_ARR=($(echo "$EXPECTED_HASH" | tr ',' '\n'))
+    local EXPECTED_HASH_FIRST="${EXPECTED_HASH_ARR[0]}"
     local COSIGN_PUB_KEY=""
-    if (! $(isSHA256 "${EXPECTED_HASH_ARR[0]}")) ; then
-        COSIGN_PUB_KEY="$EXPECTED_HASH" && EXPECTED_HASH=""
-        if ($(isCommand cosign)) && (! $(isFileEmpty $COSIGN_PUB_KEY)) ; then
-            echoWarn "WARNING: Checksum was not provided, checking if a signature file is available..."
-            # assume pubkey was provided instead of checksum
+    local PUB_URL=""
+    local DOWNLOAD_SUCCESS="false"
+
+    if (! $(isCommand cosign)) ; then
+        echoErr "ERROR: Cosign tool is not installed, please install version v1.13.1 or later."
+        return 1
+    fi
+
+    if (! $(isSHA256 "$EXPECTED_HASH_FIRST")) ; then
+        if ($(isCID "$EXPECTED_HASH_FIRST")) ; then
+            echoInfo "INFO: Detected IPFS CID, searching available gatewys..."
+            COSIGN_PUB_KEY="$TMP_PATH_PUB"
+            ipfsGet "$COSIGN_PUB_KEY" "$EXPECTED_HASH_FIRST"
+
+            if ($(isFileEmpty $COSIGN_PUB_KEY)); then
+                echoErr "ERROR: Failed to locate or download public key file '$EXPECTED_HASH_FIRST' from any public IPFS gateway :("
+                return 1
+            fi
+        elif (! $(isFileEmpty "$EXPECTED_HASH_FIRST")) ; then
+            echoInfo "INFO: Detected public key file"
+            COSIGN_PUB_KEY="$EXPECTED_HASH_FIRST"
+        fi
+
+        if (! $(isFileEmpty $COSIGN_PUB_KEY)) || ($(urlExists "$COSIGN_PUB_KEY")) ; then
+            echoWarn "WARNING: Attempting to fetch signature file..."
             wget "$SIG_URL" -O $TMP_PATH_SIG
         else
-            echoErr "ERROR: Cosign tool is not installed or public key was not found in '$COSIGN_PUB_KEY'"
+            echoErr "ERROR: Public key was not found in '$COSIGN_PUB_KEY'"
             return 1
         fi
     else
@@ -375,7 +621,7 @@ function safeWget() {
     fi
 
     local COSIGN_VERIFIED="false"
-    if (! $(isFileEmpty $COSIGN_PUB_KEY)) && (! $(isFileEmpty $TMP_PATH)) ; then
+    if ( (! $(isFileEmpty $COSIGN_PUB_KEY)) || ($(urlExists "${COSIGN_PUB_KEY}" 1)) ) && (! $(isFileEmpty $TMP_PATH)) ; then
         echoInfo "INFO: Using cosign to verify temporary file integrity..."
         COSIGN_VERIFIED="true"  
         cosign verify-blob --key="$COSIGN_PUB_KEY" --signature="$TMP_PATH_SIG" "$TMP_PATH" || COSIGN_VERIFIED="false"
@@ -884,6 +1130,10 @@ function isServiceActive {
     [ "$(bash-utils toLower "$ISACT")" == "active" ] && echo "true" || echo "false"
 }
 
+function isWSL {
+    echo "$(isSubStr "$(uname -a)" "microsoft-standard-WSL")"
+}
+
 # returns 0 if failure, otherwise natural number in microseconds
 function pingTime() {
     if ($(isDnsOrIp "$1")) ; then
@@ -896,19 +1146,28 @@ function pingTime() {
     else echo "0" ; fi
 }
 
+# sets global var with user selection, default var name is OPTION
+# e.g.: pressToContinue TEST a b c
 function pressToContinue {
+    local glob_var_name="OPTION"
+    local var_len=0
+    for kg_var in "$@" ; do
+        kg_var=$(echo "$kg_var" | tr -d '\011\012\013\014\015\040' 2>/dev/null || echo -n "")
+        [[ $(strLength "$kg_var") -ge 2 ]] && glob_var_name=$kg_var && break
+    done
+
     if ($(isNullOrEmpty "$1")) ; then
         read -n 1 -s 
-        globSet OPTION ""
+        globSet "$glob_var_name" ""
     else
         while : ; do
-            local kg_OPTION=""
+            local OPTION=""
             local FOUND=false
-            read -n 1 -s kg_OPTION
-            kg_OPTION=$(bash-utils toLower "$kg_OPTION")
+            read -n 1 -s OPTION
+            OPTION=$(bash-utils toLower "$OPTION")
             for kg_var in "$@" ; do
                 kg_var=$(echo "$kg_var" | tr -d '\011\012\013\014\015\040' 2>/dev/null || echo -n "")
-                [ "$(bash-utils toLower "$kg_var")" == "$kg_OPTION" ] && globSet OPTION "$kg_OPTION" && FOUND=true && break
+                [ "$(bash-utils toLower "$kg_var")" == "$OPTION" ] && globSet "$glob_var_name" "$OPTION" && FOUND=true && break
             done
             [ "$FOUND" == "true" ] && break
         done
@@ -930,6 +1189,115 @@ displayAlign() {
     fi
 }
 
+# print with colours, to restore default use 'tput reset' or 'tput sgr0'
+# recognisable color types: [bla]ck, [red], [gre]en, [yel]low, [blu], [mag]enta, [cya]n
+# recognisable font types: [bol]d, [dim], [ita]lic, [und]er, [bli]nk, [inv]erse, [str]ike, [per]sustent, [sto]re, [res]tore, [cle]ar
+# recognisable intensities: [bri]gth (true/1), [dar]k (false/0)
+# e.g.: echoNC "<font>;<foreground>;<bacground>;<fr-intensity>;<bg-intensity>;<persistent>;<store/restore>" "test text"
+# e.g.: echoNC "bli;whi;bla;d;b;false" "test text"
+# e.g.: echoNC "bli;whi;bla;d;b;false" "test text"
+# echoC "sto;blu" "|---------$(echoC "res;gre" "lol")---------|"
+function echoNC() {
+    local IFS=";"
+    local arr=($1)
+    local font="${arr[0]}"
+    local fgrnd="${arr[1]}"
+    local bgrnd="${arr[2]}"
+    local fint="${arr[3]}"
+    local bint="${arr[4]}"
+    local persistent="${arr[5]}"
+    local store="${arr[6]}"
+    local text="$2"
+
+    ([ -z "$persistent" ] || [ "$persistent" == "false" ] || [ "$persistent" == "0" ]) && persistent="false"
+    ([ "$persistent" == "true" ] || [ "$persistent" == "1" ] || [ "$persistent" == "per" ] || [ "$persistent" == "p" ]) && persistent="true"
+
+    ([ -z "$store" ] || [ "$store" == "false" ] || [ "$store" == "0" ]) && store="false"
+    ([ "$store" == "store" ] || [ "$store" == "sto" ] || [ "$store" == "s" ]) && store="store"
+    ([ "$store" == "restore" ] || [ "$store" == "res" ] || [ "$store" == "r" ]) && store="restore"
+    ([ "$store" == "clear" ] || [ "$store" == "cle" ] || [ "$store" == "c" ]) && store="clear"
+
+    ([ -z "$font" ] || [ "$font" == "nor" ] || [ "$font" == "nul" ] || [ "$font" == "true" ]) && font=0
+    [ "$font" == "bol" ] && font=1
+    [ "$font" == "dim" ] && font=2
+    [ "$font" == "ita" ] && font=3
+    [ "$font" == "und" ] && font=4
+    [ "$font" == "bli" ] && font=5
+    [ "$font" == "inv" ] && font=7
+    ( [ "$font" == "str" ] || [ "$font" == "false" ] ) && font=9
+    [ "$font" == "per" ] && persistent="true" && font=0
+    [ "$font" == "sto" ] && store="store" && font=0
+    [ "$font" == "res" ] && store="restore" && font=0
+    [ "$font" == "cle" ] && store="clear" && font=0
+    
+    ([ "$fgrnd" == "bla" ] || [ "$fgrnd" == "false" ])&& fgrnd=30
+    [ "$fgrnd" == "red" ] && fgrnd=31
+    [ "$fgrnd" == "gre" ] && fgrnd=32
+    [ "$fgrnd" == "yel" ] && fgrnd=33
+    [ "$fgrnd" == "blu" ] && fgrnd=34
+    [ "$fgrnd" == "mag" ] && fgrnd=35
+    [ "$fgrnd" == "cya" ] && fgrnd=36
+    ([ -z "$fgrnd" ] || [ "$fgrnd" == "whi" ] || [ "$fgrnd" == "true" ]) && fgrnd=37
+
+    ([ -z "$bgrnd" ] || [ "$bgrnd" == "bla" ] || [ "$fgrnd" == "true" ]) && bgrnd=40
+    [ "$bgrnd" == "red" ] && bgrnd=41
+    [ "$bgrnd" == "gre" ] && bgrnd=42
+    [ "$bgrnd" == "yel" ] && bgrnd=43
+    [ "$bgrnd" == "blu" ] && bgrnd=44
+    [ "$bgrnd" == "mag" ] && bgrnd=45
+    [ "$bgrnd" == "cya" ] && bgrnd=46
+    ([ "$bgrnd" == "whi" ] || [ "$fgrnd" == "false" ]) && bgrnd=47
+
+    if [[ $fgrnd -ge 90 ]] ; then
+        ([ "$fint" == "dar" ] || [ "$fint" == "d" ] || [ "$fint" == "0" ] || [ "$fint" == "false" ]) && \
+        fgrnd=$((fgrnd - 60))
+    fi
+
+    ( [ -z "$fint" ] || [ "$fint" == "bri" ] || [ "$fint" == "b" ] || [ "$fint" == "1" ] || [ "$fint" == "true" ]) && \
+        fgrnd=$((fgrnd + 60))
+
+    ( [ "$bint" == "bri" ] || [ "$bint" == "b" ] || [ "$bint" == "1" ] || [ "$bint" == "true" ]) && \
+        bgrnd=$((bgrnd + 60))
+
+    if [[ $bgrnd -ge 100 ]] ; then
+        ([ "$bint" == "dar" ] || [ "$bint" == "d" ] || [ "$bint" == "0" ] || [ "$bint" == "false" ]) && \
+        bgrnd=$((bgrnd - 60))
+    fi
+
+    local new_config="${font};${fgrnd};${bgrnd}m"
+
+    if [ "$persistent" == "true" ] ; then
+        echo -en "\e[0m\e[${new_config}${text}"
+    else
+        echo -en "\e[0m\e[${new_config}${text}\e[0m"
+    fi
+
+    if [ "$store" == "store" ] ; then
+        globSet "kg_echoNC_" "$new_config"
+    elif [ "$store" == "restore" ] ; then
+        local old_config="$(globGet "kg_echoNC_")"
+        [ ! -z "$old_config" ] && echo -en "\e[0m\e[${old_config}" || tput sgr0
+    elif [ "$store" == "clear" ] ; then
+        tput sgr0
+    fi
+}
+function echoC() {
+    echo "$(echoNC "$1" "${2}")"
+}
+
+# blue popup
+function echoPop() {
+    echo -e "\e[0m\e[94;1m${1}\e[0m"
+}
+# green console log
+function echoLog() {
+    echo -e "\e[0m\e[92;1m${1}\e[0m"
+}
+# light blue info
+function echoInfo() {
+    echo -e "\e[0m\e[36;1m${1}\e[0m"
+}
+
 function echoInfo() {
     echo -e "\e[0m\e[36;1m${1}\e[0m"
 }
@@ -949,6 +1317,12 @@ function echoError() {
     echoErr "${1}"
 }
 
+function echoNPop() {
+    echo -en "\e[0m\e[94;1m${1}\e[0m"
+}
+function echoNLog() {
+    echo -en "\e[0m\e[92;1m${1}\e[0m"
+}
 function echoNInfo() {
     echo -en "\e[0m\e[36;1m${1}\e[0m"
 }
@@ -1012,6 +1386,7 @@ function getNLineByPrefix() {
     fi
 }
 
+# getLastLineByPSubStr <prefix> <file>
 function getLastLineByPSubStr() {
     getNLineBySubStr "0" "$1" "$2"
 }
