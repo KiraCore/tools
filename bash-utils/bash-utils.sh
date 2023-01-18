@@ -25,7 +25,7 @@ function bashUtilsVersion() {
 # this is default installation script for utils
 # ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
 function bashUtilsSetup() {
-    local BASH_UTILS_VERSION="v0.3.4"
+    local BASH_UTILS_VERSION="v0.3.5"
     local COSIGN_VERSION="v1.13.1"
     if [ "$1" == "version" ] ; then
         echo "$BASH_UTILS_VERSION"
@@ -1609,6 +1609,34 @@ function setTomlVar() {
     fi
 }
 
+# reads last variable occurance from a file
+# getVar "PATH" /etc/profile
+function getVar() {
+    local VAR_NAME="$(delWhitespaces "$1")"
+    local VAR_FILE="$2"
+    if [ ! -z "$VAR_NAME" ] && [ -f $VAR_FILE ] ; then
+        local LINE_NR=$(getLastLineByPrefix "${VAR_NAME}=" "$VAR_FILE" 2> /dev/null || echo "-1")
+        [[ $LINE_NR -lt 0 ]] && LINE_NR=$(getLastLineByPrefix "export ${VAR_NAME}=" "$VAR_FILE" 2> /dev/null || echo "-1")
+
+        if [[ $LINE_NR -ge 0 ]] ; then
+            local line=$(sed "${LINE_NR}q;d" $VAR_FILE)
+            line="$( cut -d '=' -f 2- <<< "$line" )"
+
+            if ($(strStartsWith "$line" "\"")) && ($(strEndsWith "$line" "\"")) && ($(isSubStr "$line" " ")) ; then
+                line=$(sed -e 's/^"//' -e 's/"$//' <<<"$line")
+            fi
+            echo "$line"
+            return 0
+        fi
+    fi
+
+    return 1
+}
+
+function tryGetVar() {
+    getVar "$1" "$2" 2> /dev/null || echo ""
+} 
+
 # setVar <name> <value> <file>
 function setVar() {
     local VAR_NAME=$(delWhitespaces "$1")
@@ -1638,6 +1666,10 @@ function setVar() {
         return 1
     fi
 }
+
+function trySetVar() {
+    setVar "$1" "$2" "$3" 2> /dev/null || :
+} 
 
 function setEnv() {
     local ENV_NAME=$(delWhitespaces "$1")

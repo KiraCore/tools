@@ -454,6 +454,25 @@ TEST_S1="| $(strFixC "$TEST_S0" 15) |"
 TEST_S2="|   1234567890    |"
 [ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed C padding, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 3 passed"
 
+#################################################################
+echoWarn "TEST: getVar & setVar"
+
+FILE="/tmp/test"
+rm -rfv $FILE && touch $FILE
+
+TEST_V1=" some simple value = comes here :) \n ~"
+TEST_V2="somesimplevalue=comeshere:)\n~"
+TEST_V3="\" some simple 2 value = comes here :) \n ~"
+
+setVar test1 "$TEST_V1" $FILE
+setVar test2 "$TEST_V2" $FILE
+setVar test1 "$TEST_V3" $FILE
+
+TEST_R1="$(getVar test1 $FILE)"
+TEST_R2="$(getVar test2 $FILE)"
+
+[ "$TEST_R1" != "$TEST_V3" ] && echoErr "ERROR: Failed value read, got '$TEST_R1', expected '$TEST_V3'" && exit 1 ||  echoInfo "INFO: Test 1 passed"
+[ "$TEST_R2" != "$TEST_V2" ] && echoErr "ERROR: Failed value read, got '$TEST_R2', expected '$TEST_V2'" && exit 1 ||  echoInfo "INFO: Test 2 passed"
 
 #################################################################
 
