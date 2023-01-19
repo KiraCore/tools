@@ -2,7 +2,7 @@ Features:
 * added color printing commands `echoNC, echoC, echoPop, echoLog` including color store & restore
 * `bash-utils` now installs `cosign` during setup if it's not already installed
 * `safeWget` support for public key hosting on IPFS
-* added `isCIRD` validation
+* added `isCIDR` validation
 * added `isWSL` command allowing to identify OS running within WSL
 * added `ipfsGet` command allowing fetch from public gateways
 * improved `isMnemonic` false positive detection rate

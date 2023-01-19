@@ -25,7 +25,7 @@ function bashUtilsVersion() {
 # this is default installation script for utils
 # ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
 function bashUtilsSetup() {
-    local BASH_UTILS_VERSION="v0.3.5"
+    local BASH_UTILS_VERSION="v0.3.6"
     local COSIGN_VERSION="v1.13.1"
     if [ "$1" == "version" ] ; then
         echo "$BASH_UTILS_VERSION"
@@ -164,8 +164,8 @@ function isDnsOrIp() {
 }
 
 # Notation check "xxx.xxx.xxx.xxx/xx"
-# e.g.: isCIRD 172.22.24.212/20
-function isCIRD() {
+# e.g.: isCIDR 172.22.24.212/20
+function isCIDR() {
     if ($(isNullOrEmpty "$1")) ; then echo "false" ; else [[ "$1" =~ $REGEX_CIRD ]] && echo "true" || echo "false" ; fi
 }
 
@@ -383,7 +383,8 @@ function strFixL() {
     local string="$1"
     local max_len="$2" && ( (! $(isNaturalNumber $max_len)) || [[ $max_len -le 0 ]]  ) && max_len=0
     local separator="$3" && [ -z "$separator" ] && separator="."
-    local filler="$4" && [ -z "$filler" ] && filler=" " && filler=$(strRepeat "$filler" $max_len)
+    local filler="$4" && [ -z "$filler" ] && filler=" "
+    filler=$(strRepeat "$filler" $max_len)
     echo "$(strFirstN "$(strShortN "$string" $max_len "$separator")$filler" $max_len)"
 }
 
@@ -393,7 +394,8 @@ function strFixR() {
     local string="$1"
     local max_len="$2" && ( (! $(isNaturalNumber $max_len)) || [[ $max_len -le 0 ]]  ) && max_len=0
     local separator="$3" && [ -z "$separator" ] && separator="."
-    local filler="$4" && [ -z "$filler" ] && filler=" " && filler=$(strRepeat "$filler" $max_len)
+    local filler="$4" && [ -z "$filler" ] && filler=" "
+    filler=$(strRepeat "$filler" $max_len)
     echo "$(strLastN "${filler}$(strShortN "$string" $max_len "$separator")" $max_len)"
 }
 
