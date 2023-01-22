@@ -25,7 +25,7 @@ function bashUtilsVersion() {
 # this is default installation script for utils
 # ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
 function bashUtilsSetup() {
-    local BASH_UTILS_VERSION="v0.3.6"
+    local BASH_UTILS_VERSION="v0.3.7"
     local COSIGN_VERSION="v1.13.1"
     if [ "$1" == "version" ] ; then
         echo "$BASH_UTILS_VERSION"
@@ -468,6 +468,9 @@ function getArgs() {
             local val="${arg:$n}"
             prefix="$(echo $prefix  | sed -z 's/^-*//')"
             local key=$(echo "$prefix" | tr '-' '_')
+            if [ "$arg" == "-$key=''" ] || [ "$arg" == "-$key=\"\"" ] || [ "$arg" == "--$key=''" ] || [ "$arg" == "--$key=\"\"" ] || [ "$arg" == "--$key=" ] || [ "$arg" == "-$key=" ] ; then
+                val=""
+            fi 
             echoInfo "$key='$val'"
             eval $key="'$val'"
         else
@@ -640,7 +643,8 @@ function safeWget() {
     EXPECTED_HASH_ARR=($(echo "$EXPECTED_HASH" | tr ',' '\n'))
     local HASH_MATCH="false"
     for hash in "${EXPECTED_HASH_ARR[@]}" ; do
-        if [ "$FILE_HASH" == "$hash" ] && ($(isSHA256 "$hash")); then
+        local sanitized=$(delWhitespaces "$hash" | sed 's/^0x//')
+        if [ "$FILE_HASH" == "$sanitized" ] && ($(isSHA256 "$sanitized")); then
             HASH_MATCH="true"
             echoInfo "INFO: No need to download, file with the hash '$FILE_HASH' was already found in the '$TMP_DIR' directory"
             [ "$TMP_PATH" != "$OUT_PATH" ] && cp -fv $TMP_PATH $OUT_PATH
@@ -658,7 +662,6 @@ function safeWget() {
     COSIGN_VERIFIED="false"
     if [ "$HASH_MATCH" == "false" ] && (! $(isFileEmpty $COSIGN_PUB_KEY)) && (! $(isFileEmpty $OUT_PATH)) ; then
 
-
         echoInfo "INFO: Using cosign to verify final file integrity..."
         COSIGN_VERIFIED="true"
         cosign verify-blob --key="$COSIGN_PUB_KEY" --signature="$TMP_PATH_SIG" "$OUT_PATH" || COSIGN_VERIFIED="false"
@@ -675,7 +678,8 @@ function safeWget() {
     EXPECTED_HASH_ARR=($(echo "$EXPECTED_HASH" | tr ',' '\n'))
     HASH_MATCH="false"
     for hash in "${EXPECTED_HASH_ARR[@]}" ; do
-        if [ "$FILE_HASH" == "$hash" ] && ($(isSHA256 "$hash")) ; then
+        local sanitized=$(delWhitespaces "$hash" | sed 's/^0x//')
+        if [ "$FILE_HASH" == "$sanitized" ] && ($(isSHA256 "$sanitized")) ; then
             HASH_MATCH="true"
             break
         fi
@@ -1103,6 +1107,34 @@ function prettyTimeSlim {
   (( $M > 0 )) && (( $M < 2 )) && printf '%dm ' $M
   (( $S != 1 )) && printf '%ds\n' $S || printf '%ds\n' $S
 }
+
+# fromats Bytes into k, M, G, T, P - Bytes
+function prettyBytes {
+  local size="$1" && (! $(isNaturalNumber "$size")) && size=0
+
+  if [[ $size -lt 1024 ]] ; then
+    echo "$size B"
+  elif [[ $size -lt 1048576 ]] ; then
+    size=$(printf "%.3f" $(echo "scale=3; $size/1024" | bc))
+    echo "$size kB"
+  elif [[ $size -lt 1073741824 ]] ; then
+    size=$(printf "%.3f" $(echo "scale=3; $size/1048576" | bc))
+    echo "$size MB"
+  elif [[ $size -lt 1099511627776 ]] ; then
+    size=$(printf "%.3f" $(echo "scale=3; $size/1073741824" | bc))
+    echo "$size GB"
+  elif [[ $size -lt 1125899906842624 ]] ; then
+    size=$(printf "%.3f" $(echo "scale=3; $size/1099511627776" | bc))
+    echo "$size TB"
+  elif [[ $size -lt 1152921504606846976 ]] ; then
+    size=$(printf "%.3f" $(echo "scale=3; $size/1125899906842624" | bc))
+    echo "$size PB"
+  else
+    size=$(printf "%.3f" $(echo "scale=3; $size/1152921504606846976" | bc))
+    echo "$size EB"
+  fi
+}
+
 
 function resolveDNS {
     if ($(isIp "$1")) ; then
