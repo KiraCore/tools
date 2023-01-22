@@ -351,9 +351,10 @@ EOL
 #################################################################
 echoWarn "TEST: getArgs"
 
-getArgs -test1="test 1" --test_2="te\st 2" -t3='t3' -e="t 4" --p="test5" -z=" \"  :)" --l-ol=lol
+test0="aaa"
+getArgs -test1="test 1" --test_2="te\st 2" -t3='t3' -e="t 4" --p="test5" -z=" \"  :)" --l-ol=lol --test0=
 
-RES="${test1}${test_2}${t3}${e}${p}${z}${l_ol}"
+RES="${test1}${test0}${test_2}${t3}${e}${p}${z}${l_ol}"
 RES_EXP="test 1te\st 2t3t 4test5 \"  :)lol"
 
 [ "$RES" != "$RES_EXP" ] && \

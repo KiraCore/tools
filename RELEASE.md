@@ -12,3 +12,4 @@ Features:
 * improved readme with download example for `bip39gen`
 * added network interface commands: `getNetworkIface, getNetworkIfaces, getLocalIp, getPublicIp`
 * added variable value grab commands: `getVar, tryGetVar` as well as non throwing setter `trySetVar`
+* Allow empty variables in `getArgs`
