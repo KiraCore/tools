@@ -10,6 +10,7 @@ REGEX_MD5="^[a-fA-F0-9]{32}$"
 REGEX_INTEGER="^-?[0-9]+$"
 REGEX_NUMBER="^[+-]?([0-9]*[.])?([0-9]+)?$"
 REGEX_PUBLIC_IP='^([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?<!172\.(16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31))(?<!127)(?<!^10)(?<!^0)\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?<!192\.168)(?<!172\.(16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31))\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?<!\.255$)(?<!\b255.255.255.0\b)(?<!\b255.255.255.242\b)$'
+REGEX_CIRD="^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\/([0-9]|[1-2][0-9]|3[0-2])$"
 REGEX_KIRA="^(kira)[a-zA-Z0-9]{39}$"
 REGEX_VERSION="^(v?)([0-9]+)\.([0-9]+)\.([0-9]+)(-?)([a-zA-Z]+)?(\.?([0-9]+)?)$"
 REGEX_CID="^(Qm[1-9A-HJ-NP-Za-km-z]{44,}|b[A-Za-z2-7]{58,}|B[A-Z2-7]{58,}|z[1-9A-HJ-NP-Za-km-z]{48,}|F[0-9A-F]{50,})$"
@@ -24,7 +25,7 @@ function bashUtilsVersion() {
 # this is default installation script for utils
 # ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
 function bashUtilsSetup() {
-    local BASH_UTILS_VERSION="v0.3.2"
+    local BASH_UTILS_VERSION="v0.3.7"
     local COSIGN_VERSION="v1.13.1"
     if [ "$1" == "version" ] ; then
         echo "$BASH_UTILS_VERSION"
@@ -161,6 +162,13 @@ function isDnsOrIp() {
         echo $VAR
     fi
 }
+
+# Notation check "xxx.xxx.xxx.xxx/xx"
+# e.g.: isCIDR 172.22.24.212/20
+function isCIDR() {
+    if ($(isNullOrEmpty "$1")) ; then echo "false" ; else [[ "$1" =~ $REGEX_CIRD ]] && echo "true" || echo "false" ; fi
+}
+
 
 function isInteger() {
     if ($(isNullOrEmpty "$1")) ; then echo "false" ; else [[ $1 =~ $REGEX_INTEGER ]] && echo "true" || echo "false" ; fi
@@ -375,7 +383,8 @@ function strFixL() {
     local string="$1"
     local max_len="$2" && ( (! $(isNaturalNumber $max_len)) || [[ $max_len -le 0 ]]  ) && max_len=0
     local separator="$3" && [ -z "$separator" ] && separator="."
-    local filler="$4" && [ -z "$filler" ] && filler=" " && filler=$(strRepeat "$filler" $max_len)
+    local filler="$4" && [ -z "$filler" ] && filler=" "
+    filler=$(strRepeat "$filler" $max_len)
     echo "$(strFirstN "$(strShortN "$string" $max_len "$separator")$filler" $max_len)"
 }
 
@@ -385,7 +394,8 @@ function strFixR() {
     local string="$1"
     local max_len="$2" && ( (! $(isNaturalNumber $max_len)) || [[ $max_len -le 0 ]]  ) && max_len=0
     local separator="$3" && [ -z "$separator" ] && separator="."
-    local filler="$4" && [ -z "$filler" ] && filler=" " && filler=$(strRepeat "$filler" $max_len)
+    local filler="$4" && [ -z "$filler" ] && filler=" "
+    filler=$(strRepeat "$filler" $max_len)
     echo "$(strLastN "${filler}$(strShortN "$string" $max_len "$separator")" $max_len)"
 }
 
@@ -438,6 +448,14 @@ function strEndsWith() {
     echo "false"
 }
 
+# splits string by specific character and takes n'th element (indexed starting at 0)
+# e.g.: strSplitTakeN , 2 "a,b,c"
+function strSplitTakeN() {
+    local IFS="$1"
+    local arr=($3)
+    echo "${arr[$2]}"
+}
+
 # getArgs --test="lol1" --tes-t="lol-l" --test2="lol 2" -e=ok -t=ok2
 function getArgs() {
     for arg in "$@" ; do
@@ -450,6 +468,9 @@ function getArgs() {
             local val="${arg:$n}"
             prefix="$(echo $prefix  | sed -z 's/^-*//')"
             local key=$(echo "$prefix" | tr '-' '_')
+            if [ "$arg" == "-$key=''" ] || [ "$arg" == "-$key=\"\"" ] || [ "$arg" == "--$key=''" ] || [ "$arg" == "--$key=\"\"" ] || [ "$arg" == "--$key=" ] || [ "$arg" == "-$key=" ] ; then
+                val=""
+            fi 
             echoInfo "$key='$val'"
             eval $key="'$val'"
         else
@@ -457,6 +478,34 @@ function getArgs() {
             return 1
         fi
     done
+}
+
+# get default network interface
+function getNetworkIface() {
+    echo "$(netstat -rn 2> /dev/null | grep -m 1 UG | awk '{print $8}' | xargs 2> /dev/null || echo -n "")"
+}
+
+# get network interfaces
+function getNetworkIfaces() {
+    echo "$(ifconfig | cut -d ' ' -f1 | tr ':' '\n' | awk NF)"
+}
+
+function getPublicIp() {
+    local public_ip=$(dig TXT +short o-o.myaddr.l.google.com @ns1.google.com +time=5 +tries=1 2> /dev/null | awk -F'"' '{ print $2}' 2> /dev/null || echo -n "")
+    ( ! $(isDnsOrIp "$public_ip")) && public_ip=$(dig +short @resolver1.opendns.com myip.opendns.com +time=5 +tries=1 2> /dev/null | awk -F'"' '{ print $1}' 2> /dev/null || echo -n "")
+    ( ! $(isDnsOrIp "$public_ip")) && public_ip=$(dig +short @ns1.google.com -t txt o-o.myaddr.l.google.com -4 2> /dev/null | xargs 2> /dev/null || echo -n "")
+    ( ! $(isDnsOrIp "$public_ip")) && public_ip=$(timeout 3 curl --silent https://ipinfo.io/ip | xargs 2> /dev/null || echo -n "")
+    ( ! $(isDnsOrIp "$public_ip")) && echo "" || echo "$public_ip"
+}
+
+# returns ip of the defined local network interface otherwise checks default
+# .e.g getLocalIp "$(globGet IFACE)"
+function getLocalIp() {
+    local default_iface="$1"
+    [ -z "$default_iface" ] && default_iface=$(getDefaultNetworkIface)
+    local local_ip=$(/sbin/ifconfig "$default_iface" | grep -i mask | awk '{print $2}' | cut -f2 2> /dev/null || echo -n "")
+    ( ! $(isDnsOrIp "$local_ip")) && local_ip=$(hostname -I | awk '{ print $1}' 2> /dev/null || echo "0.0.0.0")
+    ($(isDnsOrIp "$local_ip")) && echo "$local_ip" || echo "0.0.0.0"
 }
 
 # Host list: https://ipfs.github.io/public-gateway-checker
@@ -566,7 +615,7 @@ function safeWget() {
         fi
 
         if (! $(isFileEmpty $COSIGN_PUB_KEY)) || ($(urlExists "$COSIGN_PUB_KEY")) ; then
-            echoInfo "WARNING: Attempting to fetch signature file..."
+            echoWarn "WARNING: Attempting to fetch signature file..."
             wget "$SIG_URL" -O $TMP_PATH_SIG
         else
             echoErr "ERROR: Public key was not found in '$COSIGN_PUB_KEY'"
@@ -594,7 +643,8 @@ function safeWget() {
     EXPECTED_HASH_ARR=($(echo "$EXPECTED_HASH" | tr ',' '\n'))
     local HASH_MATCH="false"
     for hash in "${EXPECTED_HASH_ARR[@]}" ; do
-        if [ "$FILE_HASH" == "$hash" ] && ($(isSHA256 "$hash")); then
+        local sanitized=$(delWhitespaces "$hash" | sed 's/^0x//')
+        if [ "$FILE_HASH" == "$sanitized" ] && ($(isSHA256 "$sanitized")); then
             HASH_MATCH="true"
             echoInfo "INFO: No need to download, file with the hash '$FILE_HASH' was already found in the '$TMP_DIR' directory"
             [ "$TMP_PATH" != "$OUT_PATH" ] && cp -fv $TMP_PATH $OUT_PATH
@@ -612,7 +662,6 @@ function safeWget() {
     COSIGN_VERIFIED="false"
     if [ "$HASH_MATCH" == "false" ] && (! $(isFileEmpty $COSIGN_PUB_KEY)) && (! $(isFileEmpty $OUT_PATH)) ; then
 
-
         echoInfo "INFO: Using cosign to verify final file integrity..."
         COSIGN_VERIFIED="true"
         cosign verify-blob --key="$COSIGN_PUB_KEY" --signature="$TMP_PATH_SIG" "$OUT_PATH" || COSIGN_VERIFIED="false"
@@ -629,7 +678,8 @@ function safeWget() {
     EXPECTED_HASH_ARR=($(echo "$EXPECTED_HASH" | tr ',' '\n'))
     HASH_MATCH="false"
     for hash in "${EXPECTED_HASH_ARR[@]}" ; do
-        if [ "$FILE_HASH" == "$hash" ] && ($(isSHA256 "$hash")) ; then
+        local sanitized=$(delWhitespaces "$hash" | sed 's/^0x//')
+        if [ "$FILE_HASH" == "$sanitized" ] && ($(isSHA256 "$sanitized")) ; then
             HASH_MATCH="true"
             break
         fi
@@ -1058,6 +1108,34 @@ function prettyTimeSlim {
   (( $S != 1 )) && printf '%ds\n' $S || printf '%ds\n' $S
 }
 
+# fromats Bytes into k, M, G, T, P - Bytes
+function prettyBytes {
+  local size="$1" && (! $(isNaturalNumber "$size")) && size=0
+
+  if [[ $size -lt 1024 ]] ; then
+    echo "$size B"
+  elif [[ $size -lt 1048576 ]] ; then
+    size=$(printf "%.3f" $(echo "scale=3; $size/1024" | bc))
+    echo "$size kB"
+  elif [[ $size -lt 1073741824 ]] ; then
+    size=$(printf "%.3f" $(echo "scale=3; $size/1048576" | bc))
+    echo "$size MB"
+  elif [[ $size -lt 1099511627776 ]] ; then
+    size=$(printf "%.3f" $(echo "scale=3; $size/1073741824" | bc))
+    echo "$size GB"
+  elif [[ $size -lt 1125899906842624 ]] ; then
+    size=$(printf "%.3f" $(echo "scale=3; $size/1099511627776" | bc))
+    echo "$size TB"
+  elif [[ $size -lt 1152921504606846976 ]] ; then
+    size=$(printf "%.3f" $(echo "scale=3; $size/1125899906842624" | bc))
+    echo "$size PB"
+  else
+    size=$(printf "%.3f" $(echo "scale=3; $size/1152921504606846976" | bc))
+    echo "$size EB"
+  fi
+}
+
+
 function resolveDNS {
     if ($(isIp "$1")) ; then
         echo "$1"
@@ -1145,12 +1223,14 @@ displayAlign() {
     fi
 }
 
-# print with colours
+# print with colours, to restore default use 'tput reset' or 'tput sgr0'
 # recognisable color types: [bla]ck, [red], [gre]en, [yel]low, [blu], [mag]enta, [cya]n
-# recognisable font types: [bol]d, [dim], [ita]lic, [und]er, [bli]nk, [inv]erse, [str]ike
+# recognisable font types: [bol]d, [dim], [ita]lic, [und]er, [bli]nk, [inv]erse, [str]ike, [per]sustent, [sto]re, [res]tore, [cle]ar
 # recognisable intensities: [bri]gth (true/1), [dar]k (false/0)
-# e.g.: echoNC "<font>;<foreground>;<bacground>;<fr-intensity>;<bg-intensity>" "test text"
-# e.g.: echoNC "bli;whi;bla;d;b" "test text"
+# e.g.: echoNC "<font>;<foreground>;<bacground>;<fr-intensity>;<bg-intensity>;<persistent>;<store/restore>" "test text"
+# e.g.: echoNC "bli;whi;bla;d;b;false" "test text"
+# e.g.: echoNC "bli;whi;bla;d;b;false" "test text"
+# echoC "sto;blu" "|---------$(echoC "res;gre" "lol")---------|"
 function echoNC() {
     local IFS=";"
     local arr=($1)
@@ -1159,7 +1239,17 @@ function echoNC() {
     local bgrnd="${arr[2]}"
     local fint="${arr[3]}"
     local bint="${arr[4]}"
+    local persistent="${arr[5]}"
+    local store="${arr[6]}"
     local text="$2"
+
+    ([ -z "$persistent" ] || [ "$persistent" == "false" ] || [ "$persistent" == "0" ]) && persistent="false"
+    ([ "$persistent" == "true" ] || [ "$persistent" == "1" ] || [ "$persistent" == "per" ] || [ "$persistent" == "p" ]) && persistent="true"
+
+    ([ -z "$store" ] || [ "$store" == "false" ] || [ "$store" == "0" ]) && store="false"
+    ([ "$store" == "store" ] || [ "$store" == "sto" ] || [ "$store" == "s" ]) && store="store"
+    ([ "$store" == "restore" ] || [ "$store" == "res" ] || [ "$store" == "r" ]) && store="restore"
+    ([ "$store" == "clear" ] || [ "$store" == "cle" ] || [ "$store" == "c" ]) && store="clear"
 
     ([ -z "$font" ] || [ "$font" == "nor" ] || [ "$font" == "nul" ] || [ "$font" == "true" ]) && font=0
     [ "$font" == "bol" ] && font=1
@@ -1169,6 +1259,10 @@ function echoNC() {
     [ "$font" == "bli" ] && font=5
     [ "$font" == "inv" ] && font=7
     ( [ "$font" == "str" ] || [ "$font" == "false" ] ) && font=9
+    [ "$font" == "per" ] && persistent="true" && font=0
+    [ "$font" == "sto" ] && store="store" && font=0
+    [ "$font" == "res" ] && store="restore" && font=0
+    [ "$font" == "cle" ] && store="clear" && font=0
     
     ([ "$fgrnd" == "bla" ] || [ "$fgrnd" == "false" ])&& fgrnd=30
     [ "$fgrnd" == "red" ] && fgrnd=31
@@ -1204,12 +1298,36 @@ function echoNC() {
         bgrnd=$((bgrnd - 60))
     fi
 
-    echo -en "\e[0m\e[${font};${fgrnd};${bgrnd}m${text}\e[0m"
+    local new_config="${font};${fgrnd};${bgrnd}m"
+
+    if [ "$persistent" == "true" ] ; then
+        echo -en "\e[0m\e[${new_config}${text}"
+    else
+        echo -en "\e[0m\e[${new_config}${text}\e[0m"
+    fi
+
+    if [ "$store" == "store" ] ; then
+        globSet "kg_echoNC_" "$new_config"
+    elif [ "$store" == "restore" ] ; then
+        local old_config="$(globGet "kg_echoNC_")"
+        [ ! -z "$old_config" ] && echo -en "\e[0m\e[${old_config}" || tput sgr0
+    elif [ "$store" == "clear" ] ; then
+        tput sgr0
+    fi
 }
 function echoC() {
     echo "$(echoNC "$1" "${2}")"
 }
 
+# blue popup
+function echoPop() {
+    echo -e "\e[0m\e[94;1m${1}\e[0m"
+}
+# green console log
+function echoLog() {
+    echo -e "\e[0m\e[92;1m${1}\e[0m"
+}
+# light blue info
 function echoInfo() {
     echo -e "\e[0m\e[36;1m${1}\e[0m"
 }
@@ -1233,6 +1351,12 @@ function echoError() {
     echoErr "${1}"
 }
 
+function echoNPop() {
+    echo -en "\e[0m\e[94;1m${1}\e[0m"
+}
+function echoNLog() {
+    echo -en "\e[0m\e[92;1m${1}\e[0m"
+}
 function echoNInfo() {
     echo -en "\e[0m\e[36;1m${1}\e[0m"
 }
@@ -1296,6 +1420,7 @@ function getNLineByPrefix() {
     fi
 }
 
+# getLastLineByPSubStr <prefix> <file>
 function getLastLineByPSubStr() {
     getNLineBySubStr "0" "$1" "$2"
 }
@@ -1518,6 +1643,34 @@ function setTomlVar() {
     fi
 }
 
+# reads last variable occurance from a file
+# getVar "PATH" /etc/profile
+function getVar() {
+    local VAR_NAME="$(delWhitespaces "$1")"
+    local VAR_FILE="$2"
+    if [ ! -z "$VAR_NAME" ] && [ -f $VAR_FILE ] ; then
+        local LINE_NR=$(getLastLineByPrefix "${VAR_NAME}=" "$VAR_FILE" 2> /dev/null || echo "-1")
+        [[ $LINE_NR -lt 0 ]] && LINE_NR=$(getLastLineByPrefix "export ${VAR_NAME}=" "$VAR_FILE" 2> /dev/null || echo "-1")
+
+        if [[ $LINE_NR -ge 0 ]] ; then
+            local line=$(sed "${LINE_NR}q;d" $VAR_FILE)
+            line="$( cut -d '=' -f 2- <<< "$line" )"
+
+            if ($(strStartsWith "$line" "\"")) && ($(strEndsWith "$line" "\"")) && ($(isSubStr "$line" " ")) ; then
+                line=$(sed -e 's/^"//' -e 's/"$//' <<<"$line")
+            fi
+            echo "$line"
+            return 0
+        fi
+    fi
+
+    return 1
+}
+
+function tryGetVar() {
+    getVar "$1" "$2" 2> /dev/null || echo ""
+} 
+
 # setVar <name> <value> <file>
 function setVar() {
     local VAR_NAME=$(delWhitespaces "$1")
@@ -1547,6 +1700,10 @@ function setVar() {
         return 1
     fi
 }
+
+function trySetVar() {
+    setVar "$1" "$2" "$3" 2> /dev/null || :
+} 
 
 function setEnv() {
     local ENV_NAME=$(delWhitespaces "$1")

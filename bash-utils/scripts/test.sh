@@ -351,9 +351,10 @@ EOL
 #################################################################
 echoWarn "TEST: getArgs"
 
-getArgs -test1="test 1" --test_2="te\st 2" -t3='t3' -e="t 4" --p="test5" -z=" \"  :)" --l-ol=lol
+test0="aaa"
+getArgs -test1="test 1" --test_2="te\st 2" -t3='t3' -e="t 4" --p="test5" -z=" \"  :)" --l-ol=lol --test0=
 
-RES="${test1}${test_2}${t3}${e}${p}${z}${l_ol}"
+RES="${test1}${test0}${test_2}${t3}${e}${p}${z}${l_ol}"
 RES_EXP="test 1te\st 2t3t 4test5 \"  :)lol"
 
 [ "$RES" != "$RES_EXP" ] && \
@@ -454,6 +455,25 @@ TEST_S1="| $(strFixC "$TEST_S0" 15) |"
 TEST_S2="|   1234567890    |"
 [ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed C padding, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 3 passed"
 
+#################################################################
+echoWarn "TEST: getVar & setVar"
+
+FILE="/tmp/test"
+rm -rfv $FILE && touch $FILE
+
+TEST_V1=" some simple value = comes here :) \n ~"
+TEST_V2="somesimplevalue=comeshere:)\n~"
+TEST_V3="\" some simple 2 value = comes here :) \n ~"
+
+setVar test1 "$TEST_V1" $FILE
+setVar test2 "$TEST_V2" $FILE
+setVar test1 "$TEST_V3" $FILE
+
+TEST_R1="$(getVar test1 $FILE)"
+TEST_R2="$(getVar test2 $FILE)"
+
+[ "$TEST_R1" != "$TEST_V3" ] && echoErr "ERROR: Failed value read, got '$TEST_R1', expected '$TEST_V3'" && exit 1 ||  echoInfo "INFO: Test 1 passed"
+[ "$TEST_R2" != "$TEST_V2" ] && echoErr "ERROR: Failed value read, got '$TEST_R2', expected '$TEST_V2'" && exit 1 ||  echoInfo "INFO: Test 2 passed"
 
 #################################################################
 

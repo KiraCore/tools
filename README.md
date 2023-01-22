@@ -35,7 +35,7 @@ KIRA bash-utils is a general purpose tool for simplifying scripts & commands
 
 ```bash
 # one line install
-TOOLS_VERSION="v0.3.0" && mkdir -p /usr/keys && FILE_NAME="bash-utils.sh" && \
+TOOLS_VERSION="v0.3.4" && mkdir -p /usr/keys && FILE_NAME="bash-utils.sh" && \
  if [ -z "$KIRA_COSIGN_PUB" ] ; then KIRA_COSIGN_PUB=/usr/keys/kira-cosign.pub ; fi && \
  echo -e "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE/IrzBQYeMwvKa44/DF/HB7XDpnE+\nf+mU9F/Qbfq25bBWV2+NlYMJv3KvKHNtu3Jknt6yizZjUV4b8WGfKBzFYw==\n-----END PUBLIC KEY-----" > $KIRA_COSIGN_PUB && \
  wget "https://github.com/KiraCore/tools/releases/download/$TOOLS_VERSION/${FILE_NAME}" -O ./$FILE_NAME && \
