@@ -25,7 +25,7 @@ function bashUtilsVersion() {
 # this is default installation script for utils
 # ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
 function bashUtilsSetup() {
-    local BASH_UTILS_VERSION="v0.3.8"
+    local BASH_UTILS_VERSION="v0.3.9"
     local COSIGN_VERSION="v1.13.1"
     if [ "$1" == "version" ] ; then
         echo "$BASH_UTILS_VERSION"
@@ -60,9 +60,12 @@ function bashUtilsSetup() {
             cp -fv "$UTILS_SOURCE" "/usr/local/bin/bu"
             chmod +x "$UTILS_DESTINATION" "/usr/local/bin/bash-utils" "/bin/bu"
 
-            local SUDOUSER="${SUDO_USER}" && [ "$SUDOUSER" == "root" ] && SUDOUSER=""
-            local USERNAME="${USER}" && [ "$USERNAME" == "root" ] && USERNAME=""
-            local LOGNAME=$(logname 2> /dev/null echo "") && [ "$LOGNAME" == "root" ] && LOGNAME=""
+            local SUDOUSER="${SUDO_USER}" 
+            local USERNAME="${USER}" 
+            local LOGNAME=$(logname 2> /dev/null echo "") 
+            [ "$SUDOUSER" == "root" ] && SUDOUSER=""
+            [ "$USERNAME" == "root" ] && USERNAME=""
+            [ "$LOGNAME" == "root" ] && LOGNAME=""
 
             local TARGET="/$LOGNAME/.bashrc" 
             [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
@@ -170,7 +173,6 @@ function isDnsOrIp() {
 function isCIDR() {
     if ($(isNullOrEmpty "$1")) ; then echo "false" ; else [[ "$1" =~ $REGEX_CIRD ]] && echo "true" || echo "false" ; fi
 }
-
 
 function isInteger() {
     if ($(isNullOrEmpty "$1")) ; then echo "false" ; else [[ $1 =~ $REGEX_INTEGER ]] && echo "true" || echo "false" ; fi
@@ -337,8 +339,10 @@ function strLastN() {
 # e.g. strShort "123456789" 1 "..."" -> 1...9 
 function strShort() {
     local string="$1"
-    local trim_len="$2" && ( (! $(isNaturalNumber $trim_len)) || [[ $trim_len -le 0 ]]  ) && trim_len=3
-    local separator="$3" && [ -z "$separator" ] && separator="..."
+    local trim_len="$2" 
+    ( (! $(isNaturalNumber $trim_len)) || [[ $trim_len -le 0 ]]  ) && trim_len=3
+    local separator="$3" 
+    [ -z "$separator" ] && separator="..."
     local string_len=$(strLength "$string")
     local separator_len=$(strLength "$separator")
     local final_len=$(((trim_len * 2) + separator_len ))
@@ -349,9 +353,11 @@ function strShort() {
 # e.g. strShort 123456789" 5 '.' -> 1...9
 function strShortN() {
     local string="$1"
-    local max_len="$2" && ( (! $(isNaturalNumber $max_len)) || [[ $max_len -le 0 ]]  ) && echo "" && return 0
-    local separator="$3" && ( [ -z "$separator" ] || [[ $(strLength "$separator") -gt 1 ]] ) && separator="." 
+    local max_len="$2" 
+    local separator="$3" 
     local string_len=$(strLength "$string")
+    ( (! $(isNaturalNumber $max_len)) || [[ $max_len -le 0 ]]  ) && echo "" && return 0
+    ( [ -z "$separator" ] || [[ $(strLength "$separator") -gt 1 ]] ) && separator="." 
     if [[ $max_len -le 0 ]] ; then
         echo ""
     elif [[ $max_len -ge $string_len ]] ; then  # same or greater lenght, skip processing
@@ -375,8 +381,9 @@ function strShortN() {
 # e.g.: strRepeat "a" 3 -> aaa
 strRepeat(){
     local string="$1"
-    local n="$2" && ( (! $(isNaturalNumber $n)) || [[ $n -le 0 ]]  ) && n=0
+    local n="$2" 
     local output=""
+    ( (! $(isNaturalNumber $n)) || [[ $n -le 0 ]]  ) && n=0
     for i in $(seq 1 $n); do
       output="$output$string"
     done
@@ -387,9 +394,10 @@ strRepeat(){
 # e.g.: echo "| $(strFixL "123456789" 15) |" -> | 123456789       |
 function strFixL() {
     local string="$1"
-    local max_len="$2" && ( (! $(isNaturalNumber $max_len)) || [[ $max_len -le 0 ]]  ) && max_len=0
+    local max_len="$2" 
     local separator="$3" 
     local filler="$4"
+    ( (! $(isNaturalNumber $max_len)) || [[ $max_len -le 0 ]]  ) && max_len=0
     [ -z "$separator" ] && separator="."
     [ -z "$filler" ] && filler=" "
     filler=$(strRepeat "$filler" $max_len)
@@ -400,9 +408,10 @@ function strFixL() {
 # e.g.: echo "| $(strFixR "123456789" 15) |" -> |       123456789 |
 function strFixR() {
     local string="$1"
-    local max_len="$2" && ( (! $(isNaturalNumber $max_len)) || [[ $max_len -le 0 ]]  ) && max_len=0
+    local max_len="$2" 
     local separator="$3"
     local filler="$4" 
+    ( (! $(isNaturalNumber $max_len)) || [[ $max_len -le 0 ]]  ) && max_len=0
     [ -z "$separator" ] && separator="."
     [ -z "$filler" ] && filler=" "
     filler=$(strRepeat "$filler" $max_len)
@@ -413,9 +422,10 @@ function strFixR() {
 # e.g.: echo "| $(strFixC "123456789" 15) |" -> |    123456789    |
 function strFixC() {
     local string="$1"
-    local max_len="$2" && ( (! $(isNaturalNumber $max_len)) || [[ $max_len -le 0 ]]  ) && max_len=0
+    local max_len="$2"
     local separator="$3" 
     local filler="$4" 
+    ( (! $(isNaturalNumber $max_len)) || [[ $max_len -le 0 ]]  ) && max_len=0
     [ -z "$separator" ] && separator="."
     [ -z "$filler" ] && filler=" "
     local filler_extr=$(strRepeat "$filler" $max_len)
@@ -722,8 +732,9 @@ function getRamTotal() {
 
 # allowed modes: 'default', 'short', 'long'
 function getArch() {
-    local mode="$1" && mode="$(bash-utils toLower $mode)"
+    local mode="$1"
     local ARCH=$(uname -m)
+    mode="$(bash-utils toLower $mode)"
     if [[ "$ARCH" == *"arm"* ]] || [[ "$ARCH" == *"aarch"* ]] ; then
         echo "arm64"
     elif [[ "$ARCH" == *"x64"* ]] || [[ "$ARCH" == *"x86_64"* ]] || [[ "$ARCH" == *"amd64"* ]] || [[ "$ARCH" == *"amd"* ]] ; then
@@ -951,15 +962,16 @@ function isURL() {
 function urlExists() {
     local timeout="$2" && (! $(isNaturalNumber $timeout)) && timeout=10
     if ($(isNullOrEmpty "$1")) ; then echo "false"
-    elif curl -r0-0 --fail --silent -m $timeout "$1" >/dev/null; then echo "true"
+    elif curl -r0-0 --fail --silent -m $timeout "$1" --output /dev/null >/dev/null; then echo "true"
     else echo "false" ; fi
 }
 
 # TODO: Investigate 0 output
 # urlContentLength 18.168.78.192:11000/api/snapshot 10
 function urlContentLength() {
+    local url="$1"
     local timeout="$2" && (! $(isNaturalNumber $timeout)) && timeout=10
-    local VAL=$(curl --fail $1 --dump-header /dev/fd/1 --silent -m $timeout  2> /dev/null | grep -i Content-Length -m 1 2> /dev/null | awk '{print $2}' 2> /dev/null || echo -n "")
+    local VAL=$(curl --fail "$url" --dump-header /dev/fd/1 --silent -m $timeout --output /dev/null 2> /dev/null | grep -i Content-Length -m 1 2> /dev/null | awk '{print $2}' 2> /dev/null || echo -n "")
     # remove invisible whitespace characters
     VAL=$(echo ${VAL%$'\r'})
     (! $(isNaturalNumber $VAL)) && VAL=0
