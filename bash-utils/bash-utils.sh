@@ -25,7 +25,7 @@ function bashUtilsVersion() {
 # this is default installation script for utils
 # ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
 function bashUtilsSetup() {
-    local BASH_UTILS_VERSION="v0.3.7"
+    local BASH_UTILS_VERSION="v0.3.8"
     local COSIGN_VERSION="v1.13.1"
     if [ "$1" == "version" ] ; then
         echo "$BASH_UTILS_VERSION"
@@ -64,7 +64,8 @@ function bashUtilsSetup() {
             local USERNAME="${USER}" && [ "$USERNAME" == "root" ] && USERNAME=""
             local LOGNAME=$(logname 2> /dev/null echo "") && [ "$LOGNAME" == "root" ] && LOGNAME=""
 
-            local TARGET="/$LOGNAME/.bashrc" && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
+            local TARGET="/$LOGNAME/.bashrc" 
+            [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
             TARGET="/$USERNAME/.bashrc" && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
             TARGET="/$SUDOUSER/.bashrc" && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
             TARGET="/root/.bashrc" && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
@@ -157,7 +158,8 @@ function isPublicIp() {
 
 function isDnsOrIp() {
     if ($(isNullOrEmpty "$1")) ; then echo "false" ; else
-        local VAR="false" && ($(isDns "$1")) && VAR="true"
+        local VAR="false" 
+        ($(isDns "$1")) && VAR="true"
         [ "$VAR" != "true" ] && ($(isIp "$1")) && VAR="true"
         echo $VAR
     fi
@@ -278,11 +280,15 @@ function versionToNumber() {
     local version=""
     [ -z "$1" ] && version="$(timeout 1 cat 2> /dev/null || echo "")" || version="$1"
     version=$(echo "$version" | tr -d [a-z,A-Z] | sed "s/-././g" | sed "s/+/./g" | sed "s/-//g" | tr -d ' ')
-    local major=$(echo $version | cut -d. -f1 | sed 's/[^0-9]*//g' 2> /dev/null || echo "0") && (! $(isNaturalNumber "$major")) && major=0
-    local minor=$(echo $version | cut -d. -f2 | sed 's/[^0-9]*//g' 2> /dev/null || echo "0") && (! $(isNaturalNumber "$minor")) && minor=0
-    local micro=$(echo $version | cut -d. -f3 | sed 's/[^0-9]*//g' 2> /dev/null || echo "0") && (! $(isNaturalNumber "$micro")) && micro=0
-    local build=$(echo $version | cut -d. -f4 | sed 's/[^0-9]*//g' 2> /dev/null || echo "0") && (! $(isNaturalNumber "$build")) && build=0
+    local major=$(echo $version | cut -d. -f1 | sed 's/[^0-9]*//g' 2> /dev/null || echo "0")
+    local minor=$(echo $version | cut -d. -f2 | sed 's/[^0-9]*//g' 2> /dev/null || echo "0")
+    local micro=$(echo $version | cut -d. -f3 | sed 's/[^0-9]*//g' 2> /dev/null || echo "0")
+    local build=$(echo $version | cut -d. -f4 | sed 's/[^0-9]*//g' 2> /dev/null || echo "0")
     local sum=0
+    (! $(isNaturalNumber "$major")) && major=0
+    (! $(isNaturalNumber "$minor")) && minor=0
+    (! $(isNaturalNumber "$micro")) && micro=0
+    (! $(isNaturalNumber "$build")) && build=0
     sum=$(( sum + ( 1 * build ) )) && [[ $build -le 0 ]] && build=0
     sum=$(( sum + ( 10000 * micro  ) )) && [[ $micro -le 0 ]] && micro=10000
     sum=$(( sum + ( 100000000 * minor ) )) && [[ $minor -le 0 ]] && minor=100000000
@@ -382,8 +388,10 @@ strRepeat(){
 function strFixL() {
     local string="$1"
     local max_len="$2" && ( (! $(isNaturalNumber $max_len)) || [[ $max_len -le 0 ]]  ) && max_len=0
-    local separator="$3" && [ -z "$separator" ] && separator="."
-    local filler="$4" && [ -z "$filler" ] && filler=" "
+    local separator="$3" 
+    local filler="$4"
+    [ -z "$separator" ] && separator="."
+    [ -z "$filler" ] && filler=" "
     filler=$(strRepeat "$filler" $max_len)
     echo "$(strFirstN "$(strShortN "$string" $max_len "$separator")$filler" $max_len)"
 }
@@ -393,8 +401,10 @@ function strFixL() {
 function strFixR() {
     local string="$1"
     local max_len="$2" && ( (! $(isNaturalNumber $max_len)) || [[ $max_len -le 0 ]]  ) && max_len=0
-    local separator="$3" && [ -z "$separator" ] && separator="."
-    local filler="$4" && [ -z "$filler" ] && filler=" "
+    local separator="$3"
+    local filler="$4" 
+    [ -z "$separator" ] && separator="."
+    [ -z "$filler" ] && filler=" "
     filler=$(strRepeat "$filler" $max_len)
     echo "$(strLastN "${filler}$(strShortN "$string" $max_len "$separator")" $max_len)"
 }
@@ -404,8 +414,10 @@ function strFixR() {
 function strFixC() {
     local string="$1"
     local max_len="$2" && ( (! $(isNaturalNumber $max_len)) || [[ $max_len -le 0 ]]  ) && max_len=0
-    local separator="$3" && [ -z "$separator" ] && separator="."
-    local filler="$4" && [ -z "$filler" ] && filler=" "
+    local separator="$3" 
+    local filler="$4" 
+    [ -z "$separator" ] && separator="."
+    [ -z "$filler" ] && filler=" "
     local filler_extr=$(strRepeat "$filler" $max_len)
     local string_len=$(strLength "$string")
 
@@ -963,7 +975,8 @@ function globFile() {
     if [ ! -z "$2" ] && [ -d $2 ] ; then
         echo "${2}/$(globName $1)"
     else
-        local TARGET_DIR="$KIRA_GLOBS_DIR" && ($(isNullOrEmpty "$TARGET_DIR")) && TARGET_DIR="/var/kiraglob"
+        local TARGET_DIR="$KIRA_GLOBS_DIR" 
+        ($(isNullOrEmpty "$TARGET_DIR")) && TARGET_DIR="/var/kiraglob"
         echo "${TARGET_DIR}/$(globName $1)"
     fi
     return 0
@@ -1008,7 +1021,8 @@ function globDel {
 }
 
 function timerStart() {
-    local NAME=$1 && ($(isNullOrEmpty "$NAME")) && NAME="${BASH_SOURCE}"
+    local NAME=$1
+    ($(isNullOrEmpty "$NAME")) && NAME="${BASH_SOURCE}"
     globSet "timer_start_${NAME}" "$(date -u +%s)"
     globSet "timer_stop_${NAME}" ""
     globSet "timer_elapsed_${NAME}" ""
@@ -1018,12 +1032,18 @@ function timerStart() {
 # if TIMEOUT is set then time left until TIMEOUT is calculated
 function timerSpan() {
     local TIME="$(date -u +%s)"
-    local NAME=$1 && ($(isNullOrEmpty "$NAME")) && NAME="${BASH_SOURCE}"
+    local NAME=$1 
+    ($(isNullOrEmpty "$NAME")) && NAME="${BASH_SOURCE}"
     local TIMEOUT=$2
-    local START_TIME=$(globGet "timer_start_${NAME}") && (! $(isNaturalNumber "$START_TIME")) && START_TIME="$TIME"
-    local END_TIME=$(globGet "timer_stop_${NAME}") && (! $(isNaturalNumber "$END_TIME")) && END_TIME="$TIME"
-    local ELAPSED=$(globGet "timer_elapsed_${NAME}") && (! $(isNaturalNumber "$ELAPSED")) && ELAPSED="0"
-    local SPAN="$(($END_TIME - $START_TIME))" && [[ $SPAN -lt 0 ]] && SPAN="0"
+    local START_TIME=$(globGet "timer_start_${NAME}")
+    local END_TIME=$(globGet "timer_stop_${NAME}")
+    local ELAPSED=$(globGet "timer_elapsed_${NAME}")
+    (! $(isNaturalNumber "$START_TIME")) && START_TIME="$TIME"
+    (! $(isNaturalNumber "$END_TIME")) && END_TIME="$TIME"
+    (! $(isNaturalNumber "$ELAPSED")) && ELAPSED="0"
+
+    local SPAN="$(($END_TIME - $START_TIME))" 
+    [[ $SPAN -lt 0 ]] && SPAN="0"
     SPAN="$(($SPAN + $ELAPSED))" 
     
     if ($(isNaturalNumber $TIMEOUT)) ; then
@@ -1037,15 +1057,20 @@ function timerSpan() {
 
 function timerPause() {
     local TIME="$(date -u +%s)"
-    local NAME=$1 && ($(isNullOrEmpty "$NAME")) && NAME="${BASH_SOURCE}"
+    local NAME=$1 
+    ($(isNullOrEmpty "$NAME")) && NAME="${BASH_SOURCE}"
     local END_TIME=$(globGet "timer_stop_${NAME}")
 
     if (! $(isNaturalNumber "$END_TIME")) ; then
         globSet "timer_stop_${NAME}" "$TIME"
-        local OLD_ELAPSED=$(globGet "timer_elapsed_${NAME}") && (! $(isNaturalNumber "$OLD_ELAPSED")) && OLD_ELAPSED="0"
-        local START_TIME=$(globGet "timer_start_${NAME}") && (! $(isNaturalNumber "$START_TIME")) && START_TIME="$TIME"
-        local END_TIME=$(globGet "timer_stop_${NAME}") && (! $(isNaturalNumber "$END_TIME")) && END_TIME="$TIME"
-        local NOW_ELAPSED="$(($END_TIME - $START_TIME))" && [[ $NOW_ELAPSED -lt 0 ]] && NOW_ELAPSED="0"
+        local OLD_ELAPSED=$(globGet "timer_elapsed_${NAME}") 
+        local START_TIME=$(globGet "timer_start_${NAME}") 
+        local END_TIME=$(globGet "timer_stop_${NAME}") 
+        (! $(isNaturalNumber "$OLD_ELAPSED")) && OLD_ELAPSED="0"
+        (! $(isNaturalNumber "$START_TIME")) && START_TIME="$TIME"
+        (! $(isNaturalNumber "$END_TIME")) && END_TIME="$TIME"
+        local NOW_ELAPSED="$(($END_TIME - $START_TIME))" 
+        [[ $NOW_ELAPSED -lt 0 ]] && NOW_ELAPSED="0"
         globSet "timer_start_${NAME}" "$TIME"
         globSet "timer_elapsed_${NAME}" "$(($NOW_ELAPSED + $OLD_ELAPSED))"
     fi
@@ -1053,7 +1078,8 @@ function timerPause() {
 }
 
 function timerUnpause() {
-    local NAME=$1 && ($(isNullOrEmpty "$NAME")) && NAME="${BASH_SOURCE}"
+    local NAME=$1 
+    ($(isNullOrEmpty "$NAME")) && NAME="${BASH_SOURCE}"
     local END_TIME=$(globGet "timer_stop_${NAME}")
 
     if ($(isNaturalNumber "$END_TIME")) ; then
@@ -1736,11 +1762,13 @@ function setEnv() {
 function setGlobEnv() {
     local ENV_NAME=$1
     local ENV_VALUE=$2
-    
     local GLOB_SRC="source /etc/profile"
-    local SUDOUSER="${SUDO_USER}" && [ "$SUDOUSER" == "root" ] && SUDOUSER=""
-    local USERNAME="${USER}" && [ "$USERNAME" == "root" ] && USERNAME=""
-    local LOGNAME=$(logname 2> /dev/null echo "") && [ "$LOGNAME" == "root" ] && LOGNAME=""
+    local SUDOUSER="${SUDO_USER}" 
+    local USERNAME="${USER}" 
+    local LOGNAME=$(logname 2> /dev/null echo "")
+    [ "$SUDOUSER" == "root" ] && SUDOUSER=""
+    [ "$USERNAME" == "root" ] && USERNAME=""
+    [ "$LOGNAME" == "root" ] && LOGNAME=""
 
     local TARGET="/$LOGNAME/.bashrc"
     if [ ! -z "$LOGNAME" ] && [ -f  $TARGET ] ; then
