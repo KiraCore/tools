@@ -13,3 +13,4 @@ Features:
 * added network interface commands: `getNetworkIface, getNetworkIfaces, getLocalIp, getPublicIp`
 * added variable value grab commands: `getVar, tryGetVar` as well as non throwing setter `trySetVar`
 * Allow empty variables in `getArgs`
+* The `urlContentLength` and `urlExists` now correctly support binary files
