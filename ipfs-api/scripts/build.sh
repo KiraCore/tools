@@ -10,9 +10,12 @@ LOCAL_PLATFORM=$(toLower $(uname))
 LOCAL_ARCH=$(([[ "$(uname -m)" == *"arm"* ]] || [[ "$(uname -m)" == *"aarch"* ]]) && echo "arm64" || echo "amd64")
 LOCAL_OUT="${GOBIN}/ipfs-api"
 
-PLATFORM="$1" && [ -z "$PLATFORM" ] && PLATFORM="$LOCAL_PLATFORM"
-ARCH="$2" && [ -z "$ARCH" ] && ARCH="$LOCAL_ARCH"
-OUTPUT="$3" && [ -z "$OUTPUT" ] && OUTPUT="$LOCAL_OUT"
+PLATFORM="$1" 
+ARCH="$2" 
+OUTPUT="$3" 
+[ -z "$PLATFORM" ] && PLATFORM="$LOCAL_PLATFORM"
+[ -z "$ARCH" ] && ARCH="$LOCAL_ARCH"
+[ -z "$OUTPUT" ] && OUTPUT="$LOCAL_OUT"
 
 CONSTANS_FILE=./types/constants.go
 VERSION=$(grep -Fn -m 1 'IpfsApiVersion ' $CONSTANS_FILE | rev | cut -d "=" -f1 | rev | xargs | tr -dc '[:alnum:]\-\.' || echo '')
