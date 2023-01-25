@@ -845,6 +845,7 @@ function isSimpleJsonObjOrArrFile() {
     fi
 }
 
+# Accepted flags (as params 4,5,6,7): sort_keys (bool), ensure_ascii (bool), encoding (str), indent (bool)
 function jsonParse() {
     local QUERY=""
     local FIN=""
@@ -853,13 +854,16 @@ function jsonParse() {
     local sort_keys="False"
     local ensure_ascii="False"
     local encoding="utf8"
+    local indent="utf8"
 
-    [ ! -z "${4}${5}${6}" ] && getArgs --gargs_throw=false --gargs_verbose=false "$4" "$5" "$6"
+    [ ! -z "${4}${5}${6}${7}" ] && getArgs --gargs_throw=false --gargs_verbose=false "$4" "$5" "$6" "$7"
     [ -z "$sort_keys" ] && sort_keys="false" || sort_keys="$(toLower "$sort_keys")"
     [ -z "$ensure_ascii" ] && ensure_ascii="false" || ensure_ascii="$(toLower "$ensure_ascii")"
     [ -z "$encoding" ] && ensure_ascii="utf8"
+    [ -z "$indent" ] && indent="false" || ensure_ascii="$(toLower "$ensure_ascii")"
     sort_keys="$(toCapital "$sort_keys")"
     ensure_ascii="$(toCapital "$ensure_ascii")"
+    [ "$indent" == "true" ] &&  indent=",indent=4" || indent=""
 
     INPUT=$(echo $1 | xargs 2> /dev/null 2> /dev/null || echo -n "")
     [ ! -z "$2" ] && FIN=$(realpath $2 2> /dev/null || echo -n "")
@@ -874,12 +878,12 @@ function jsonParse() {
     if [ ! -z "$FIN" ] ; then
         if [ ! -z "$FOUT" ] ; then
             [ "$FIN" != "$FOUT" ] && rm -f "$FOUT" || :
-            python3 -c "import json,sys;fin=open('$FIN',\"r\");obj=json.load(fin);fin.close();fout=open('$FOUT',\"w\",encoding=\"$encoding\");json.dump(obj$QUERY,fout,separators=(',',':'),ensure_ascii=$ensure_ascii,sort_keys=$sort_keys);fout.close()"
+            python3 -c "import json,sys;fin=open('$FIN',\"r\");obj=json.load(fin);fin.close();fout=open('$FOUT',\"w\",encoding=\"$encoding\");json.dump(obj$QUERY,fout,separators=(',',':')$indent,ensure_ascii=$ensure_ascii,sort_keys=$sort_keys);fout.close()"
         else
-            python3 -c "import json,sys;f=open('$FIN',\"r\");obj=json.load(f);print(json.dumps(obj$QUERY,separators=(',', ':'),ensure_ascii=$ensure_ascii,sort_keys=$sort_keys).strip(' \t\n\r\"'));f.close()"
+            python3 -c "import json,sys;f=open('$FIN',\"r\");obj=json.load(f);print(json.dumps(obj$QUERY,separators=(',', ':')$indent,ensure_ascii=$ensure_ascii,sort_keys=$sort_keys).strip(' \t\n\r\"'));f.close()"
         fi
     else
-        cat | python3 -c "import json,sys;obj=json.load(sys.stdin);print(json.dumps(obj$QUERY,separators=(',', ':'),ensure_ascii=$ensure_ascii,sort_keys=$sort_keys).strip(' \t\n\r\"'));"
+        cat | python3 -c "import json,sys;obj=json.load(sys.stdin);print(json.dumps(obj$QUERY,separators=(',', ':')$indent,ensure_ascii=$ensure_ascii,sort_keys=$sort_keys).strip(' \t\n\r\"'));"
     fi
 }
 

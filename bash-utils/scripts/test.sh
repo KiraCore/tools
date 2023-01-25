@@ -481,8 +481,10 @@ echoWarn "TEST: jsonParse"
 T1_FILE="/tmp/test1"
 T2_FILE="/tmp/test2"
 T3_FILE="/tmp/test3"
-T4_FILE="/tmp/test3"
-rm -rfv $T1_FILE $T2_FILE $T3_FILE $T4_FILE && touch $T1_FILE $T2_FILE $T3_FILE $T4_FILE
+T4_FILE="/tmp/test4"
+T5_FILE="/tmp/test5"
+T6_FILE="/tmp/test6"
+rm -rfv $T1_FILE $T2_FILE $T3_FILE $T4_FILE $T6_FILE && touch $T1_FILE $T2_FILE $T3_FILE $T4_FILE $T6_FILE
 
 cat > $T1_FILE << EOL
 {
@@ -511,10 +513,23 @@ EOL
 TEST_R3="$(sha256 $T3_FILE)"
 TEST_V3="$(sha256 $T4_FILE)"
 
+jsonParse "a.a" "$T1_FILE" "$T5_FILE" --sort_keys=true --indent=true
+cat > $T6_FILE << EOL
+[
+    3,
+    2,
+    1
+]
+EOL
+
+TEST_R4="$(sha256 $T5_FILE)"
+TEST_V4="$(sha256 $T6_FILE)"
+
 t=1
 [ "$TEST_R1" != "$TEST_V1" ] && echoErr "ERROR: Failed json Parse, got '$TEST_R1', expected '$TEST_V1'" && t=$((t + 1)) && exit 1 || echoInfo "INFO: Test $t passed"
 [ "$TEST_R2" != "$TEST_V2" ] && echoErr "ERROR: Failed json Parse, got '$TEST_R2', expected '$TEST_V2'" && t=$((t + 1)) && exit 1 || echoInfo "INFO: Test $t passed"
 [ "$TEST_R3" != "$TEST_V3" ] && echoErr "ERROR: Failed json Parse, got '$TEST_R3', expected '$TEST_V3'" && t=$((t + 1)) && exit 1 || echoInfo "INFO: Test $t passed"
+[ "$TEST_R4" != "$TEST_V4" ] && echoErr "ERROR: Failed json Parse, got '$TEST_R4', expected '$TEST_V4'" && t=$((t + 1)) && exit 1 || echoInfo "INFO: Test $t passed"
 
 #################################################################
 
