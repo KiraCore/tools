@@ -509,9 +509,12 @@ jsonParse "a" "$T1_FILE" "$T3_FILE" --sort_keys=true
 cat > $T4_FILE << EOL
 {"a":[3,2,1],"d":123,"z":"z1 z2 z3"}
 EOL
+# remove newline at the end
+truncate -s -1 $T4_FILE
 
 TEST_R3="$(sha256 $T3_FILE)"
 TEST_V3="$(sha256 $T4_FILE)"
+
 
 jsonParse "a.a" "$T1_FILE" "$T5_FILE" --sort_keys=true --indent=true
 cat > $T6_FILE << EOL
@@ -521,6 +524,9 @@ cat > $T6_FILE << EOL
     1
 ]
 EOL
+# remove newline at the end
+truncate -s -1 $T6_FILE
+
 
 TEST_R4="$(sha256 $T5_FILE)"
 TEST_V4="$(sha256 $T6_FILE)"
