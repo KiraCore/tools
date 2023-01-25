@@ -25,7 +25,7 @@ function bashUtilsVersion() {
 # this is default installation script for utils
 # ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
 function bashUtilsSetup() {
-    local BASH_UTILS_VERSION="v0.3.9"
+    local BASH_UTILS_VERSION="v0.3.10"
     local COSIGN_VERSION="v1.13.1"
     if [ "$1" == "version" ] ; then
         echo "$BASH_UTILS_VERSION"
@@ -109,13 +109,22 @@ function bashUtilsSetup() {
 # bash 3 (MAC) compatybility
 # "$(toLower "$1")"
 function toLower() {
-    echo $(echo "$1" |  tr '[:upper:]' '[:lower:]' )
+    echo $(echo "$1" | tr '[:upper:]' '[:lower:]' )
 }
 
 # bash 3 (MAC) compatybility
 # "$(toUpper "$1")"
 function toUpper() {
-    echo $(echo "$1" |  tr '[:lower:]' '[:upper:]' )
+    echo $(echo "$1" | tr '[:lower:]' '[:upper:]' )
+}
+
+# bash 3 (MAC) compatybility
+# capitalizes first leter of a string
+function toCapital() {
+    local s="$1"
+    local s1="$(echo "$s" | cut -c1)"
+    local s2="$(echo "$s" | cut -c2-)"
+    echo "$(toUpper "$s1")${s2}"
 }
 
 function isNullOrEmpty() {
@@ -478,9 +487,16 @@ function strSplitTakeN() {
     echo "${arr[$2]}"
 }
 
-# getArgs --test="lol1" --tes-t="lol-l" --test2="lol 2" -e=ok -t=ok2
+
+# getArgs --test="lol1" --tes-t="lol-l" --test2="lol 2" -e=ok -t=ok2 --silent=true --invisible=yes
+# internally supported flags:
+# gargs_verbose (default true), gargs_throw (default true)
+# getArgs --gargs_throw=false --gargs_verbose=false --test="lol1" --tes-t="lol-l" --test2="lol 2" -e=ok -t=ok2 --silent=true --invisible=yes "lol"
 function getArgs() {
+    local gargs_verbose="true"
+    local gargs_throw="true"
     for arg in "$@" ; do
+        [ -z "$arg" ] && continue
         ($(strStartsWith "$arg" "-")) && (! $(strStartsWith "$arg" "--")) && arg="-${arg}"
         if ($(strStartsWith "$arg" "--")) && [[ "$arg" == *"="* ]] && [[ "$arg" != "--="* ]] && [[ "$arg" != "-="* ]] ; then
             local arg_len=$(strLength "$arg")
@@ -492,14 +508,27 @@ function getArgs() {
             local key=$(echo "$prefix" | tr '-' '_')
             if [ "$arg" == "-$key=''" ] || [ "$arg" == "-$key=\"\"" ] || [ "$arg" == "--$key=''" ] || [ "$arg" == "--$key=\"\"" ] || [ "$arg" == "--$key=" ] || [ "$arg" == "-$key=" ] ; then
                 val=""
-            fi 
-            echoInfo "$key='$val'"
-            eval $key="'$val'"
+            fi
+
+            [ "$key" == "gargs_verbose" ] && [ "$(echo "$(toLower "$val")" | xargs)" == "false" ] && gargs_verbose="false"
+            [ "$key" == "gargs_throw" ] && [ "$(echo "$(toLower "$val")" | xargs)" == "false" ] && gargs_throw="false"
+
+            if [ "$key" != "gargs_throw" ] && [ "$key" != "gargs_verbose" ] ; then
+                [ "$gargs_verbose" == "true" ] && echoInfo "$key='$val'"
+                if [ "$gargs_throw" == "true" ]; then
+                    eval $key="'$val'"
+                else
+                    eval $key="'$val'" || :
+                fi
+            fi
         else
-            echoErr "ERROR: Invalid argument '$arg', missing name, '--' and/or '=' operators"
-            return 1
+            [ "$gargs_verbose" == "true" ] && echoErr "ERROR: Invalid argument '$arg', missing name, '--' and/or '=' operators ($gargs_throw)"
+            [ "$gargs_throw" == "true" ] && return 1
         fi
     done
+
+    # eval returns non 0 code, ensure to return 0
+    return 0
 }
 
 # get default network interface
@@ -820,7 +849,19 @@ function jsonParse() {
     local QUERY=""
     local FIN=""
     local FOUT=""
-    local INPUT=$(echo $1 | xargs 2> /dev/null 2> /dev/null || echo -n "")
+    local INPUT=""
+    local sort_keys="False"
+    local ensure_ascii="False"
+    local encoding="utf8"
+
+    [ ! -z "${4}${5}${6}" ] && getArgs --gargs_throw=false --gargs_verbose=false "$4" "$5" "$6"
+    [ -z "$sort_keys" ] && sort_keys="false" || sort_keys="$(toLower "$sort_keys")"
+    [ -z "$ensure_ascii" ] && ensure_ascii="false" || ensure_ascii="$(toLower "$ensure_ascii")"
+    [ -z "$encoding" ] && ensure_ascii="utf8"
+    sort_keys="$(toCapital "$sort_keys")"
+    ensure_ascii="$(toCapital "$ensure_ascii")"
+
+    INPUT=$(echo $1 | xargs 2> /dev/null 2> /dev/null || echo -n "")
     [ ! -z "$2" ] && FIN=$(realpath $2 2> /dev/null || echo -n "")
     [ ! -z "$3" ] && FOUT=$(realpath $3 2> /dev/null || echo -n "")
     if [ ! -z "$INPUT" ] ; then
@@ -833,12 +874,12 @@ function jsonParse() {
     if [ ! -z "$FIN" ] ; then
         if [ ! -z "$FOUT" ] ; then
             [ "$FIN" != "$FOUT" ] && rm -f "$FOUT" || :
-            python3 -c "import json,sys;fin=open('$FIN',\"r\");obj=json.load(fin);fin.close();fout=open('$FOUT',\"w\",encoding=\"utf8\");json.dump(obj$QUERY,fout,separators=(',',':'),ensure_ascii=False);fout.close()"
+            python3 -c "import json,sys;fin=open('$FIN',\"r\");obj=json.load(fin);fin.close();fout=open('$FOUT',\"w\",encoding=\"$encoding\");json.dump(obj$QUERY,fout,separators=(',',':'),ensure_ascii=$ensure_ascii,sort_keys=$sort_keys);fout.close()"
         else
-            python3 -c "import json,sys;f=open('$FIN',\"r\");obj=json.load(f);print(json.dumps(obj$QUERY,separators=(',', ':'),ensure_ascii=False).strip(' \t\n\r\"'));f.close()"
+            python3 -c "import json,sys;f=open('$FIN',\"r\");obj=json.load(f);print(json.dumps(obj$QUERY,separators=(',', ':'),ensure_ascii=$ensure_ascii,sort_keys=$sort_keys).strip(' \t\n\r\"'));f.close()"
         fi
     else
-        cat | python3 -c "import json,sys;obj=json.load(sys.stdin);print(json.dumps(obj$QUERY,separators=(',', ':'),ensure_ascii=False).strip(' \t\n\r\"'));"
+        cat | python3 -c "import json,sys;obj=json.load(sys.stdin);print(json.dumps(obj$QUERY,separators=(',', ':'),ensure_ascii=$ensure_ascii,sort_keys=$sort_keys).strip(' \t\n\r\"'));"
     fi
 }
 
