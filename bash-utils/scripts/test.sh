@@ -88,9 +88,34 @@ if ($(isMD5 "$FILE_MD5")) || [ "$FILE_MD5" != "$EXPECTED_FILE_MD5" ] ; then
 fi
 
 #################################################################
+echoWarn "TEST: ipfsGet"
+
+TEST_FILE="/tmp/test.file"
+rm -fv $TEST_FILE
+ipfsGet "$TEST_FILE" "QmNPG6RQSDa6jKqaPbNDyP9iM9CRxmv1kaHaPMCw2aQceb"
+
+if ($(isFileEmpty $TEST_FILE)); then
+    echoErr "ERROR: Expected public ipfs file 'QmNPG6RQSDa6jKqaPbNDyP9iM9CRxmv1kaHaPMCw2aQceb' to NOT be empty"
+    exit 1
+fi
+
+rm -fv $TEST_FILE
+ipfsGet "$TEST_FILE" "QmNPG6RQSDa6jKqaPbNDyP9iM9CRxmv1kaHaPMCw2aQcec" || :
+
+if (! $(isFileEmpty $TEST_FILE)); then
+    echoErr "ERROR: Expected non existent file to be empty when attempted to be downloaded from IPFS"
+    exit 1
+fi
+
+#################################################################
 echoWarn "TEST: safeWget"
 rm -fv /usr/local/bin/cosign_amd64 /usr/local/bin/cosign_arm64
 rm -rfv /tmp/downloads
+
+# safe fetch with public key from IPFS and grab default sig file
+TEST_FILE="/tmp/bash-utils.sh.tmp"
+safeWget "$TEST_FILE" https://github.com/KiraCore/tools/releases/download/v0.2.20/bash-utils.sh QmeqFDLGfwoWgCy2ZEFXerVC5XW8c5xgRyhK5bLArBr2ue
+FILE_SHA256=$(sha256 $TEST_FILE) && EXPECTED_FILE_SHA256="0b1d5565448a94c5e7717d11c11150b4dd7992ac2227dd253067420102ce5c71"
 
 safeWget /usr/local/bin/cosign_arm64 "https://github.com/sigstore/cosign/releases/download/v1.7.2/cosign-$(getPlatform)-arm64" \
     "2448231e6bde13722aad7a17ac00789d187615a24c7f82739273ea589a42c94b,80f80f3ef5b9ded92aa39a9dd8e028f5b942a3b6964f24c47b35e7f6e4d18907"
@@ -326,9 +351,10 @@ EOL
 #################################################################
 echoWarn "TEST: getArgs"
 
-getArgs -test1="test 1" --test_2="te\st 2" -t3='t3' -e="t 4" --p="test5" -z=" \"  :)" --l-ol=lol
+test0="aaa"
+getArgs -test1="test 1" --test_2="te\st 2" -t3='t3' -e="t 4" --p="test5" -z=" \"  :)" --l-ol=lol --test0=
 
-RES="${test1}${test_2}${t3}${e}${p}${z}${l_ol}"
+RES="${test1}${test0}${test_2}${t3}${e}${p}${z}${l_ol}"
 RES_EXP="test 1te\st 2t3t 4test5 \"  :)lol"
 
 [ "$RES" != "$RES_EXP" ] && \
@@ -361,6 +387,155 @@ URL_e1="http://ghcrio"
 ($(isURL $URL_e0)) && echoErr "ERROR: Expected '$URL_e0' to be an invalid URL, but got true response" && exit 1 || echoInfo "INFO: Test 3 passed"
 ($(isURL $URL_e1)) && echoErr "ERROR: Expected '$URL_e1' to be an invalid URL, but got true response" && exit 1 || echoInfo "INFO: Test 4 passed"
 ($(isURL "")) && echoErr "ERROR: Expected '' to be an invalid URL, but got true response" && exit 1 || echoInfo "INFO: Test 5 passed"
+
+#################################################################
+echoWarn "TEST: strShort"
+
+TEST_S0="1234567890"
+TEST_S1="$(strShort "$TEST_S0" 1)"
+TEST_S2="1...0"
+[ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed string shorting, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 1 passed"
+
+TEST_S1="$(strShort "$TEST_S0" 3)"
+TEST_S2="123...890"
+[ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed string shorting, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 2 passed"
+
+TEST_S1="$(strShort "$TEST_S0" 20)"
+[ "$TEST_S1" != "$TEST_S0" ] && echoErr "ERROR: Failed string shorting, got '$TEST_S1', expected '$TEST_S0'" && exit 1 ||  echoInfo "INFO: Test 3 passed"
+
+#################################################################
+echoWarn "TEST: strFixL"
+
+TEST_S0="1234567890"
+TEST_S1="| $(strFixL "$TEST_S0" 15) |"
+TEST_S2="| 1234567890      |"
+[ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed L padding T1, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 1 passed"
+
+TEST_S0="123456789423432523523523"
+TEST_S1="| $(strFixL "$TEST_S0" 15) |"
+TEST_S2="| 123456...523523 |"
+[ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed L padding T2, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 2 passed"
+
+TEST_S1="| $(strFixL "$TEST_S0" 16) |"
+TEST_S2="| 1234567...523523 |"
+[ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed L padding T3, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 3 passed"
+
+#################################################################
+echoWarn "TEST: strFixR"
+
+TEST_S0="1234567890"
+TEST_S1="| $(strFixR "$TEST_S0" 15) |"
+TEST_S2="|      1234567890 |"
+[ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed R padding T1, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 1 passed"
+
+TEST_S0="123456789423432523523523"
+TEST_S1="| $(strFixR "$TEST_S0" 15) |"
+TEST_S2="| 123456...523523 |"
+[ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed R padding T2, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 2 passed"
+
+TEST_S1="| $(strFixR "$TEST_S0" 16) |"
+TEST_S2="| 1234567...523523 |"
+[ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed R padding T3, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 3 passed"
+
+#################################################################
+echoWarn "TEST: strFixC"
+
+TEST_S0="123456789"
+TEST_S1="| $(strFixC "$TEST_S0" 15) |"
+TEST_S2="|    123456789    |"
+[ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed C padding, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 1 passed"
+
+TEST_S0="123456789423432523523523"
+TEST_S1="| $(strFixC "$TEST_S0" 15) |"
+TEST_S2="| 123456...523523 |"
+[ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed C padding, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 2 passed"
+
+TEST_S0="1234567890"
+TEST_S1="| $(strFixC "$TEST_S0" 15) |"
+TEST_S2="|   1234567890    |"
+[ "$TEST_S1" != "$TEST_S2" ] && echoErr "ERROR: Failed C padding, got '$TEST_S1', expected '$TEST_S2'" && exit 1 ||  echoInfo "INFO: Test 3 passed"
+
+#################################################################
+echoWarn "TEST: getVar & setVar"
+
+FILE="/tmp/test"
+rm -rfv $FILE && touch $FILE
+
+TEST_V1=" some simple value = comes here :) \n ~"
+TEST_V2="somesimplevalue=comeshere:)\n~"
+TEST_V3="\" some simple 2 value = comes here :) \n ~"
+
+setVar test1 "$TEST_V1" $FILE
+setVar test2 "$TEST_V2" $FILE
+setVar test1 "$TEST_V3" $FILE
+
+TEST_R1="$(getVar test1 $FILE)"
+TEST_R2="$(getVar test2 $FILE)"
+
+[ "$TEST_R1" != "$TEST_V3" ] && echoErr "ERROR: Failed value read, got '$TEST_R1', expected '$TEST_V3'" && exit 1 ||  echoInfo "INFO: Test 1 passed"
+[ "$TEST_R2" != "$TEST_V2" ] && echoErr "ERROR: Failed value read, got '$TEST_R2', expected '$TEST_V2'" && exit 1 ||  echoInfo "INFO: Test 2 passed"
+
+#################################################################
+echoWarn "TEST: jsonParse"
+
+T1_FILE="/tmp/test1"
+T2_FILE="/tmp/test2"
+T3_FILE="/tmp/test3"
+T4_FILE="/tmp/test4"
+T5_FILE="/tmp/test5"
+T6_FILE="/tmp/test6"
+rm -rfv $T1_FILE $T2_FILE $T3_FILE $T4_FILE $T6_FILE && touch $T1_FILE $T2_FILE $T3_FILE $T4_FILE $T6_FILE
+
+cat > $T1_FILE << EOL
+{
+    "c": "a1",
+    "a": {
+        "z": "z1 z2 z3",
+        "a": [3, 2, 1 ],
+        "d": 123
+    },
+    "b": [ 3, 2, 1]
+}
+EOL
+
+TEST_R1=$(cat $T1_FILE | jsonParse "a.d")
+TEST_V1=123
+
+jsonParse "a" "$T1_FILE" "$T2_FILE"
+TEST_R2=$(cat $T2_FILE | jsonParse "a")
+TEST_V2="[3,2,1]"
+
+jsonParse "a" "$T1_FILE" "$T3_FILE" --sort_keys=true
+cat > $T4_FILE << EOL
+{"a":[3,2,1],"d":123,"z":"z1 z2 z3"}
+EOL
+# remove newline at the end
+truncate -s -1 $T4_FILE
+
+TEST_R3="$(sha256 $T3_FILE)"
+TEST_V3="$(sha256 $T4_FILE)"
+
+
+jsonParse "a.a" "$T1_FILE" "$T5_FILE" --sort_keys=true --indent=true
+cat > $T6_FILE << EOL
+[
+    3,
+    2,
+    1
+]
+EOL
+# remove newline at the end
+truncate -s -1 $T6_FILE
+
+
+TEST_R4="$(sha256 $T5_FILE)"
+TEST_V4="$(sha256 $T6_FILE)"
+
+t=1
+[ "$TEST_R1" != "$TEST_V1" ] && echoErr "ERROR: Failed json Parse, got '$TEST_R1', expected '$TEST_V1'" && t=$((t + 1)) && exit 1 || echoInfo "INFO: Test $t passed"
+[ "$TEST_R2" != "$TEST_V2" ] && echoErr "ERROR: Failed json Parse, got '$TEST_R2', expected '$TEST_V2'" && t=$((t + 1)) && exit 1 || echoInfo "INFO: Test $t passed"
+[ "$TEST_R3" != "$TEST_V3" ] && echoErr "ERROR: Failed json Parse, got '$TEST_R3', expected '$TEST_V3'" && t=$((t + 1)) && exit 1 || echoInfo "INFO: Test $t passed"
+[ "$TEST_R4" != "$TEST_V4" ] && echoErr "ERROR: Failed json Parse, got '$TEST_R4', expected '$TEST_V4'" && t=$((t + 1)) && exit 1 || echoInfo "INFO: Test $t passed"
 
 #################################################################
 
