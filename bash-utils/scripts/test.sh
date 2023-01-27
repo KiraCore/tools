@@ -538,5 +538,13 @@ t=1
 [ "$TEST_R4" != "$TEST_V4" ] && echoErr "ERROR: Failed json Parse, got '$TEST_R4', expected '$TEST_V4'" && t=$((t + 1)) && exit 1 || echoInfo "INFO: Test $t passed"
 
 #################################################################
+echoWarn "TEST: strRangesToArr"
+
+TEST_S1=($(strRangesToArr "1-3,4,6-7"))
+TEST_V1="${TEST_S1[*]}"
+TEST_R1="1 2 3 4 6 7"
+[ "$TEST_V1" != "$TEST_R1" ] && echoErr "ERROR: Failed R padding T1, got '$TEST_V1', expected '$TEST_R1'" && exit 1 ||  echoInfo "INFO: Test 1 passed"
+
+#################################################################
 
 echoInfo "INFO: Successsfully executed all bash-utils test cases, elapsed $(prettyTime $(timerSpan))"
