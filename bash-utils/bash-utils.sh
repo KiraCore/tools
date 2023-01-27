@@ -25,7 +25,7 @@ function bashUtilsVersion() {
 # this is default installation script for utils
 # ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
 function bashUtilsSetup() {
-    local BASH_UTILS_VERSION="v0.3.10"
+    local BASH_UTILS_VERSION="v0.3.11"
     local COSIGN_VERSION="v1.13.1"
     if [ "$1" == "version" ] ; then
         echo "$BASH_UTILS_VERSION"
@@ -487,7 +487,6 @@ function strSplitTakeN() {
     echo "${arr[$2]}"
 }
 
-
 # getArgs --test="lol1" --tes-t="lol-l" --test2="lol 2" -e=ok -t=ok2 --silent=true --invisible=yes
 # internally supported flags:
 # gargs_verbose (default true), gargs_throw (default true)
@@ -512,14 +511,13 @@ function getArgs() {
 
             [ "$key" == "gargs_verbose" ] && [ "$(echo "$(toLower "$val")" | xargs)" == "false" ] && gargs_verbose="false"
             [ "$key" == "gargs_throw" ] && [ "$(echo "$(toLower "$val")" | xargs)" == "false" ] && gargs_throw="false"
+            ( [ "$key" == "gargs_throw" ] || [ "$key" == "gargs_verbose" ] ) && continue
 
-            if [ "$key" != "gargs_throw" ] && [ "$key" != "gargs_verbose" ] ; then
-                [ "$gargs_verbose" == "true" ] && echoInfo "$key='$val'"
-                if [ "$gargs_throw" == "true" ]; then
-                    eval $key="'$val'"
-                else
-                    eval $key="'$val'" || :
-                fi
+            [ "$gargs_verbose" == "true" ] && echoInfo "$key='$val'"
+            if [ "$gargs_throw" == "true" ]; then
+                eval $key="'$val'"
+            else
+                eval $key="'$val'" || :
             fi
         else
             [ "$gargs_verbose" == "true" ] && echoErr "ERROR: Invalid argument '$arg', missing name, '--' and/or '=' operators ($gargs_throw)"
@@ -529,6 +527,56 @@ function getArgs() {
 
     # eval returns non 0 code, ensure to return 0
     return 0
+}
+
+# counts number of characters in a string
+# strCntChar "1,2,3,4,5" ","
+function strCntChar() {
+    local str="$1"
+    local char="$2"
+    local cnt=0
+    if [ ! -z "$str" ] && [ ! -z "$char" ] ; then
+        cnt="$(echo "$str" | grep -o "$char" | wc -l || echo "0")"
+    fi
+    (! $(isNaturalNumber "$cnt")) && cnt="0"
+    echo "$cnt"
+}
+
+# converts character separated ranges to whitespace separated unique ordered string
+# arr=($(rangesToArr "1-3,4,6-7" , -)) ; echo "${arr[*]}" -> "1 2 3 4 6 7"
+strRangesToArr() {
+    local ranges="$1"
+    local char1="$2"
+    local char2="$3"
+    [ -z "$char1" ] && char1=","
+    [ -z "$char2" ] && char2="-"
+    local ranges_cnt=$(strCntChar "$ranges" "$char1")
+    local res_arr=()
+    local i=0
+    local valStart=0
+    local valEnd=0
+
+    while [[ $i -le $ranges_cnt ]] ; do
+        range="$(delWhitespaces $(strSplitTakeN "$char1" $i "$ranges"))"
+        i=$((i + 1))
+        ($(isNumber "$range")) && res_arr+=($range) && continue
+        valStart="$(delWhitespaces $(strSplitTakeN "$char2" 0 "$range"))"
+        valEnd="$(delWhitespaces $(strSplitTakeN "$char2" 1 "$range"))"
+        ( (! $(isNumber "$valStart")) || (! $(isNumber "$valStart")) ) && continue
+        if [[ $valStart -gt $valEnd ]] ; then
+            res_arr+=($(seq $valEnd $valStart))
+        else
+            res_arr+=($(seq $valStart $valEnd))
+        fi
+    done
+
+    res_arr=($(echo "${res_arr[*]}" | tr ' ' '\n' | sort -u -n | tr '\n' ' '))
+
+    local OLDIFS=$IFS
+    local IFS=' '
+    local result="${res_arr[*]}"
+    local IFS=$OLDIFS
+    echo "$result"
 }
 
 # get default network interface
