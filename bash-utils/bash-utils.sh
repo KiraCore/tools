@@ -366,7 +366,7 @@ function strLastN() {
 function strShort() {
     local string="$1"
     local trim_len="" 
-    ( [ ! -z "$2" ] && [[ "$2" -gt 1 ]] 2> /dev/null ) && trim_len="$2" || trim_len=3
+    ( [ ! -z "$2" ] && [[ "$2" -gt 0 ]] 2> /dev/null ) && trim_len="$2" || trim_len=3
     local separator="$3" 
     [ -z "$separator" ] && separator="..."
     local string_len=$(strLength "$string")
