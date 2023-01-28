@@ -203,9 +203,8 @@ function isNumber() {
      if ($(bash-utils isNullOrEmpty "$1")) ; then echo "false" ; else [[ "$1" =~ $REGEX_NUMBER ]] && echo "true" || echo "false" ; fi
 }
 
-#  if ($(isNullOrEmpty "$1")) ; then echo "false" ; else ( ($(isInteger "$1")) && [[ $1 -ge 0 ]] ) && echo "true" || echo "false" ; fi
 function isNaturalNumber() {
-    [ ! -z "$1" ] && [[ "$1" -ge 0 ]] 2> /dev/null && echo "true" || echo "false" 
+    ( ! [[ "$1" =~ [^0-9] ]] && [[ "$1" -ge 0 ]] 2> /dev/null ) && echo "true" || echo "false" 
 }
 
 function isLetters() {
