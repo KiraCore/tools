@@ -25,7 +25,7 @@ function bashUtilsVersion() {
 # this is default installation script for utils
 # ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
 function bashUtilsSetup() {
-    local BASH_UTILS_VERSION="v0.3.11"
+    local BASH_UTILS_VERSION="v0.3.12"
     local COSIGN_VERSION="v1.13.1"
     if [ "$1" == "version" ] ; then
         echo "$BASH_UTILS_VERSION"
@@ -204,7 +204,7 @@ function isNumber() {
 }
 
 function isNaturalNumber() {
-    if ($(isNullOrEmpty "$1")) ; then echo "false" ; else ( ($(isInteger "$1")) && [[ $1 -ge 0 ]] ) && echo "true" || echo "false" ; fi
+    ( [ ! -z "$1" ] && ( ! [[ "$1" =~ [^0-9] ]] ) && [[ "$1" -ge 0 ]] 2> /dev/null ) && echo "true" || echo "false" 
 }
 
 function isLetters() {
@@ -327,29 +327,46 @@ function strLength() {
     [ "$1" == "-e" ] && echo "2" && return 0
     local result=""
     [ -z "$1" ] && result="0" || result=$(echo "$1" | awk '{print length}') || result=-1
-    ($(isNumber "$result")) && echo $result || echo -1
+    [[ "$result" -gt 0 ]] 2> /dev/null && echo $result || echo -1
 }
 
 function strFirstN() {
     local string="$1"
-    local n="$2" && (! $(isNaturalNumber $n)) && n=3
+    local n=""
+    ( [ ! -z "$2" ] && [[ "$2" -gt 0 ]] 2> /dev/null ) && n="$2" || ( echo "" && return 0 )
     local string_len=$(strLength "$string")
     [[ $string_len -le $n ]] && echo "$string" || echo "${string:0:n}"
 }
 
+function strFirstN() {
+    local string="$1"
+    local n="$2"
+    if [ ! -z "$n" ] && [[ "$n" -gt 0 ]] 2> /dev/null ; then
+        local string_len=$(strLength "$string")
+        [[ $string_len -le $n ]] && echo "$string" || echo "${string:0:n}"
+    else
+        echo ""
+    fi
+}
+
+
 function strLastN() {
     local string="$1"
-    local n="$2" && (! $(isNaturalNumber $n)) && n=0
-    local string_len=$(strLength "$string")
-    [[ $string_len -le $n ]] && echo "$string" || echo "${string: -n}"
+    local n="$2"
+    if [ ! -z "$n" ] && [[ "$n" -gt 0 ]] 2> /dev/null ; then
+        local string_len=$(strLength "$string")
+        [[ $string_len -le $n ]] && echo "$string" || echo "${string: -n}"
+    else
+        echo ""
+    fi
 }
 
 # shortens string if possible by taking N prefix and N suffix characters and combining it with separator
 # e.g. strShort "123456789" 1 "..."" -> 1...9 
 function strShort() {
     local string="$1"
-    local trim_len="$2" 
-    ( (! $(isNaturalNumber $trim_len)) || [[ $trim_len -le 0 ]]  ) && trim_len=3
+    local trim_len="" 
+    ( [ ! -z "$2" ] && [[ "$2" -gt 0 ]] 2> /dev/null ) && trim_len="$2" || trim_len=3
     local separator="$3" 
     [ -z "$separator" ] && separator="..."
     local string_len=$(strLength "$string")
@@ -362,10 +379,10 @@ function strShort() {
 # e.g. strShort 123456789" 5 '.' -> 1...9
 function strShortN() {
     local string="$1"
-    local max_len="$2" 
+    local max_len="" 
     local separator="$3" 
     local string_len=$(strLength "$string")
-    ( (! $(isNaturalNumber $max_len)) || [[ $max_len -le 0 ]]  ) && echo "" && return 0
+    ( [ ! -z "$2" ] && [[ "$2" -gt 0 ]] 2> /dev/null ) && max_len="$2" || ( echo "" && return 0 )
     ( [ -z "$separator" ] || [[ $(strLength "$separator") -gt 1 ]] ) && separator="." 
     if [[ $max_len -le 0 ]] ; then
         echo ""
@@ -387,26 +404,23 @@ function strShortN() {
 }
 
 # repeats string N times
-# e.g.: strRepeat "a" 3 -> aaa
+# e.g.: strRepeat "a" 30 -> aaa...
 strRepeat(){
-    local string="$1"
-    local n="$2" 
-    local output=""
-    ( (! $(isNaturalNumber $n)) || [[ $n -le 0 ]]  ) && n=0
-    for i in $(seq 1 $n); do
-      output="$output$string"
-    done
-    echo "$output"
+    if [ "$1" == "-" ] || [ "$1" == "%" ] ; then
+        [[ "$2" -gt 0 ]] 2> /dev/null && echo "$(printf "%${2}s" | sed "s/ /${1}/g")" || echo "" 
+    else
+        [[ "$2" -gt 0 ]] 2> /dev/null && echo "$(printf "$1"'%.s' $(eval "echo {1.."$(($2))"}"))" || echo "" 
+    fi
 }
 
 # fixes string to specific length to the left with filler padding
 # e.g.: echo "| $(strFixL "123456789" 15) |" -> | 123456789       |
 function strFixL() {
     local string="$1"
-    local max_len="$2" 
+    local max_len="" 
     local separator="$3" 
     local filler="$4"
-    ( (! $(isNaturalNumber $max_len)) || [[ $max_len -le 0 ]]  ) && max_len=0
+    ( [ ! -z "$2" ] && [[ "$2" -gt 0 ]] 2> /dev/null ) && max_len="$2" || max_len="0"
     [ -z "$separator" ] && separator="."
     [ -z "$filler" ] && filler=" "
     filler=$(strRepeat "$filler" $max_len)
@@ -420,7 +434,7 @@ function strFixR() {
     local max_len="$2" 
     local separator="$3"
     local filler="$4" 
-    ( (! $(isNaturalNumber $max_len)) || [[ $max_len -le 0 ]]  ) && max_len=0
+    ( [ ! -z "$2" ] && [[ "$2" -gt 0 ]] 2> /dev/null ) && max_len="$2" || max_len="0"
     [ -z "$separator" ] && separator="."
     [ -z "$filler" ] && filler=" "
     filler=$(strRepeat "$filler" $max_len)
@@ -433,8 +447,8 @@ function strFixC() {
     local string="$1"
     local max_len="$2"
     local separator="$3" 
-    local filler="$4" 
-    ( (! $(isNaturalNumber $max_len)) || [[ $max_len -le 0 ]]  ) && max_len=0
+    local filler="$4"
+    ( [ ! -z "$2" ] && [[ "$2" -gt 0 ]] 2> /dev/null ) && max_len="$2" || max_len="0"
     [ -z "$separator" ] && separator="."
     [ -z "$filler" ] && filler=" "
     local filler_extr=$(strRepeat "$filler" $max_len)
@@ -543,7 +557,7 @@ function strCntChar() {
 }
 
 # converts character separated ranges to whitespace separated unique ordered string
-# arr=($(rangesToArr "1-3,4,6-7" , -)) ; echo "${arr[*]}" -> "1 2 3 4 6 7"
+# arr=($(strRangesToArr "1-3,4,6-7" , -)) ; echo "${arr[*]}" -> "1 2 3 4 6 7"
 strRangesToArr() {
     local ranges="$1"
     local char1="$2"
