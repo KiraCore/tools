@@ -25,7 +25,7 @@ function bashUtilsVersion() {
 # this is default installation script for utils
 # ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
 function bashUtilsSetup() {
-    local BASH_UTILS_VERSION="v0.3.12"
+    local BASH_UTILS_VERSION="v0.3.13"
     local COSIGN_VERSION="v1.13.1"
     if [ "$1" == "version" ] ; then
         echo "$BASH_UTILS_VERSION"
@@ -330,13 +330,6 @@ function strLength() {
     [[ "$result" -gt 0 ]] 2> /dev/null && echo $result || echo -1
 }
 
-function strFirstN() {
-    local string="$1"
-    local n=""
-    ( [ ! -z "$2" ] && [[ "$2" -gt 0 ]] 2> /dev/null ) && n="$2" || ( echo "" && return 0 )
-    local string_len=$(strLength "$string")
-    [[ $string_len -le $n ]] && echo "$string" || echo "${string:0:n}"
-}
 
 function strFirstN() {
     local string="$1"
@@ -348,7 +341,6 @@ function strFirstN() {
         echo ""
     fi
 }
-
 
 function strLastN() {
     local string="$1"
@@ -1326,32 +1318,55 @@ function pingTime() {
 }
 
 # sets global var with user selection, default var name is OPTION
-# e.g.: pressToContinue TEST a b c
+# e.g.: pressToContinue --glob=TEST --timeout=1 a b c
 function pressToContinue {
-    local glob_var_name="OPTION"
-    local var_len=0
-    for kg_var in "$@" ; do
-        kg_var=$(echo "$kg_var" | tr -d '\011\012\013\014\015\040' 2>/dev/null || echo -n "")
-        [[ $(strLength "$kg_var") -ge 2 ]] && glob_var_name=$kg_var && break
-    done
+    local glob="OPTION"
+    local timeout=0
+    getArgs --gargs_verbose=false --gargs_throw=false "$1" "$2"
+    (! $(isNaturalNumber "$timeout")) && timeout=0
 
-    if ($(isNullOrEmpty "$1")) ; then
-        read -n 1 -s 
-        globSet "$glob_var_name" ""
+    local OPTION=""
+    local FOUND=false
+    local TIME_START="$(date -u +%s)"
+    local TIME_END="$TIME_START"
+    local TIME_SPAN=0
+
+    if ($(bu isNullOrEmpty "$1")) ; then
+        OPTION=""
+        if [[ $timeout -gt 0 ]] ; then
+            read -t "$timeout" -n 1 -s OPTION
+        else
+            read -n 1 -s OPTION
+        fi
+        globSet "$glob" ""
     else
         while : ; do
-            local OPTION=""
-            local FOUND=false
-            read -n 1 -s OPTION
-            OPTION=$(bash-utils toLower "$OPTION")
+            OPTION=""
+            FOUND=false
+            if [[ $timeout -gt 0 ]] ; then
+                read -t "$timeout" -n 1 -s OPTION
+            else
+                read -n 1 -s OPTION
+            fi
+            OPTION=$(bu toLower "$OPTION")
             for kg_var in "$@" ; do
                 kg_var=$(echo "$kg_var" | tr -d '\011\012\013\014\015\040' 2>/dev/null || echo -n "")
-                [ "$(bash-utils toLower "$kg_var")" == "$OPTION" ] && globSet "$glob_var_name" "$OPTION" && FOUND=true && break
+                [ "$(bu toLower "$kg_var")" == "$OPTION" ] && globSet "$glob" "$OPTION" && FOUND=true && break
             done
+
             [ "$FOUND" == "true" ] && break
-        done
+
+            TIME_END="$(date -u +%s)"
+            TIME_SPAN=$((TIME_END - TIME_START))
+            if [[ $timeout -gt 0 ]] && [[ $TIME_SPAN -gt $timeout ]] ; then
+                globSet "$glob" ""
+                echo ""
+                return 142
+            fi
+        done 
     fi
     echo ""
+    return 0
 }
 
 displayAlign() {
