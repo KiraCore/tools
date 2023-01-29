@@ -2049,6 +2049,20 @@ EOL
     fi
 }
 
+# releases file from process capturing it
+# fileProcUnlock "/var/lib/dpkg/lock-frontend"
+function fileProcUnlock {
+  local file="$1"
+  [ ! -f "$file" ] && echoWarn "WARNING: File '$file' was NOT found, no need to unlock" && return 0
+  pid=$(lslocks | grep "$file" | awk '{print $1}' || echo "")
+  if [ -n "$pid" ]; then
+    echoInfo "INFO: Releasing lock from file '$file' held by process $pid."
+    kill $pid || echoWarn "WARNINIG: Failed to kill process '$pid'"
+  else
+    echoInfo "INFO: File '$file' was already unlocked."
+  fi
+}
+
 # allow to execute finctions directly from file
 if declare -f "$1" > /dev/null ; then
   # call arguments verbatim
