@@ -2063,6 +2063,35 @@ function fileProcUnlock {
   fi
 }
 
+# fileFollow /home/asmodat/logs/kirascan.log
+fileFollow() {
+    local file="$1"
+    local quit_key="q"
+    local tail_pid=0
+
+    function fileFollowInt {
+        echoNC "bli;whi" "\n\n ~~~ To exit press [Q] ~~~ \n\n" && sleep 2
+    }
+
+    function fileFollowErr {
+        kill $tail_pid &> /dev/null || :
+    }
+
+    if (! $(isFileEmpty "$file")) ; then
+        echoNC ";whi" "\n ~~~ Oppening '$file', to exit press [Q] ~~~ \n\n" && sleep 3
+
+        trap fileFollowInt INT
+        trap fileFollowErr ERR
+        tail -f "$file" &
+        tail_pid=$!
+
+        pressToContinue "q"
+        fileFollowErr
+    else
+        echoNC ";red" "\n ~~~ File '$file' is empty or does NOT exist ~~~ \n\n" && sleep 1
+    fi
+}
+
 # allow to execute finctions directly from file
 if declare -f "$1" > /dev/null ; then
   # call arguments verbatim
