@@ -2067,28 +2067,65 @@ function fileProcUnlock {
 fileFollow() {
     local file="$1"
     local quit_key="q"
-    local tail_pid=0
+    local pid=0
 
     function fileFollowInt {
-        echoNC "bli;whi" "\n\n ~~~ To exit press [Q] ~~~ \n\n" && sleep 2
+        echoNC "bli;whi" "\n$(strFixC "~~~ To exit press [Q] ~~~" 80)\n\n" && sleep 2
     }
 
     function fileFollowErr {
-        kill $tail_pid &> /dev/null || :
+        kill -SIGINT $pid &> /dev/null || :
+        kill $pid &> /dev/null || :
+        kill -9 $pid &> /dev/null || :
+        trap - INT || :
+        trap - ERR || :
     }
 
-    if (! $(isFileEmpty "$file")) ; then
-        echoNC ";whi" "\n ~~~ Oppening '$file', to exit press [Q] ~~~ \n\n" && sleep 3
+    echoNC "bli;whi" "\n$(strFixC "~~~ Oppening '$file', to exit press [Q] ~~~" 80)\n\n" && sleep 3
 
+    if (! $(isFileEmpty "$file")) ; then
         trap fileFollowInt INT
         trap fileFollowErr ERR
         tail -f "$file" &
-        tail_pid=$!
+        pid=$!
 
         pressToContinue "q"
         fileFollowErr
     else
-        echoNC ";red" "\n ~~~ File '$file' is empty or does NOT exist ~~~ \n\n" && sleep 1
+        echoNC "bli;red" "\n$(strFixC "~~~ File '$file' is empty or does NOT exist ~~~" 80)\n\n" && sleep 1
+    fi
+}
+
+# cmdFollow "docker logs --follow --details --timestamps ca862e8335cf8f1e163ecaef231994080d61b07ecd496ebf29927a0d05f3b668"
+cmdFollow() {
+    local cmd="$1"
+    local quit_key="q"
+    local pid1=0
+
+    function cmdFollowInt {
+        echoNC "bli;whi" "\n$(strFixC "~~~ To exit process '$pid1' press [Q] ~~~" 80)\n\n" && sleep 2
+    }
+
+    function cmdFollowErr {
+        kill -SIGINT $pid1 &> /dev/null || :
+        kill $pid1 &> /dev/null || :
+        kill -9 $pid1 &> /dev/null || :
+        trap - INT || :
+        trap - ERR || :
+    }
+
+    echoNC "bli;whi" "\n$(strFixC "~~~ Starting command '$cmd', to exit press [Q] ~~~" 80)\n\n" && sleep 3
+
+    if (! $(isNullOrWhitespaces $cmd)) ; then
+        trap cmdFollowInt INT
+        trap cmdFollowInt ERR
+        bash -c ". /etc/profile && $cmd" &
+        pid1=$!
+
+        pressToContinue "q"
+        cmdFollowErr
+    else
+        echoNC "bli;red" "\n$(strFixC "~~~ Command is invalid or was not specified ~~~" 80)\n\n" && sleep 1
     fi
 }
 
