@@ -19,3 +19,4 @@ Features:
 * Added word capitalization function `toCapital`
 * Support for optimistic argument resolving in `getArgs` with `--gargs_throw=<bool> --gargs_verbose=<bool>`
 * Added `strRangesToArr` and `strCntChar` allowing to print unique value ranges and count characters
+* Added `fileFollow` and `cmdFollow` allowing for simple logs follow without exiting sub-shell
