@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/kiracore/tools/bip39saifu/cmd"
+	"github.com/kiracore/tools/bip39gen/cmd"
 )
 
 const Bip39GenVersion = "v0.2.19"
