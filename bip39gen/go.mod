@@ -1,6 +1,6 @@
 module github.com/kiracore/tools/bip39gen
 
-go 1.19
+go 1.18
 
 require (
 	github.com/spf13/cobra v1.6.1

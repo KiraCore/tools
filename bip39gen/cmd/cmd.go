@@ -1,8 +1,9 @@
 package cmd
 
 import (
-	"github.com/spf13/cobra"
 	"os"
+
+	"github.com/spf13/cobra"
 )
 
 var (
@@ -23,10 +24,11 @@ var rootCmd = &cobra.Command{
 }
 
 var mnemonicCommand = &cobra.Command{
-	Use:   "mnemonic [command]",
-	Short: "mnemonic",
-	Long:  "Generate mnemonic words",
-	RunE:  cmdMnemonic,
+	Use:     "mnemonic [command]",
+	Short:   "mnemonic",
+	Long:    "Generate mnemonic words",
+	PreRunE: cmdMnemonicPreRun,
+	RunE:    cmdMnemonic,
 }
 
 var versionCommand = &cobra.Command{

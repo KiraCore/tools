@@ -1,8 +1,10 @@
 Features:
-* bip39gen: added flag cipher 
-* bip39gen: added sha256 
-* bip39gen: added sha512
-* bip39gen: added chacha20, flags should be set explicitly(hex, verbose)
+* bip39gen: added PreRun logic
+* bip39gen: added checks for input with cipher flag
+* bip39gen: added warnings 
+
 Bug fixed: 
-* bip39gen: typo in error
-* bip39gen: incuficient entropy returns error message and exit with code 1
+* bip39gen: fixed regexp expression
+* bip39gen: fixed go.mod version
+
+

@@ -242,6 +242,9 @@ func (m *Mnemonic) SetUserEntropy(entropy *string) *Mnemonic {
 
 	return m
 }
+func (m *Mnemonic) GetUserEntropy() string {
+	return fmt.Sprintf("User entropy: %s\n", m.userEntropy)
+}
 func (m *Mnemonic) SetRawEntropy(entropy *string) *Mnemonic {
 	switch m.GetStringType() {
 	case true:
