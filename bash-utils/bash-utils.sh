@@ -25,7 +25,7 @@ function bashUtilsVersion() {
 # this is default installation script for utils
 # ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
 function bashUtilsSetup() {
-    local BASH_UTILS_VERSION="v0.3.6"
+    local BASH_UTILS_VERSION="v0.3.13"
     local COSIGN_VERSION="v1.13.1"
     if [ "$1" == "version" ] ; then
         echo "$BASH_UTILS_VERSION"
@@ -60,11 +60,15 @@ function bashUtilsSetup() {
             cp -fv "$UTILS_SOURCE" "/usr/local/bin/bu"
             chmod +x "$UTILS_DESTINATION" "/usr/local/bin/bash-utils" "/bin/bu"
 
-            local SUDOUSER="${SUDO_USER}" && [ "$SUDOUSER" == "root" ] && SUDOUSER=""
-            local USERNAME="${USER}" && [ "$USERNAME" == "root" ] && USERNAME=""
-            local LOGNAME=$(logname 2> /dev/null echo "") && [ "$LOGNAME" == "root" ] && LOGNAME=""
+            local SUDOUSER="${SUDO_USER}" 
+            local USERNAME="${USER}" 
+            local LOGNAME=$(logname 2> /dev/null echo "") 
+            [ "$SUDOUSER" == "root" ] && SUDOUSER=""
+            [ "$USERNAME" == "root" ] && USERNAME=""
+            [ "$LOGNAME" == "root" ] && LOGNAME=""
 
-            local TARGET="/$LOGNAME/.bashrc" && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
+            local TARGET="/$LOGNAME/.bashrc" 
+            [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
             TARGET="/$USERNAME/.bashrc" && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
             TARGET="/$SUDOUSER/.bashrc" && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
             TARGET="/root/.bashrc" && [ -f $TARGET ] && chmod 777 $TARGET && echoInfo "INFO: /etc/profile executable target set to $TARGET"
@@ -105,13 +109,22 @@ function bashUtilsSetup() {
 # bash 3 (MAC) compatybility
 # "$(toLower "$1")"
 function toLower() {
-    echo $(echo "$1" |  tr '[:upper:]' '[:lower:]' )
+    echo $(echo "$1" | tr '[:upper:]' '[:lower:]' )
 }
 
 # bash 3 (MAC) compatybility
 # "$(toUpper "$1")"
 function toUpper() {
-    echo $(echo "$1" |  tr '[:lower:]' '[:upper:]' )
+    echo $(echo "$1" | tr '[:lower:]' '[:upper:]' )
+}
+
+# bash 3 (MAC) compatybility
+# capitalizes first leter of a string
+function toCapital() {
+    local s="$1"
+    local s1="$(echo "$s" | cut -c1)"
+    local s2="$(echo "$s" | cut -c2-)"
+    echo "$(toUpper "$s1")${s2}"
 }
 
 function isNullOrEmpty() {
@@ -157,7 +170,8 @@ function isPublicIp() {
 
 function isDnsOrIp() {
     if ($(isNullOrEmpty "$1")) ; then echo "false" ; else
-        local VAR="false" && ($(isDns "$1")) && VAR="true"
+        local VAR="false" 
+        ($(isDns "$1")) && VAR="true"
         [ "$VAR" != "true" ] && ($(isIp "$1")) && VAR="true"
         echo $VAR
     fi
@@ -168,7 +182,6 @@ function isDnsOrIp() {
 function isCIDR() {
     if ($(isNullOrEmpty "$1")) ; then echo "false" ; else [[ "$1" =~ $REGEX_CIRD ]] && echo "true" || echo "false" ; fi
 }
-
 
 function isInteger() {
     if ($(isNullOrEmpty "$1")) ; then echo "false" ; else [[ $1 =~ $REGEX_INTEGER ]] && echo "true" || echo "false" ; fi
@@ -191,7 +204,7 @@ function isNumber() {
 }
 
 function isNaturalNumber() {
-    if ($(isNullOrEmpty "$1")) ; then echo "false" ; else ( ($(isInteger "$1")) && [[ $1 -ge 0 ]] ) && echo "true" || echo "false" ; fi
+    ( [ ! -z "$1" ] && ( ! [[ "$1" =~ [^0-9] ]] ) && [[ "$1" -ge 0 ]] 2> /dev/null ) && echo "true" || echo "false" 
 }
 
 function isLetters() {
@@ -278,11 +291,15 @@ function versionToNumber() {
     local version=""
     [ -z "$1" ] && version="$(timeout 1 cat 2> /dev/null || echo "")" || version="$1"
     version=$(echo "$version" | tr -d [a-z,A-Z] | sed "s/-././g" | sed "s/+/./g" | sed "s/-//g" | tr -d ' ')
-    local major=$(echo $version | cut -d. -f1 | sed 's/[^0-9]*//g' 2> /dev/null || echo "0") && (! $(isNaturalNumber "$major")) && major=0
-    local minor=$(echo $version | cut -d. -f2 | sed 's/[^0-9]*//g' 2> /dev/null || echo "0") && (! $(isNaturalNumber "$minor")) && minor=0
-    local micro=$(echo $version | cut -d. -f3 | sed 's/[^0-9]*//g' 2> /dev/null || echo "0") && (! $(isNaturalNumber "$micro")) && micro=0
-    local build=$(echo $version | cut -d. -f4 | sed 's/[^0-9]*//g' 2> /dev/null || echo "0") && (! $(isNaturalNumber "$build")) && build=0
+    local major=$(echo $version | cut -d. -f1 | sed 's/[^0-9]*//g' 2> /dev/null || echo "0")
+    local minor=$(echo $version | cut -d. -f2 | sed 's/[^0-9]*//g' 2> /dev/null || echo "0")
+    local micro=$(echo $version | cut -d. -f3 | sed 's/[^0-9]*//g' 2> /dev/null || echo "0")
+    local build=$(echo $version | cut -d. -f4 | sed 's/[^0-9]*//g' 2> /dev/null || echo "0")
     local sum=0
+    (! $(isNaturalNumber "$major")) && major=0
+    (! $(isNaturalNumber "$minor")) && minor=0
+    (! $(isNaturalNumber "$micro")) && micro=0
+    (! $(isNaturalNumber "$build")) && build=0
     sum=$(( sum + ( 1 * build ) )) && [[ $build -le 0 ]] && build=0
     sum=$(( sum + ( 10000 * micro  ) )) && [[ $micro -le 0 ]] && micro=10000
     sum=$(( sum + ( 100000000 * minor ) )) && [[ $minor -le 0 ]] && minor=100000000
@@ -310,29 +327,40 @@ function strLength() {
     [ "$1" == "-e" ] && echo "2" && return 0
     local result=""
     [ -z "$1" ] && result="0" || result=$(echo "$1" | awk '{print length}') || result=-1
-    ($(isNumber "$result")) && echo $result || echo -1
+    [[ "$result" -gt 0 ]] 2> /dev/null && echo $result || echo -1
 }
+
 
 function strFirstN() {
     local string="$1"
-    local n="$2" && (! $(isNaturalNumber $n)) && n=3
-    local string_len=$(strLength "$string")
-    [[ $string_len -le $n ]] && echo "$string" || echo "${string:0:n}"
+    local n="$2"
+    if [ ! -z "$n" ] && [[ "$n" -gt 0 ]] 2> /dev/null ; then
+        local string_len=$(strLength "$string")
+        [[ $string_len -le $n ]] && echo "$string" || echo "${string:0:n}"
+    else
+        echo ""
+    fi
 }
 
 function strLastN() {
     local string="$1"
-    local n="$2" && (! $(isNaturalNumber $n)) && n=0
-    local string_len=$(strLength "$string")
-    [[ $string_len -le $n ]] && echo "$string" || echo "${string: -n}"
+    local n="$2"
+    if [ ! -z "$n" ] && [[ "$n" -gt 0 ]] 2> /dev/null ; then
+        local string_len=$(strLength "$string")
+        [[ $string_len -le $n ]] && echo "$string" || echo "${string: -n}"
+    else
+        echo ""
+    fi
 }
 
 # shortens string if possible by taking N prefix and N suffix characters and combining it with separator
 # e.g. strShort "123456789" 1 "..."" -> 1...9 
 function strShort() {
     local string="$1"
-    local trim_len="$2" && ( (! $(isNaturalNumber $trim_len)) || [[ $trim_len -le 0 ]]  ) && trim_len=3
-    local separator="$3" && [ -z "$separator" ] && separator="..."
+    local trim_len="" 
+    ( [ ! -z "$2" ] && [[ "$2" -gt 0 ]] 2> /dev/null ) && trim_len="$2" || trim_len=3
+    local separator="$3" 
+    [ -z "$separator" ] && separator="..."
     local string_len=$(strLength "$string")
     local separator_len=$(strLength "$separator")
     local final_len=$(((trim_len * 2) + separator_len ))
@@ -343,9 +371,11 @@ function strShort() {
 # e.g. strShort 123456789" 5 '.' -> 1...9
 function strShortN() {
     local string="$1"
-    local max_len="$2" && ( (! $(isNaturalNumber $max_len)) || [[ $max_len -le 0 ]]  ) && echo "" && return 0
-    local separator="$3" && ( [ -z "$separator" ] || [[ $(strLength "$separator") -gt 1 ]] ) && separator="." 
+    local max_len="" 
+    local separator="$3" 
     local string_len=$(strLength "$string")
+    ( [ ! -z "$2" ] && [[ "$2" -gt 0 ]] 2> /dev/null ) && max_len="$2" || ( echo "" && return 0 )
+    ( [ -z "$separator" ] || [[ $(strLength "$separator") -gt 1 ]] ) && separator="." 
     if [[ $max_len -le 0 ]] ; then
         echo ""
     elif [[ $max_len -ge $string_len ]] ; then  # same or greater lenght, skip processing
@@ -366,24 +396,25 @@ function strShortN() {
 }
 
 # repeats string N times
-# e.g.: strRepeat "a" 3 -> aaa
+# e.g.: strRepeat "a" 30 -> aaa...
 strRepeat(){
-    local string="$1"
-    local n="$2" && ( (! $(isNaturalNumber $n)) || [[ $n -le 0 ]]  ) && n=0
-    local output=""
-    for i in $(seq 1 $n); do
-      output="$output$string"
-    done
-    echo "$output"
+    if [ "$1" == "-" ] || [ "$1" == "%" ] ; then
+        [[ "$2" -gt 0 ]] 2> /dev/null && echo "$(printf "%${2}s" | sed "s/ /${1}/g")" || echo "" 
+    else
+        [[ "$2" -gt 0 ]] 2> /dev/null && echo "$(printf "$1"'%.s' $(eval "echo {1.."$(($2))"}"))" || echo "" 
+    fi
 }
 
 # fixes string to specific length to the left with filler padding
 # e.g.: echo "| $(strFixL "123456789" 15) |" -> | 123456789       |
 function strFixL() {
     local string="$1"
-    local max_len="$2" && ( (! $(isNaturalNumber $max_len)) || [[ $max_len -le 0 ]]  ) && max_len=0
-    local separator="$3" && [ -z "$separator" ] && separator="."
-    local filler="$4" && [ -z "$filler" ] && filler=" "
+    local max_len="" 
+    local separator="$3" 
+    local filler="$4"
+    ( [ ! -z "$2" ] && [[ "$2" -gt 0 ]] 2> /dev/null ) && max_len="$2" || max_len="0"
+    [ -z "$separator" ] && separator="."
+    [ -z "$filler" ] && filler=" "
     filler=$(strRepeat "$filler" $max_len)
     echo "$(strFirstN "$(strShortN "$string" $max_len "$separator")$filler" $max_len)"
 }
@@ -392,9 +423,12 @@ function strFixL() {
 # e.g.: echo "| $(strFixR "123456789" 15) |" -> |       123456789 |
 function strFixR() {
     local string="$1"
-    local max_len="$2" && ( (! $(isNaturalNumber $max_len)) || [[ $max_len -le 0 ]]  ) && max_len=0
-    local separator="$3" && [ -z "$separator" ] && separator="."
-    local filler="$4" && [ -z "$filler" ] && filler=" "
+    local max_len="$2" 
+    local separator="$3"
+    local filler="$4" 
+    ( [ ! -z "$2" ] && [[ "$2" -gt 0 ]] 2> /dev/null ) && max_len="$2" || max_len="0"
+    [ -z "$separator" ] && separator="."
+    [ -z "$filler" ] && filler=" "
     filler=$(strRepeat "$filler" $max_len)
     echo "$(strLastN "${filler}$(strShortN "$string" $max_len "$separator")" $max_len)"
 }
@@ -403,9 +437,12 @@ function strFixR() {
 # e.g.: echo "| $(strFixC "123456789" 15) |" -> |    123456789    |
 function strFixC() {
     local string="$1"
-    local max_len="$2" && ( (! $(isNaturalNumber $max_len)) || [[ $max_len -le 0 ]]  ) && max_len=0
-    local separator="$3" && [ -z "$separator" ] && separator="."
-    local filler="$4" && [ -z "$filler" ] && filler=" "
+    local max_len="$2"
+    local separator="$3" 
+    local filler="$4"
+    ( [ ! -z "$2" ] && [[ "$2" -gt 0 ]] 2> /dev/null ) && max_len="$2" || max_len="0"
+    [ -z "$separator" ] && separator="."
+    [ -z "$filler" ] && filler=" "
     local filler_extr=$(strRepeat "$filler" $max_len)
     local string_len=$(strLength "$string")
 
@@ -456,9 +493,15 @@ function strSplitTakeN() {
     echo "${arr[$2]}"
 }
 
-# getArgs --test="lol1" --tes-t="lol-l" --test2="lol 2" -e=ok -t=ok2
+# getArgs --test="lol1" --tes-t="lol-l" --test2="lol 2" -e=ok -t=ok2 --silent=true --invisible=yes
+# internally supported flags:
+# gargs_verbose (default true), gargs_throw (default true)
+# getArgs --gargs_throw=false --gargs_verbose=false --test="lol1" --tes-t="lol-l" --test2="lol 2" -e=ok -t=ok2 --silent=true --invisible=yes "lol"
 function getArgs() {
+    local gargs_verbose="true"
+    local gargs_throw="true"
     for arg in "$@" ; do
+        [ -z "$arg" ] && continue
         ($(strStartsWith "$arg" "-")) && (! $(strStartsWith "$arg" "--")) && arg="-${arg}"
         if ($(strStartsWith "$arg" "--")) && [[ "$arg" == *"="* ]] && [[ "$arg" != "--="* ]] && [[ "$arg" != "-="* ]] ; then
             local arg_len=$(strLength "$arg")
@@ -468,13 +511,78 @@ function getArgs() {
             local val="${arg:$n}"
             prefix="$(echo $prefix  | sed -z 's/^-*//')"
             local key=$(echo "$prefix" | tr '-' '_')
-            echoInfo "$key='$val'"
-            eval $key="'$val'"
+            if [ "$arg" == "-$key=''" ] || [ "$arg" == "-$key=\"\"" ] || [ "$arg" == "--$key=''" ] || [ "$arg" == "--$key=\"\"" ] || [ "$arg" == "--$key=" ] || [ "$arg" == "-$key=" ] ; then
+                val=""
+            fi
+
+            [ "$key" == "gargs_verbose" ] && [ "$(echo "$(toLower "$val")" | xargs)" == "false" ] && gargs_verbose="false"
+            [ "$key" == "gargs_throw" ] && [ "$(echo "$(toLower "$val")" | xargs)" == "false" ] && gargs_throw="false"
+            ( [ "$key" == "gargs_throw" ] || [ "$key" == "gargs_verbose" ] ) && continue
+
+            [ "$gargs_verbose" == "true" ] && echoInfo "$key='$val'"
+            if [ "$gargs_throw" == "true" ]; then
+                eval $key="'$val'"
+            else
+                eval $key="'$val'" || :
+            fi
         else
-            echoErr "ERROR: Invalid argument '$arg', missing name, '--' and/or '=' operators"
-            return 1
+            [ "$gargs_verbose" == "true" ] && echoErr "ERROR: Invalid argument '$arg', missing name, '--' and/or '=' operators ($gargs_throw)"
+            [ "$gargs_throw" == "true" ] && return 1
         fi
     done
+
+    # eval returns non 0 code, ensure to return 0
+    return 0
+}
+
+# counts number of characters in a string
+# strCntChar "1,2,3,4,5" ","
+function strCntChar() {
+    local str="$1"
+    local char="$2"
+    local cnt=0
+    if [ ! -z "$str" ] && [ ! -z "$char" ] ; then
+        cnt="$(echo "$str" | grep -o "$char" | wc -l || echo "0")"
+    fi
+    (! $(isNaturalNumber "$cnt")) && cnt="0"
+    echo "$cnt"
+}
+
+# converts character separated ranges to whitespace separated unique ordered string
+# arr=($(strRangesToArr "1-3,4,6-7" , -)) ; echo "${arr[*]}" -> "1 2 3 4 6 7"
+strRangesToArr() {
+    local ranges="$1"
+    local char1="$2"
+    local char2="$3"
+    [ -z "$char1" ] && char1=","
+    [ -z "$char2" ] && char2="-"
+    local ranges_cnt=$(strCntChar "$ranges" "$char1")
+    local res_arr=()
+    local i=0
+    local valStart=0
+    local valEnd=0
+
+    while [[ $i -le $ranges_cnt ]] ; do
+        range="$(delWhitespaces $(strSplitTakeN "$char1" $i "$ranges"))"
+        i=$((i + 1))
+        ($(isNumber "$range")) && res_arr+=($range) && continue
+        valStart="$(delWhitespaces $(strSplitTakeN "$char2" 0 "$range"))"
+        valEnd="$(delWhitespaces $(strSplitTakeN "$char2" 1 "$range"))"
+        ( (! $(isNumber "$valStart")) || (! $(isNumber "$valStart")) ) && continue
+        if [[ $valStart -gt $valEnd ]] ; then
+            res_arr+=($(seq $valEnd $valStart))
+        else
+            res_arr+=($(seq $valStart $valEnd))
+        fi
+    done
+
+    res_arr=($(echo "${res_arr[*]}" | tr ' ' '\n' | sort -u -n | tr '\n' ' '))
+
+    local OLDIFS=$IFS
+    local IFS=' '
+    local result="${res_arr[*]}"
+    local IFS=$OLDIFS
+    echo "$result"
 }
 
 # get default network interface
@@ -640,7 +748,8 @@ function safeWget() {
     EXPECTED_HASH_ARR=($(echo "$EXPECTED_HASH" | tr ',' '\n'))
     local HASH_MATCH="false"
     for hash in "${EXPECTED_HASH_ARR[@]}" ; do
-        if [ "$FILE_HASH" == "$hash" ] && ($(isSHA256 "$hash")); then
+        local sanitized=$(delWhitespaces "$hash" | sed 's/^0x//')
+        if [ "$FILE_HASH" == "$sanitized" ] && ($(isSHA256 "$sanitized")); then
             HASH_MATCH="true"
             echoInfo "INFO: No need to download, file with the hash '$FILE_HASH' was already found in the '$TMP_DIR' directory"
             [ "$TMP_PATH" != "$OUT_PATH" ] && cp -fv $TMP_PATH $OUT_PATH
@@ -658,7 +767,6 @@ function safeWget() {
     COSIGN_VERIFIED="false"
     if [ "$HASH_MATCH" == "false" ] && (! $(isFileEmpty $COSIGN_PUB_KEY)) && (! $(isFileEmpty $OUT_PATH)) ; then
 
-
         echoInfo "INFO: Using cosign to verify final file integrity..."
         COSIGN_VERIFIED="true"
         cosign verify-blob --key="$COSIGN_PUB_KEY" --signature="$TMP_PATH_SIG" "$OUT_PATH" || COSIGN_VERIFIED="false"
@@ -675,7 +783,8 @@ function safeWget() {
     EXPECTED_HASH_ARR=($(echo "$EXPECTED_HASH" | tr ',' '\n'))
     HASH_MATCH="false"
     for hash in "${EXPECTED_HASH_ARR[@]}" ; do
-        if [ "$FILE_HASH" == "$hash" ] && ($(isSHA256 "$hash")) ; then
+        local sanitized=$(delWhitespaces "$hash" | sed 's/^0x//')
+        if [ "$FILE_HASH" == "$sanitized" ] && ($(isSHA256 "$sanitized")) ; then
             HASH_MATCH="true"
             break
         fi
@@ -706,8 +815,9 @@ function getRamTotal() {
 
 # allowed modes: 'default', 'short', 'long'
 function getArch() {
-    local mode="$1" && mode="$(bash-utils toLower $mode)"
+    local mode="$1"
     local ARCH=$(uname -m)
+    mode="$(bash-utils toLower $mode)"
     if [[ "$ARCH" == *"arm"* ]] || [[ "$ARCH" == *"aarch"* ]] ; then
         echo "arm64"
     elif [[ "$ARCH" == *"x64"* ]] || [[ "$ARCH" == *"x86_64"* ]] || [[ "$ARCH" == *"amd64"* ]] || [[ "$ARCH" == *"amd"* ]] ; then
@@ -789,11 +899,27 @@ function isSimpleJsonObjOrArrFile() {
     fi
 }
 
+# Accepted flags (as params 4,5,6,7): sort_keys (bool), ensure_ascii (bool), encoding (str), indent (bool)
 function jsonParse() {
     local QUERY=""
     local FIN=""
     local FOUT=""
-    local INPUT=$(echo $1 | xargs 2> /dev/null 2> /dev/null || echo -n "")
+    local INPUT=""
+    local sort_keys="False"
+    local ensure_ascii="False"
+    local encoding="utf8"
+    local indent="utf8"
+
+    [ ! -z "${4}${5}${6}${7}" ] && getArgs --gargs_throw=false --gargs_verbose=false "$4" "$5" "$6" "$7"
+    [ -z "$sort_keys" ] && sort_keys="false" || sort_keys="$(toLower "$sort_keys")"
+    [ -z "$ensure_ascii" ] && ensure_ascii="false" || ensure_ascii="$(toLower "$ensure_ascii")"
+    [ -z "$encoding" ] && ensure_ascii="utf8"
+    [ -z "$indent" ] && indent="false" || ensure_ascii="$(toLower "$ensure_ascii")"
+    sort_keys="$(toCapital "$sort_keys")"
+    ensure_ascii="$(toCapital "$ensure_ascii")"
+    [ "$indent" == "true" ] &&  indent=",indent=4" || indent=""
+
+    INPUT=$(echo $1 | xargs 2> /dev/null 2> /dev/null || echo -n "")
     [ ! -z "$2" ] && FIN=$(realpath $2 2> /dev/null || echo -n "")
     [ ! -z "$3" ] && FOUT=$(realpath $3 2> /dev/null || echo -n "")
     if [ ! -z "$INPUT" ] ; then
@@ -806,12 +932,12 @@ function jsonParse() {
     if [ ! -z "$FIN" ] ; then
         if [ ! -z "$FOUT" ] ; then
             [ "$FIN" != "$FOUT" ] && rm -f "$FOUT" || :
-            python3 -c "import json,sys;fin=open('$FIN',\"r\");obj=json.load(fin);fin.close();fout=open('$FOUT',\"w\",encoding=\"utf8\");json.dump(obj$QUERY,fout,separators=(',',':'),ensure_ascii=False);fout.close()"
+            python3 -c "import json,sys;fin=open('$FIN',\"r\");obj=json.load(fin);fin.close();fout=open('$FOUT',\"w\",encoding=\"$encoding\");json.dump(obj$QUERY,fout,separators=(',',':')$indent,ensure_ascii=$ensure_ascii,sort_keys=$sort_keys);fout.close()"
         else
-            python3 -c "import json,sys;f=open('$FIN',\"r\");obj=json.load(f);print(json.dumps(obj$QUERY,separators=(',', ':'),ensure_ascii=False).strip(' \t\n\r\"'));f.close()"
+            python3 -c "import json,sys;f=open('$FIN',\"r\");obj=json.load(f);print(json.dumps(obj$QUERY,separators=(',', ':')$indent,ensure_ascii=$ensure_ascii,sort_keys=$sort_keys).strip(' \t\n\r\"'));f.close()"
         fi
     else
-        cat | python3 -c "import json,sys;obj=json.load(sys.stdin);print(json.dumps(obj$QUERY,separators=(',', ':'),ensure_ascii=False).strip(' \t\n\r\"'));"
+        cat | python3 -c "import json,sys;obj=json.load(sys.stdin);print(json.dumps(obj$QUERY,separators=(',', ':')$indent,ensure_ascii=$ensure_ascii,sort_keys=$sort_keys).strip(' \t\n\r\"'));"
     fi
 }
 
@@ -935,15 +1061,16 @@ function isURL() {
 function urlExists() {
     local timeout="$2" && (! $(isNaturalNumber $timeout)) && timeout=10
     if ($(isNullOrEmpty "$1")) ; then echo "false"
-    elif curl -r0-0 --fail --silent -m $timeout "$1" >/dev/null; then echo "true"
+    elif curl -r0-0 --fail --silent -m $timeout "$1" --output /dev/null >/dev/null; then echo "true"
     else echo "false" ; fi
 }
 
 # TODO: Investigate 0 output
 # urlContentLength 18.168.78.192:11000/api/snapshot 10
 function urlContentLength() {
+    local url="$1"
     local timeout="$2" && (! $(isNaturalNumber $timeout)) && timeout=10
-    local VAL=$(curl --fail $1 --dump-header /dev/fd/1 --silent -m $timeout  2> /dev/null | grep -i Content-Length -m 1 2> /dev/null | awk '{print $2}' 2> /dev/null || echo -n "")
+    local VAL=$(curl --fail "$url" --dump-header /dev/fd/1 --silent -m $timeout --output /dev/null 2> /dev/null | grep -i Content-Length -m 1 2> /dev/null | awk '{print $2}' 2> /dev/null || echo -n "")
     # remove invisible whitespace characters
     VAL=$(echo ${VAL%$'\r'})
     (! $(isNaturalNumber $VAL)) && VAL=0
@@ -959,7 +1086,8 @@ function globFile() {
     if [ ! -z "$2" ] && [ -d $2 ] ; then
         echo "${2}/$(globName $1)"
     else
-        local TARGET_DIR="$KIRA_GLOBS_DIR" && ($(isNullOrEmpty "$TARGET_DIR")) && TARGET_DIR="/var/kiraglob"
+        local TARGET_DIR="$KIRA_GLOBS_DIR" 
+        ($(isNullOrEmpty "$TARGET_DIR")) && TARGET_DIR="/var/kiraglob"
         echo "${TARGET_DIR}/$(globName $1)"
     fi
     return 0
@@ -1004,7 +1132,8 @@ function globDel {
 }
 
 function timerStart() {
-    local NAME=$1 && ($(isNullOrEmpty "$NAME")) && NAME="${BASH_SOURCE}"
+    local NAME=$1
+    ($(isNullOrEmpty "$NAME")) && NAME="${BASH_SOURCE}"
     globSet "timer_start_${NAME}" "$(date -u +%s)"
     globSet "timer_stop_${NAME}" ""
     globSet "timer_elapsed_${NAME}" ""
@@ -1014,12 +1143,18 @@ function timerStart() {
 # if TIMEOUT is set then time left until TIMEOUT is calculated
 function timerSpan() {
     local TIME="$(date -u +%s)"
-    local NAME=$1 && ($(isNullOrEmpty "$NAME")) && NAME="${BASH_SOURCE}"
+    local NAME=$1 
+    ($(isNullOrEmpty "$NAME")) && NAME="${BASH_SOURCE}"
     local TIMEOUT=$2
-    local START_TIME=$(globGet "timer_start_${NAME}") && (! $(isNaturalNumber "$START_TIME")) && START_TIME="$TIME"
-    local END_TIME=$(globGet "timer_stop_${NAME}") && (! $(isNaturalNumber "$END_TIME")) && END_TIME="$TIME"
-    local ELAPSED=$(globGet "timer_elapsed_${NAME}") && (! $(isNaturalNumber "$ELAPSED")) && ELAPSED="0"
-    local SPAN="$(($END_TIME - $START_TIME))" && [[ $SPAN -lt 0 ]] && SPAN="0"
+    local START_TIME=$(globGet "timer_start_${NAME}")
+    local END_TIME=$(globGet "timer_stop_${NAME}")
+    local ELAPSED=$(globGet "timer_elapsed_${NAME}")
+    (! $(isNaturalNumber "$START_TIME")) && START_TIME="$TIME"
+    (! $(isNaturalNumber "$END_TIME")) && END_TIME="$TIME"
+    (! $(isNaturalNumber "$ELAPSED")) && ELAPSED="0"
+
+    local SPAN="$(($END_TIME - $START_TIME))" 
+    [[ $SPAN -lt 0 ]] && SPAN="0"
     SPAN="$(($SPAN + $ELAPSED))" 
     
     if ($(isNaturalNumber $TIMEOUT)) ; then
@@ -1033,15 +1168,20 @@ function timerSpan() {
 
 function timerPause() {
     local TIME="$(date -u +%s)"
-    local NAME=$1 && ($(isNullOrEmpty "$NAME")) && NAME="${BASH_SOURCE}"
+    local NAME=$1 
+    ($(isNullOrEmpty "$NAME")) && NAME="${BASH_SOURCE}"
     local END_TIME=$(globGet "timer_stop_${NAME}")
 
     if (! $(isNaturalNumber "$END_TIME")) ; then
         globSet "timer_stop_${NAME}" "$TIME"
-        local OLD_ELAPSED=$(globGet "timer_elapsed_${NAME}") && (! $(isNaturalNumber "$OLD_ELAPSED")) && OLD_ELAPSED="0"
-        local START_TIME=$(globGet "timer_start_${NAME}") && (! $(isNaturalNumber "$START_TIME")) && START_TIME="$TIME"
-        local END_TIME=$(globGet "timer_stop_${NAME}") && (! $(isNaturalNumber "$END_TIME")) && END_TIME="$TIME"
-        local NOW_ELAPSED="$(($END_TIME - $START_TIME))" && [[ $NOW_ELAPSED -lt 0 ]] && NOW_ELAPSED="0"
+        local OLD_ELAPSED=$(globGet "timer_elapsed_${NAME}") 
+        local START_TIME=$(globGet "timer_start_${NAME}") 
+        local END_TIME=$(globGet "timer_stop_${NAME}") 
+        (! $(isNaturalNumber "$OLD_ELAPSED")) && OLD_ELAPSED="0"
+        (! $(isNaturalNumber "$START_TIME")) && START_TIME="$TIME"
+        (! $(isNaturalNumber "$END_TIME")) && END_TIME="$TIME"
+        local NOW_ELAPSED="$(($END_TIME - $START_TIME))" 
+        [[ $NOW_ELAPSED -lt 0 ]] && NOW_ELAPSED="0"
         globSet "timer_start_${NAME}" "$TIME"
         globSet "timer_elapsed_${NAME}" "$(($NOW_ELAPSED + $OLD_ELAPSED))"
     fi
@@ -1049,7 +1189,8 @@ function timerPause() {
 }
 
 function timerUnpause() {
-    local NAME=$1 && ($(isNullOrEmpty "$NAME")) && NAME="${BASH_SOURCE}"
+    local NAME=$1 
+    ($(isNullOrEmpty "$NAME")) && NAME="${BASH_SOURCE}"
     local END_TIME=$(globGet "timer_stop_${NAME}")
 
     if ($(isNaturalNumber "$END_TIME")) ; then
@@ -1104,6 +1245,34 @@ function prettyTimeSlim {
   (( $S != 1 )) && printf '%ds\n' $S || printf '%ds\n' $S
 }
 
+# fromats Bytes into k, M, G, T, P - Bytes
+function prettyBytes {
+  local size="$1" && (! $(isNaturalNumber "$size")) && size=0
+
+  if [[ $size -lt 1024 ]] ; then
+    echo "$size B"
+  elif [[ $size -lt 1048576 ]] ; then
+    size=$(printf "%.3f" $(echo "scale=3; $size/1024" | bc))
+    echo "$size kB"
+  elif [[ $size -lt 1073741824 ]] ; then
+    size=$(printf "%.3f" $(echo "scale=3; $size/1048576" | bc))
+    echo "$size MB"
+  elif [[ $size -lt 1099511627776 ]] ; then
+    size=$(printf "%.3f" $(echo "scale=3; $size/1073741824" | bc))
+    echo "$size GB"
+  elif [[ $size -lt 1125899906842624 ]] ; then
+    size=$(printf "%.3f" $(echo "scale=3; $size/1099511627776" | bc))
+    echo "$size TB"
+  elif [[ $size -lt 1152921504606846976 ]] ; then
+    size=$(printf "%.3f" $(echo "scale=3; $size/1125899906842624" | bc))
+    echo "$size PB"
+  else
+    size=$(printf "%.3f" $(echo "scale=3; $size/1152921504606846976" | bc))
+    echo "$size EB"
+  fi
+}
+
+
 function resolveDNS {
     if ($(isIp "$1")) ; then
         echo "$1"
@@ -1149,32 +1318,55 @@ function pingTime() {
 }
 
 # sets global var with user selection, default var name is OPTION
-# e.g.: pressToContinue TEST a b c
+# e.g.: pressToContinue --glob=TEST --timeout=1 a b c
 function pressToContinue {
-    local glob_var_name="OPTION"
-    local var_len=0
-    for kg_var in "$@" ; do
-        kg_var=$(echo "$kg_var" | tr -d '\011\012\013\014\015\040' 2>/dev/null || echo -n "")
-        [[ $(strLength "$kg_var") -ge 2 ]] && glob_var_name=$kg_var && break
-    done
+    local glob="OPTION"
+    local timeout=0
+    getArgs --gargs_verbose=false --gargs_throw=false "$1" "$2"
+    (! $(isNaturalNumber "$timeout")) && timeout=0
 
-    if ($(isNullOrEmpty "$1")) ; then
-        read -n 1 -s 
-        globSet "$glob_var_name" ""
+    local OPTION=""
+    local FOUND=false
+    local TIME_START="$(date -u +%s)"
+    local TIME_END="$TIME_START"
+    local TIME_SPAN=0
+
+    if ($(bu isNullOrEmpty "$1")) ; then
+        OPTION=""
+        if [[ $timeout -gt 0 ]] ; then
+            read -t "$timeout" -n 1 -s OPTION
+        else
+            read -n 1 -s OPTION
+        fi
+        globSet "$glob" ""
     else
         while : ; do
-            local OPTION=""
-            local FOUND=false
-            read -n 1 -s OPTION
-            OPTION=$(bash-utils toLower "$OPTION")
+            OPTION=""
+            FOUND=false
+            if [[ $timeout -gt 0 ]] ; then
+                read -t "$timeout" -n 1 -s OPTION
+            else
+                read -n 1 -s OPTION
+            fi
+            OPTION=$(bu toLower "$OPTION")
             for kg_var in "$@" ; do
                 kg_var=$(echo "$kg_var" | tr -d '\011\012\013\014\015\040' 2>/dev/null || echo -n "")
-                [ "$(bash-utils toLower "$kg_var")" == "$OPTION" ] && globSet "$glob_var_name" "$OPTION" && FOUND=true && break
+                [ "$(bu toLower "$kg_var")" == "$OPTION" ] && globSet "$glob" "$OPTION" && FOUND=true && break
             done
+
             [ "$FOUND" == "true" ] && break
-        done
+
+            TIME_END="$(date -u +%s)"
+            TIME_SPAN=$((TIME_END - TIME_START))
+            if [[ $timeout -gt 0 ]] && [[ $TIME_SPAN -gt $timeout ]] ; then
+                globSet "$glob" ""
+                echo ""
+                return 142
+            fi
+        done 
     fi
     echo ""
+    return 0
 }
 
 displayAlign() {
@@ -1704,11 +1896,13 @@ function setEnv() {
 function setGlobEnv() {
     local ENV_NAME=$1
     local ENV_VALUE=$2
-    
     local GLOB_SRC="source /etc/profile"
-    local SUDOUSER="${SUDO_USER}" && [ "$SUDOUSER" == "root" ] && SUDOUSER=""
-    local USERNAME="${USER}" && [ "$USERNAME" == "root" ] && USERNAME=""
-    local LOGNAME=$(logname 2> /dev/null echo "") && [ "$LOGNAME" == "root" ] && LOGNAME=""
+    local SUDOUSER="${SUDO_USER}" 
+    local USERNAME="${USER}" 
+    local LOGNAME=$(logname 2> /dev/null echo "")
+    [ "$SUDOUSER" == "root" ] && SUDOUSER=""
+    [ "$USERNAME" == "root" ] && USERNAME=""
+    [ "$LOGNAME" == "root" ] && LOGNAME=""
 
     local TARGET="/$LOGNAME/.bashrc"
     if [ ! -z "$LOGNAME" ] && [ -f  $TARGET ] ; then
@@ -1852,6 +2046,86 @@ EOL
         [ ! -f $FULL_SRC_PATH_ARM64 ] && echoErr "ERROR: Could NOT find arm64 relese: '$FULL_SRC_PATH_ARM64'" 
         [ ! -f $FULL_SRC_PATH_AMD64 ] && echoErr "ERROR: Could NOT find amd64 relese: '$FULL_SRC_PATH_AMD64'"
         return 1
+    fi
+}
+
+# releases file from process capturing it
+# fileProcUnlock "/var/lib/dpkg/lock-frontend"
+function fileProcUnlock {
+  local file="$1"
+  [ ! -f "$file" ] && echoWarn "WARNING: File '$file' was NOT found, no need to unlock" && return 0
+  pid=$(lslocks | grep "$file" | awk '{print $1}' || echo "")
+  if [ -n "$pid" ]; then
+    echoInfo "INFO: Releasing lock from file '$file' held by process $pid."
+    kill $pid || echoWarn "WARNINIG: Failed to kill process '$pid'"
+  else
+    echoInfo "INFO: File '$file' was already unlocked."
+  fi
+}
+
+# fileFollow /home/asmodat/logs/kirascan.log
+fileFollow() {
+    local file="$1"
+    local quit_key="q"
+    local pid=0
+
+    function fileFollowInt {
+        echoNC "bli;whi" "\n$(strFixC "~~~ To exit press [Q] ~~~" 80)\n\n" && sleep 2
+    }
+
+    function fileFollowErr {
+        kill -SIGINT $pid &> /dev/null || :
+        kill $pid &> /dev/null || :
+        kill -9 $pid &> /dev/null || :
+        trap - INT || :
+        trap - ERR || :
+    }
+
+    echoNC "bli;whi" "\n$(strFixC "~~~ Oppening '$file', to exit press [Q] ~~~" 80)\n\n" && sleep 3
+
+    if (! $(isFileEmpty "$file")) ; then
+        trap fileFollowInt INT
+        trap fileFollowErr ERR
+        tail -f "$file" &
+        pid=$!
+
+        pressToContinue "q"
+        fileFollowErr
+    else
+        echoNC "bli;red" "\n$(strFixC "~~~ File '$file' is empty or does NOT exist ~~~" 80)\n\n" && sleep 1
+    fi
+}
+
+# cmdFollow "docker logs --follow --details --timestamps ca862e8335cf8f1e163ecaef231994080d61b07ecd496ebf29927a0d05f3b668"
+cmdFollow() {
+    local cmd="$1"
+    local quit_key="q"
+    local pid1=0
+
+    function cmdFollowInt {
+        echoNC "bli;whi" "\n$(strFixC "~~~ To exit process '$pid1' press [Q] ~~~" 80)\n\n" && sleep 2
+    }
+
+    function cmdFollowErr {
+        kill -SIGINT $pid1 &> /dev/null || :
+        kill $pid1 &> /dev/null || :
+        kill -9 $pid1 &> /dev/null || :
+        trap - INT || :
+        trap - ERR || :
+    }
+
+    echoNC "bli;whi" "\n$(strFixC "~~~ Starting command '$cmd', to exit press [Q] ~~~" 80)\n\n" && sleep 3
+
+    if (! $(isNullOrWhitespaces $cmd)) ; then
+        trap cmdFollowInt INT
+        trap cmdFollowInt ERR
+        bash -c ". /etc/profile && $cmd" &
+        pid1=$!
+
+        pressToContinue "q"
+        cmdFollowErr
+    else
+        echoNC "bli;red" "\n$(strFixC "~~~ Command is invalid or was not specified ~~~" 80)\n\n" && sleep 1
     fi
 }
 
