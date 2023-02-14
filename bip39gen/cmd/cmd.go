@@ -1,29 +1,34 @@
 package cmd
 
 import (
+	"os"
+
 	"github.com/spf13/cobra"
 )
 
-var words int
-var verbose bool
+var (
+	words   int
+	verbose bool
 
-var userEntropy string
-var rawEntropy string
+	userEntropy string
+	rawEntropy  string
+	cipher      string
 
-var ImpUsrEnt *string = &userEntropy
+	ImpUsrEnt *string = &userEntropy
 
-var hex bool
-
+	hex bool
+)
 var rootCmd = &cobra.Command{
 	Use:   "bip39gen [sub]",
 	Short: "Bip39 Mnemonic Generator",
 }
 
 var mnemonicCommand = &cobra.Command{
-	Use:   "mnemonic [command]",
-	Short: "mnemonic",
-	Long:  "Generate mnemonic words",
-	RunE:  cmdMnemonic,
+	Use:     "mnemonic [command]",
+	Short:   "mnemonic",
+	Long:    "Generate mnemonic words",
+	PreRunE: cmdMnemonicPreRun,
+	RunE:    cmdMnemonic,
 }
 
 var versionCommand = &cobra.Command{
@@ -33,7 +38,7 @@ var versionCommand = &cobra.Command{
 	RunE:  cmdVersion,
 }
 
-func init() {
+func Execute() {
 	//Turn off completion
 	rootCmd.CompletionOptions.DisableDescriptions = true
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
@@ -43,6 +48,7 @@ func init() {
 
 	mnemonicCommand.Flags().StringVarP(&userEntropy, "entropy", "e", "", "provide entropy for mixing and generating new mnemonic sentences")
 	mnemonicCommand.Flags().StringVarP(&rawEntropy, "raw-entropy", "r", "", "provide entropy to regenerate mnemonic sentences from")
+	mnemonicCommand.Flags().StringVarP(&cipher, "cipher", "c", "", "choose cipher to generate mnemonics. Available options are: sha256,sha512, chacha20, padding")
 
 	mnemonicCommand.Flags().Changed("entropy")
 	mnemonicCommand.Flags().Changed("raw-entropy")
@@ -54,9 +60,8 @@ func init() {
 	rootCmd.AddCommand(mnemonicCommand)
 	rootCmd.AddCommand(versionCommand)
 
-}
+	if err := rootCmd.Execute(); err != nil {
+		os.Exit(1)
+	}
 
-func Execute() error {
-
-	return rootCmd.Execute()
 }
