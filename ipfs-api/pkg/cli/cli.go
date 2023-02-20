@@ -17,6 +17,7 @@ var (
 	verbosity bool
 	force     bool
 	overwrite bool
+	list      bool // check gateways
 )
 
 var rootCmd = &cobra.Command{
@@ -24,7 +25,7 @@ var rootCmd = &cobra.Command{
 	Short: "IPFS API",
 }
 
-//Main function to create cli
+// Main function to create cli
 func Start() {
 	//Turn off completion
 	rootCmd.CompletionOptions.DisableDescriptions = true
@@ -38,6 +39,7 @@ func Start() {
 		}
 		return nil
 	}
+
 	pinCommand.PersistentFlags().StringVarP(&key, "key", "k", "", "path to your key")
 	pinCommand.Flags().Int8VarP(&c, "cid", "c", 1, "CID version. 0 - CIDv0, 1 - CIDv1")
 	pinCommand.PersistentFlags().BoolVarP(&force, "force", "f", false, "force to change name if file/folder already exist (default false)")
@@ -55,6 +57,8 @@ func Start() {
 	rootCmd.AddCommand(pinCommand)
 	rootCmd.AddCommand(versionCommand)
 	rootCmd.AddCommand(unpinCommand)
+
+	rootCmd.AddCommand(gatewayCommand)
 
 	rootCmd.AddCommand(testCommand)
 	cobra.CheckErr(rootCmd.Execute())
