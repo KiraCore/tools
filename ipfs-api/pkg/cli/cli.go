@@ -17,7 +17,6 @@ var (
 	verbosity bool
 	force     bool
 	overwrite bool
-	list      bool // check gateways
 )
 
 var rootCmd = &cobra.Command{
@@ -57,8 +56,6 @@ func Start() {
 	rootCmd.AddCommand(pinCommand)
 	rootCmd.AddCommand(versionCommand)
 	rootCmd.AddCommand(unpinCommand)
-
-	rootCmd.AddCommand(gatewayCommand)
 
 	rootCmd.AddCommand(testCommand)
 	cobra.CheckErr(rootCmd.Execute())
