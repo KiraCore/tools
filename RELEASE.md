@@ -7,3 +7,4 @@ Features:
 * bip39gen: added PreRun logic
 * bip39gen: added checks for input with cipher flag
 * bip39gen: added warnings 
+* bash-utils: added configurable number of decimals to prettyBytes
