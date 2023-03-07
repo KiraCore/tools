@@ -905,10 +905,10 @@ function jsonParse() {
     local FIN=""
     local FOUT=""
     local INPUT=""
-    local sort_keys="False"
-    local ensure_ascii="False"
+    local sort_keys="false"
+    local ensure_ascii="false"
     local encoding="utf8"
-    local indent="utf8"
+    local indent="false"
 
     [ ! -z "${4}${5}${6}${7}" ] && getArgs --gargs_throw=false --gargs_verbose=false "$4" "$5" "$6" "$7"
     [ -z "$sort_keys" ] && sort_keys="false" || sort_keys="$(toLower "$sort_keys")"
@@ -1246,32 +1246,38 @@ function prettyTimeSlim {
 }
 
 # fromats Bytes into k, M, G, T, P - Bytes
+# prettyBytes <size> <decimals>
 function prettyBytes {
   local size="$1" && (! $(isNaturalNumber "$size")) && size=0
+  local decimals="$2" && (! $(isNaturalNumber "$decimals")) && decimals=3
 
   if [[ $size -lt 1024 ]] ; then
     echo "$size B"
   elif [[ $size -lt 1048576 ]] ; then
-    size=$(printf "%.3f" $(echo "scale=3; $size/1024" | bc))
+    size=$(printf "%.${decimals}f" $(echo "scale=3; $size/1024" | bc))
     echo "$size kB"
   elif [[ $size -lt 1073741824 ]] ; then
-    size=$(printf "%.3f" $(echo "scale=3; $size/1048576" | bc))
+    size=$(printf "%.${decimals}f" $(echo "scale=3; $size/1048576" | bc))
     echo "$size MB"
   elif [[ $size -lt 1099511627776 ]] ; then
-    size=$(printf "%.3f" $(echo "scale=3; $size/1073741824" | bc))
+    size=$(printf "%.${decimals}f" $(echo "scale=3; $size/1073741824" | bc))
     echo "$size GB"
   elif [[ $size -lt 1125899906842624 ]] ; then
-    size=$(printf "%.3f" $(echo "scale=3; $size/1099511627776" | bc))
+    size=$(printf "%.${decimals}f" $(echo "scale=3; $size/1099511627776" | bc))
     echo "$size TB"
   elif [[ $size -lt 1152921504606846976 ]] ; then
-    size=$(printf "%.3f" $(echo "scale=3; $size/1125899906842624" | bc))
+    size=$(printf "%.${decimals}f" $(echo "scale=3; $size/1125899906842624" | bc))
     echo "$size PB"
   else
-    size=$(printf "%.3f" $(echo "scale=3; $size/1152921504606846976" | bc))
+    size=$(printf "%.${decimals}f" $(echo "scale=3; $size/1152921504606846976" | bc))
     echo "$size EB"
   fi
 }
 
+function prettyBits {
+    local str="$(prettyBytes "$1" "$2")"
+    echo "${str%?}"`echo "${str: -1}" | tr '[:upper:]' '[:lower:]'`
+}
 
 function resolveDNS {
     if ($(isIp "$1")) ; then
