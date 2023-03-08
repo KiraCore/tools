@@ -17,6 +17,7 @@ REGEX_CID="^(Qm[1-9A-HJ-NP-Za-km-z]{44,}|b[A-Za-z2-7]{58,}|B[A-Z2-7]{58,}|z[1-9A
 # NOTE: Important! in the REGEX_URL the ' quote character must be used instead of ", do NOT modify this string
 REGEX_URL1='[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[-A-Za-z0-9\+&@#/%=~_|]\.[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[-A-Za-z0-9\+&@#/%=~_|]$'
 REGEX_URL2="^(https?|ftp|file)://$REGEX_URL1"
+UBUNTU_AGENT="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.85 Safari/537.36"
 
 function bashUtilsVersion() {
     bashUtilsSetup "version" 2> /dev/null || bash-utils bashUtilsSetup "version"
@@ -25,7 +26,7 @@ function bashUtilsVersion() {
 # this is default installation script for utils
 # ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
 function bashUtilsSetup() {
-    local BASH_UTILS_VERSION="v0.3.13"
+    local BASH_UTILS_VERSION="v0.3.19"
     local COSIGN_VERSION="v1.13.1"
     if [ "$1" == "version" ] ; then
         echo "$BASH_UTILS_VERSION"
@@ -98,7 +99,7 @@ function bashUtilsSetup() {
             if [[ "$(uname -m)" == *"ar"* ]] ; then ARCH="arm64"; else ARCH="amd64" ; fi && \
              PLATFORM=$(uname) && FILE_NAME=$(echo "cosign-${PLATFORM}-${ARCH}" | tr '[:upper:]' '[:lower:]') && \
              TMP_FILE="/tmp/${FILE_NAME}.tmp" && rm -fv "$TMP_FILE" && \
-             wget https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/$FILE_NAME -O "$TMP_FILE" && \
+             wget --user-agent="$UBUNTU_AGENT" https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/$FILE_NAME -O "$TMP_FILE" && \
              chmod +x -v "$TMP_FILE" && mv -fv "$TMP_FILE" /usr/local/bin/cosign
 
              cosign version
@@ -628,32 +629,32 @@ function ipfsGet() {
 
         PUB_URL="https://gateway.ipfs.io/ipfs/${FILE_CID}"
         if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $TIMEOUT) -gt 1 ]] ) ; then
-            wget "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from gateway.ipfs.io :("
+            wget --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from gateway.ipfs.io :("
         fi
 
         PUB_URL="https://dweb.link/ipfs/${FILE_CID}"
         if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $TIMEOUT) -gt 1 ]] ) ; then
-            wget "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from dweb.link :("
+            wget --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from dweb.link :("
         fi
 
         PUB_URL="https://ipfs.joaoleitao.org/ipfs/${FILE_CID}" 
         if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $TIMEOUT) -gt 1 ]] ) ; then
-            wget "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
+            wget --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
         fi
 
         PUB_URL="https://ipfs.kira.network/ipfs/${FILE_CID}"
         if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $TIMEOUT) -gt 1 ]] ) ; then
-            wget "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
+            wget --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
         fi
 
         PUB_URL="https://ipfs.kira.network/ipfs/${FILE_CID}"
         if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $TIMEOUT) -gt 1 ]] ) ; then
-            wget "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
+            wget --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
         fi
 
         PUB_URL="https://ipfs.snggle.com/ipfs/${FILE_CID}"
         if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $TIMEOUT) -gt 1 ]] ) ; then
-            wget "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
+            wget --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
         fi
 
         if ( [ "$DOWNLOAD_SUCCESS" != "true" ] || [ ! -f "$OUT_PATH" ] ) ; then
@@ -721,7 +722,7 @@ function safeWget() {
 
         if (! $(isFileEmpty $COSIGN_PUB_KEY)) || ($(urlExists "$COSIGN_PUB_KEY")) ; then
             echoWarn "WARNING: Attempting to fetch signature file..."
-            wget "$SIG_URL" -O $TMP_PATH_SIG
+            wget --user-agent="$UBUNTU_AGENT" "$SIG_URL" -O $TMP_PATH_SIG
         else
             echoErr "ERROR: Public key was not found in '$COSIGN_PUB_KEY'"
             return 1
@@ -759,7 +760,7 @@ function safeWget() {
     
     if [ "$HASH_MATCH" == "false" ] ; then
         rm -fv $OUT_PATH
-        wget "$FILE_URL" -O $TMP_PATH
+        wget --user-agent="$UBUNTU_AGENT" "$FILE_URL" -O $TMP_PATH
         [ "$TMP_PATH" != "$OUT_PATH" ] && cp -fv $TMP_PATH $OUT_PATH
         FILE_HASH=$(sha256 $OUT_PATH)
     fi
@@ -905,10 +906,10 @@ function jsonParse() {
     local FIN=""
     local FOUT=""
     local INPUT=""
-    local sort_keys="False"
-    local ensure_ascii="False"
+    local sort_keys="false"
+    local ensure_ascii="false"
     local encoding="utf8"
-    local indent="utf8"
+    local indent="false"
 
     [ ! -z "${4}${5}${6}${7}" ] && getArgs --gargs_throw=false --gargs_verbose=false "$4" "$5" "$6" "$7"
     [ -z "$sort_keys" ] && sort_keys="false" || sort_keys="$(toLower "$sort_keys")"
@@ -1246,32 +1247,38 @@ function prettyTimeSlim {
 }
 
 # fromats Bytes into k, M, G, T, P - Bytes
+# prettyBytes <size> <decimals>
 function prettyBytes {
   local size="$1" && (! $(isNaturalNumber "$size")) && size=0
+  local decimals="$2" && (! $(isNaturalNumber "$decimals")) && decimals=3
 
   if [[ $size -lt 1024 ]] ; then
     echo "$size B"
   elif [[ $size -lt 1048576 ]] ; then
-    size=$(printf "%.3f" $(echo "scale=3; $size/1024" | bc))
+    size=$(printf "%.${decimals}f" $(echo "scale=3; $size/1024" | bc))
     echo "$size kB"
   elif [[ $size -lt 1073741824 ]] ; then
-    size=$(printf "%.3f" $(echo "scale=3; $size/1048576" | bc))
+    size=$(printf "%.${decimals}f" $(echo "scale=3; $size/1048576" | bc))
     echo "$size MB"
   elif [[ $size -lt 1099511627776 ]] ; then
-    size=$(printf "%.3f" $(echo "scale=3; $size/1073741824" | bc))
+    size=$(printf "%.${decimals}f" $(echo "scale=3; $size/1073741824" | bc))
     echo "$size GB"
   elif [[ $size -lt 1125899906842624 ]] ; then
-    size=$(printf "%.3f" $(echo "scale=3; $size/1099511627776" | bc))
+    size=$(printf "%.${decimals}f" $(echo "scale=3; $size/1099511627776" | bc))
     echo "$size TB"
   elif [[ $size -lt 1152921504606846976 ]] ; then
-    size=$(printf "%.3f" $(echo "scale=3; $size/1125899906842624" | bc))
+    size=$(printf "%.${decimals}f" $(echo "scale=3; $size/1125899906842624" | bc))
     echo "$size PB"
   else
-    size=$(printf "%.3f" $(echo "scale=3; $size/1152921504606846976" | bc))
+    size=$(printf "%.${decimals}f" $(echo "scale=3; $size/1152921504606846976" | bc))
     echo "$size EB"
   fi
 }
 
+function prettyBits {
+    local str="$(prettyBytes "$1" "$2")"
+    echo "${str%?}"`echo "${str: -1}" | tr '[:upper:]' '[:lower:]'`
+}
 
 function resolveDNS {
     if ($(isIp "$1")) ; then
