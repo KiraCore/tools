@@ -1,11 +1,3 @@
 Features:
 
-* validator-key-gen: added validate flag
-* validator-key-gen: added decode flag
-* validator-key-gen: added encode flag
-* ipfs-api: added subcommand gateways
-* bip39gen: added PreRun logic
-* bip39gen: added checks for input with cipher flag
-* bip39gen: added warnings 
-* bash-utils: added configurable number of decimals to prettyBytes
-* bash-utils: added ubuntu/chrome user agent to all wget commands
+* bash-utils: performance improvements for console printing functions and global variables processing
