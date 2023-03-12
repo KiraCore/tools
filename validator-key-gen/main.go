@@ -178,7 +178,7 @@ func main() {
 	// Derive path from string
 	derive := flag.String("derive", "", "a string")
 	path := flag.String("path", "", "a string")
-	prefix := flag.String("prefix", "", "a string")
+	prefix := flag.String("prefix", "", "a string") 
 
 	// Decode/verify kira address
 	validate := flag.Bool("validate", false, "a bool")
