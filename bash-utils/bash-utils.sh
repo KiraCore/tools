@@ -17,6 +17,7 @@ REGEX_CID="^(Qm[1-9A-HJ-NP-Za-km-z]{44,}|b[A-Za-z2-7]{58,}|B[A-Z2-7]{58,}|z[1-9A
 # NOTE: Important! in the REGEX_URL the ' quote character must be used instead of ", do NOT modify this string
 REGEX_URL1='[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[-A-Za-z0-9\+&@#/%=~_|]\.[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[-A-Za-z0-9\+&@#/%=~_|]$'
 REGEX_URL2="^(https?|ftp|file)://$REGEX_URL1"
+UBUNTU_AGENT="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.85 Safari/537.36"
 
 function bashUtilsVersion() {
     bashUtilsSetup "version" 2> /dev/null || bash-utils bashUtilsSetup "version"
@@ -25,7 +26,7 @@ function bashUtilsVersion() {
 # this is default installation script for utils
 # ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
 function bashUtilsSetup() {
-    local BASH_UTILS_VERSION="v0.3.18"
+    local BASH_UTILS_VERSION="v0.3.20"
     local COSIGN_VERSION="v1.13.1"
     if [ "$1" == "version" ] ; then
         echo "$BASH_UTILS_VERSION"
@@ -54,7 +55,7 @@ function bashUtilsSetup() {
             bash-utils echoErr "ERROR: utils source was NOT found"
             return 1
         else
-            mkdir -p "/usr/local/bin" "/bin"
+            mkdir -p "/usr/local/bin" "/bin" "/tmp"
             cp -fv "$UTILS_SOURCE" "$UTILS_DESTINATION"
             cp -fv "$UTILS_SOURCE" "/usr/local/bin/bash-utils"
             cp -fv "$UTILS_SOURCE" "/usr/local/bin/bu"
@@ -98,7 +99,7 @@ function bashUtilsSetup() {
             if [[ "$(uname -m)" == *"ar"* ]] ; then ARCH="arm64"; else ARCH="amd64" ; fi && \
              PLATFORM=$(uname) && FILE_NAME=$(echo "cosign-${PLATFORM}-${ARCH}" | tr '[:upper:]' '[:lower:]') && \
              TMP_FILE="/tmp/${FILE_NAME}.tmp" && rm -fv "$TMP_FILE" && \
-             wget https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/$FILE_NAME -O "$TMP_FILE" && \
+             wget --user-agent="$UBUNTU_AGENT" https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/$FILE_NAME -O "$TMP_FILE" && \
              chmod +x -v "$TMP_FILE" && mv -fv "$TMP_FILE" /usr/local/bin/cosign
 
              cosign version
@@ -128,8 +129,16 @@ function toCapital() {
 }
 
 function isNullOrEmpty() {
-    local val=$(bash-utils toLower "$1")
-    if [ -z "$val" ] || [ "$val" == "null" ] || [ "$val" == "nil" ] ; then echo "true" ; else echo "false" ; fi
+    local val=$(echo "$1" | tr '[:upper:]' '[:lower:]' )
+    if [ -z "$val" ] ; then
+        echo "true" 
+    else
+        case $val in
+            "null") echo "true" ;;
+            "nil") echo "true" ;;
+            *) echo "false" ;;
+        esac
+    fi
 }
 
 function delWhitespaces() {
@@ -137,7 +146,7 @@ function delWhitespaces() {
 }
 
 function isNullOrWhitespaces() {
-    isNullOrEmpty $(bash-utils delWhitespaces "$1")
+    isNullOrEmpty "$(echo "$1" | tr -d '\011\012\013\014\015\040')"
 }
 
 function isKiraAddress() {
@@ -628,32 +637,32 @@ function ipfsGet() {
 
         PUB_URL="https://gateway.ipfs.io/ipfs/${FILE_CID}"
         if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $TIMEOUT) -gt 1 ]] ) ; then
-            wget "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from gateway.ipfs.io :("
+            wget --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from gateway.ipfs.io :("
         fi
 
         PUB_URL="https://dweb.link/ipfs/${FILE_CID}"
         if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $TIMEOUT) -gt 1 ]] ) ; then
-            wget "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from dweb.link :("
+            wget --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from dweb.link :("
         fi
 
         PUB_URL="https://ipfs.joaoleitao.org/ipfs/${FILE_CID}" 
         if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $TIMEOUT) -gt 1 ]] ) ; then
-            wget "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
+            wget --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
         fi
 
         PUB_URL="https://ipfs.kira.network/ipfs/${FILE_CID}"
         if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $TIMEOUT) -gt 1 ]] ) ; then
-            wget "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
+            wget --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
         fi
 
         PUB_URL="https://ipfs.kira.network/ipfs/${FILE_CID}"
         if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $TIMEOUT) -gt 1 ]] ) ; then
-            wget "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
+            wget --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
         fi
 
         PUB_URL="https://ipfs.snggle.com/ipfs/${FILE_CID}"
         if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $TIMEOUT) -gt 1 ]] ) ; then
-            wget "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
+            wget --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
         fi
 
         if ( [ "$DOWNLOAD_SUCCESS" != "true" ] || [ ! -f "$OUT_PATH" ] ) ; then
@@ -721,7 +730,7 @@ function safeWget() {
 
         if (! $(isFileEmpty $COSIGN_PUB_KEY)) || ($(urlExists "$COSIGN_PUB_KEY")) ; then
             echoWarn "WARNING: Attempting to fetch signature file..."
-            wget "$SIG_URL" -O $TMP_PATH_SIG
+            wget --user-agent="$UBUNTU_AGENT" "$SIG_URL" -O $TMP_PATH_SIG
         else
             echoErr "ERROR: Public key was not found in '$COSIGN_PUB_KEY'"
             return 1
@@ -759,7 +768,7 @@ function safeWget() {
     
     if [ "$HASH_MATCH" == "false" ] ; then
         rm -fv $OUT_PATH
-        wget "$FILE_URL" -O $TMP_PATH
+        wget --user-agent="$UBUNTU_AGENT" "$FILE_URL" -O $TMP_PATH
         [ "$TMP_PATH" != "$OUT_PATH" ] && cp -fv $TMP_PATH $OUT_PATH
         FILE_HASH=$(sha256 $OUT_PATH)
     fi
@@ -1078,24 +1087,32 @@ function urlContentLength() {
 }
 
 function globName() {
-    echo $(echo "$(bash-utils toLower "$1")" | tr -d '\011\012\013\014\015\040' | md5sum | awk '{ print $1 }')
+    echo "$1" | tr '[:upper:]' '[:lower:]' | tr -cd '[:alnum:]'
     return 0
 }
 
 function globFile() {
-    if [ ! -z "$2" ] && [ -d $2 ] ; then
-        echo "${2}/$(globName $1)"
+    local FILE_NAME=$(echo "$1" | tr '[:upper:]' '[:lower:]' | tr -cd '[:alnum:]')
+    if [ ! -z "$2" ] && [ -d "$2" ] ; then
+        echo "${2}/$FILE_NAME"
+    elif [ ! -z "$KIRA_GLOBS_DIR" ] && [ -d "$KIRA_GLOBS_DIR" ] ; then
+        echo "${KIRA_GLOBS_DIR}/$FILE_NAME"
     else
-        local TARGET_DIR="$KIRA_GLOBS_DIR" 
-        ($(isNullOrEmpty "$TARGET_DIR")) && TARGET_DIR="/var/kiraglob"
-        echo "${TARGET_DIR}/$(globName $1)"
+        echo "/var/kiraglob/$FILE_NAME"
     fi
     return 0
 }
 
 function globGet() {
-    local FILE=$(globFile "$1" "$2")
-    [[ -s "$FILE" ]] && cat $FILE || echo ""
+    local FILE_NAME=$(echo "$1" | tr '[:upper:]' '[:lower:]' | tr -cd '[:alnum:]')
+    if [ ! -z "$2" ] && [ -d "$2" ] ; then
+        FILE_NAME="${2}/$FILE_NAME"
+    elif [ ! -z "$KIRA_GLOBS_DIR" ] && [ -d "$KIRA_GLOBS_DIR" ] ; then
+        FILE_NAME="${KIRA_GLOBS_DIR}/$FILE_NAME"
+    else
+        FILE_NAME="/var/kiraglob/$FILE_NAME"
+    fi
+    [[ -s "$FILE_NAME" ]] && cat $FILE_NAME || echo ""
     return 0
 }
 
@@ -1107,10 +1124,17 @@ function globGetTS() {
 }
 
 function globSet() {
-    [ ! -z "$3" ] && local FILE=$(globFile "$1" "$3") || local FILE=$(globFile "$1")
-    touch "$FILE.tmp"
-    [ ! -z ${2+x} ] && echo "$2" > "$FILE.tmp" || cat > "$FILE.tmp"
-    mv -f "$FILE.tmp" $FILE
+    local FILE_NAME=$(echo "$1" | tr '[:upper:]' '[:lower:]' | tr -cd '[:alnum:]')
+    if [ ! -z "$3" ] && [ -d "$3" ] ; then
+        FILE_NAME="${3}/$FILE_NAME"
+    elif [ ! -z "$KIRA_GLOBS_DIR" ] && [ -d "$KIRA_GLOBS_DIR" ] ; then
+        FILE_NAME="${KIRA_GLOBS_DIR}/$FILE_NAME"
+    else
+        FILE_NAME="/var/kiraglob/$FILE_NAME"
+    fi
+
+    [ ! -z ${2+x} ] && echo "$2" > "$FILE_NAME.tmp" || cat > "$FILE_NAME.tmp"
+    mv -f "$FILE_NAME.tmp" $FILE_NAME
 }
 
 # threadsafe global set
@@ -1397,6 +1421,99 @@ displayAlign() {
 # e.g.: echoNC "bli;whi;bla;d;b;false" "test text"
 # e.g.: echoNC "bli;whi;bla;d;b;false" "test text"
 # echoC "sto;blu" "|---------$(echoC "res;gre" "lol")---------|"
+# function echoNC() {
+#     local IFS=";"
+#     local arr=($1)
+#     local font="${arr[0]}"
+#     local fgrnd="${arr[1]}"
+#     local bgrnd="${arr[2]}"
+#     local fint="${arr[3]}"
+#     local bint="${arr[4]}"
+#     local persistent="${arr[5]}"
+#     local store="${arr[6]}"
+#     local text="$2"
+# 
+#     ([ -z "$persistent" ] || [ "$persistent" == "false" ] || [ "$persistent" == "0" ]) && persistent="false"
+#     ([ "$persistent" == "true" ] || [ "$persistent" == "1" ] || [ "$persistent" == "per" ] || [ "$persistent" == "p" ]) && persistent="true"
+# 
+#     ([ -z "$store" ] || [ "$store" == "false" ] || [ "$store" == "0" ]) && store="false"
+#     ([ "$store" == "store" ] || [ "$store" == "sto" ] || [ "$store" == "s" ]) && store="store"
+#     ([ "$store" == "restore" ] || [ "$store" == "res" ] || [ "$store" == "r" ]) && store="restore"
+#     ([ "$store" == "clear" ] || [ "$store" == "cle" ] || [ "$store" == "c" ]) && store="clear"
+# 
+#     ([ -z "$font" ] || [ "$font" == "nor" ] || [ "$font" == "nul" ] || [ "$font" == "true" ]) && font=0
+#     [ "$font" == "bol" ] && font=1
+#     [ "$font" == "dim" ] && font=2
+#     [ "$font" == "ita" ] && font=3
+#     [ "$font" == "und" ] && font=4
+#     [ "$font" == "bli" ] && font=5
+#     [ "$font" == "inv" ] && font=7
+#     ( [ "$font" == "str" ] || [ "$font" == "false" ] ) && font=9
+#     [ "$font" == "per" ] && persistent="true" && font=0
+#     [ "$font" == "sto" ] && store="store" && font=0
+#     [ "$font" == "res" ] && store="restore" && font=0
+#     [ "$font" == "cle" ] && store="clear" && font=0
+#     
+#     ([ "$fgrnd" == "bla" ] || [ "$fgrnd" == "false" ])&& fgrnd=30
+#     [ "$fgrnd" == "red" ] && fgrnd=31
+#     [ "$fgrnd" == "gre" ] && fgrnd=32
+#     [ "$fgrnd" == "yel" ] && fgrnd=33
+#     [ "$fgrnd" == "blu" ] && fgrnd=34
+#     [ "$fgrnd" == "mag" ] && fgrnd=35
+#     [ "$fgrnd" == "cya" ] && fgrnd=36
+#     ([ -z "$fgrnd" ] || [ "$fgrnd" == "whi" ] || [ "$fgrnd" == "true" ]) && fgrnd=37
+# 
+#     ([ -z "$bgrnd" ] || [ "$bgrnd" == "bla" ] || [ "$fgrnd" == "true" ]) && bgrnd=40
+#     [ "$bgrnd" == "red" ] && bgrnd=41
+#     [ "$bgrnd" == "gre" ] && bgrnd=42
+#     [ "$bgrnd" == "yel" ] && bgrnd=43
+#     [ "$bgrnd" == "blu" ] && bgrnd=44
+#     [ "$bgrnd" == "mag" ] && bgrnd=45
+#     [ "$bgrnd" == "cya" ] && bgrnd=46
+#     ([ "$bgrnd" == "whi" ] || [ "$fgrnd" == "false" ]) && bgrnd=47
+# 
+#     if [[ $fgrnd -ge 90 ]] ; then
+#         ([ "$fint" == "dar" ] || [ "$fint" == "d" ] || [ "$fint" == "0" ] || [ "$fint" == "false" ]) && \
+#         fgrnd=$((fgrnd - 60))
+#     fi
+# 
+#     ( [ -z "$fint" ] || [ "$fint" == "bri" ] || [ "$fint" == "b" ] || [ "$fint" == "1" ] || [ "$fint" == "true" ]) && \
+#         fgrnd=$((fgrnd + 60))
+# 
+#     ( [ "$bint" == "bri" ] || [ "$bint" == "b" ] || [ "$bint" == "1" ] || [ "$bint" == "true" ]) && \
+#         bgrnd=$((bgrnd + 60))
+# 
+#     if [[ $bgrnd -ge 100 ]] ; then
+#         ([ "$bint" == "dar" ] || [ "$bint" == "d" ] || [ "$bint" == "0" ] || [ "$bint" == "false" ]) && \
+#         bgrnd=$((bgrnd - 60))
+#     fi
+# 
+#     local new_config="${font};${fgrnd};${bgrnd}m"
+# 
+#     if [ "$persistent" == "true" ] ; then
+#         echo -en "\e[0m\e[${new_config}${text}"
+#     else
+#         echo -en "\e[0m\e[${new_config}${text}\e[0m"
+#     fi
+# 
+#     if [ "$store" == "store" ] ; then
+#         globSet "kg_echoNC_" "$new_config"
+#     elif [ "$store" == "restore" ] ; then
+#         local old_config="$(globGet "kg_echoNC_")"
+#         [ ! -z "$old_config" ] && echo -en "\e[0m\e[${old_config}" || tput sgr0
+#     elif [ "$store" == "clear" ] ; then
+#         tput sgr0
+#     fi
+# }
+
+# print with colours, to restore default use 'tput reset' or 'tput sgr0'
+# recognisable color types: [bla]ck, [red], [gre]en, [yel]low, [blu], [mag]enta, [cya]n
+# recognisable font types: [bol]d, [dim], [ita]lic, [und]er, [bli]nk, [inv]erse, [str]ike, [per]sustent, [sto]re, [res]tore, [cle]ar
+# recognisable intensities: [bri]gth (true/1), [dar]k (false/0)
+# e.g.: echoNC "<font>;<foreground>;<bacground>;<fr-intensity>;<bg-intensity>;<persistent>;<store/restore>" "test text"
+# e.g.: echoNC "bli;whi;bla;d;b;false" "test text"
+# echoC "sto;blu" "|---------$(echoC "res;gre" "lol")---------|"
+# echoC "sto;whi" "|$(echoC "res;bla" "$(strRepeat - 78)")|"
 function echoNC() {
     local IFS=";"
     local arr=($1)
@@ -1409,61 +1526,111 @@ function echoNC() {
     local store="${arr[6]}"
     local text="$2"
 
-    ([ -z "$persistent" ] || [ "$persistent" == "false" ] || [ "$persistent" == "0" ]) && persistent="false"
-    ([ "$persistent" == "true" ] || [ "$persistent" == "1" ] || [ "$persistent" == "per" ] || [ "$persistent" == "p" ]) && persistent="true"
+    case $persistent in
+    "") persistent="false" ;;
+    "0") persistent="false" ;;
+    esac
 
-    ([ -z "$store" ] || [ "$store" == "false" ] || [ "$store" == "0" ]) && store="false"
-    ([ "$store" == "store" ] || [ "$store" == "sto" ] || [ "$store" == "s" ]) && store="store"
-    ([ "$store" == "restore" ] || [ "$store" == "res" ] || [ "$store" == "r" ]) && store="restore"
-    ([ "$store" == "clear" ] || [ "$store" == "cle" ] || [ "$store" == "c" ]) && store="clear"
+    case $persistent in
+    "") persistent="false" ;;
+    "0") persistent="false" ;;
+    "1") persistent="true" ;;
+    "per") persistent="true" ;;
+    "p") persistent="true" ;;
+    esac
 
-    ([ -z "$font" ] || [ "$font" == "nor" ] || [ "$font" == "nul" ] || [ "$font" == "true" ]) && font=0
-    [ "$font" == "bol" ] && font=1
-    [ "$font" == "dim" ] && font=2
-    [ "$font" == "ita" ] && font=3
-    [ "$font" == "und" ] && font=4
-    [ "$font" == "bli" ] && font=5
-    [ "$font" == "inv" ] && font=7
-    ( [ "$font" == "str" ] || [ "$font" == "false" ] ) && font=9
-    [ "$font" == "per" ] && persistent="true" && font=0
-    [ "$font" == "sto" ] && store="store" && font=0
-    [ "$font" == "res" ] && store="restore" && font=0
-    [ "$font" == "cle" ] && store="clear" && font=0
-    
-    ([ "$fgrnd" == "bla" ] || [ "$fgrnd" == "false" ])&& fgrnd=30
-    [ "$fgrnd" == "red" ] && fgrnd=31
-    [ "$fgrnd" == "gre" ] && fgrnd=32
-    [ "$fgrnd" == "yel" ] && fgrnd=33
-    [ "$fgrnd" == "blu" ] && fgrnd=34
-    [ "$fgrnd" == "mag" ] && fgrnd=35
-    [ "$fgrnd" == "cya" ] && fgrnd=36
-    ([ -z "$fgrnd" ] || [ "$fgrnd" == "whi" ] || [ "$fgrnd" == "true" ]) && fgrnd=37
+    case $store in
+    "") store="false" ;;
+    "0") store="false" ;;
+    "s") store="store" ;;
+    "sto") store="store" ;;
+    "r") store="restore" ;;
+    "res") store="restore" ;;
+    "c") store="clear" ;;
+    "cle") store="clear" ;;
+    esac
 
-    ([ -z "$bgrnd" ] || [ "$bgrnd" == "bla" ] || [ "$fgrnd" == "true" ]) && bgrnd=40
-    [ "$bgrnd" == "red" ] && bgrnd=41
-    [ "$bgrnd" == "gre" ] && bgrnd=42
-    [ "$bgrnd" == "yel" ] && bgrnd=43
-    [ "$bgrnd" == "blu" ] && bgrnd=44
-    [ "$bgrnd" == "mag" ] && bgrnd=45
-    [ "$bgrnd" == "cya" ] && bgrnd=46
-    ([ "$bgrnd" == "whi" ] || [ "$fgrnd" == "false" ]) && bgrnd=47
+   case $font in
+    "") font=0 ;;
+    "nor") font=0 ;;
+    "nul") font=0 ;;
+    "true") font=0 ;;
+    "bol") font=1 ;;
+    "dim") font=2 ;;
+    "ita") font=3 ;;
+    "und") font=4 ;;
+    "bli") font=5 ;;
+    "inv") font=7 ;;
+    "str") font=9 ;;
+    "false") font=9 ;;
+    "per") persistent="true" ; font=0  ;;
+    "sto") store="store"     ; font=0  ;;
+    "res") store="restore"   ; font=0  ;;
+    "cle") store="clear"     ; font=0  ;;
+    esac
+
+    case $fgrnd in
+    "bla") fgrnd=30 ;;
+    "false") fgrnd=30 ;;
+    "red") fgrnd=31 ;;
+    "gre") fgrnd=32 ;;
+    "yel") fgrnd=33 ;;
+    "blu") fgrnd=34 ;;
+    "mag") fgrnd=35 ;;
+    "cya") fgrnd=36 ;;
+    "") fgrnd=37 ;;
+    "whi") fgrnd=37 ;;
+    "true") fgrnd=37 ;;
+    esac
+
+    case $bgrnd in
+    "") bgrnd=40 ;;
+    "bla") bgrnd=40 ;;
+    "true") bgrnd=40 ;;
+    "red") bgrnd=41 ;;
+    "gre") bgrnd=42 ;;
+    "yel") bgrnd=43 ;;
+    "blu") bgrnd=44 ;;
+    "mag") bgrnd=45 ;;
+    "cya") bgrnd=46 ;;
+    "whi") bgrnd=47 ;;
+    "false") bgrnd=47 ;;
+    esac
 
     if [[ $fgrnd -ge 90 ]] ; then
-        ([ "$fint" == "dar" ] || [ "$fint" == "d" ] || [ "$fint" == "0" ] || [ "$fint" == "false" ]) && \
-        fgrnd=$((fgrnd - 60))
+        case $fint in
+        "dar") fgrnd=$((fgrnd - 60)) ;;
+        "d") fgrnd=$((fgrnd - 60)) ;;
+        "0") fgrnd=$((fgrnd - 60)) ;;
+        "false") fgrnd=$((fgrnd - 60)) ;;
+        esac
     fi
 
-    ( [ -z "$fint" ] || [ "$fint" == "bri" ] || [ "$fint" == "b" ] || [ "$fint" == "1" ] || [ "$fint" == "true" ]) && \
-        fgrnd=$((fgrnd + 60))
+    case $fint in
+    "") fgrnd=$((fgrnd + 60)) ;;
+    "bri") fgrnd=$((fgrnd + 60)) ;;
+    "b") fgrnd=$((fgrnd + 60)) ;;
+    "1") fgrnd=$((fgrnd + 60)) ;;
+    "true") fgrnd=$((fgrnd + 60)) ;;
+    esac
 
-    ( [ "$bint" == "bri" ] || [ "$bint" == "b" ] || [ "$bint" == "1" ] || [ "$bint" == "true" ]) && \
-        bgrnd=$((bgrnd + 60))
+    case $bint in
+    "bri") bgrnd=$((bgrnd + 60)) ;;
+    "b") bgrnd=$((bgrnd + 60)) ;;
+    "1") bgrnd=$((bgrnd + 60)) ;;
+    "true") bgrnd=$((bgrnd + 60)) ;;
+    esac
 
     if [[ $bgrnd -ge 100 ]] ; then
-        ([ "$bint" == "dar" ] || [ "$bint" == "d" ] || [ "$bint" == "0" ] || [ "$bint" == "false" ]) && \
-        bgrnd=$((bgrnd - 60))
+        case $bint in
+        "dar") bgrnd=$((bgrnd - 60));;
+        "d") bgrnd=$((bgrnd - 60));;
+        "0") bgrnd=$((bgrnd - 60));;
+        "false") bgrnd=$((bgrnd - 60));;
+        esac
     fi
 
+    local CFG_FILE="/tmp/echoNC.tmp"
     local new_config="${font};${fgrnd};${bgrnd}m"
 
     if [ "$persistent" == "true" ] ; then
@@ -1473,14 +1640,17 @@ function echoNC() {
     fi
 
     if [ "$store" == "store" ] ; then
-        globSet "kg_echoNC_" "$new_config"
+        touch $CFG_FILE
+        echo "$new_config" > $CFG_FILE
     elif [ "$store" == "restore" ] ; then
-        local old_config="$(globGet "kg_echoNC_")"
+        touch $CFG_FILE
+        old_config=$(cat "$CFG_FILE")
         [ ! -z "$old_config" ] && echo -en "\e[0m\e[${old_config}" || tput sgr0
     elif [ "$store" == "clear" ] ; then
         tput sgr0
     fi
 }
+
 function echoC() {
     echo "$(echoNC "$1" "${2}")"
 }
