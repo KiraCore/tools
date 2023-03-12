@@ -131,7 +131,7 @@ function toCapital() {
 function isNullOrEmpty() {
     local val=$(echo "$1" | tr '[:upper:]' '[:lower:]' )
     if [ -z "$val" ] ; then
-        echo "false" 
+        echo "true" 
     else
         case $val in
             "null") echo "true" ;;
