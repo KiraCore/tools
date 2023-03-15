@@ -213,6 +213,7 @@ func ValKeyGen(mnemonic, defaultPrefix, defaultPath, valkey, nodekey, keyid stri
 
 			if len(valkey) != 0 {
 				filepvkey.Save()
+
 			}
 			if len(nodekey) != 0 {
 				err = filenodekey.SaveAs(nodekey)

@@ -30,4 +30,8 @@ cd ./ipfs-api
 make test 
 cd $WORKDIR
 
+# Test validator key generator
+cd ./validator-key-gen
+make test
+cd $WORKDIR
 echoInfo "SUCCESS: Testing finished"

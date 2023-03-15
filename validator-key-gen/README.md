@@ -32,11 +32,52 @@ validator-key-gen --version
 
 ### How to use
 
+Two blocks of output:
+
+#### -accadr
+#### -valadr
+#### -consadr
+Sequence doesn't matter. Sends to statndard output generated address evaluated from given mnemonic
+
+#### -valkey
+#### -nodekey
+#### -keyid
+Sequence donesn't matter. Creates files with given paths and names, containg data needed for running validator node.
+
+### Uage: 
+```bash
+Usage: validator-key-gen --mnemonic="over where ..." [OPTIONS]
+
+Options:
+  -accadr
+        boolean, if true - output account address
+  -consadr
+        boolean, if true - output consensus address
+  -keyid string
+        path, where NodeID file will be placed
+  -mnemonic string
+        Valid BIP39 mnemonic(required)
+  -nodekey string
+        path, where node key json file will be placed
+  -path string
+        set derive path (default "44'/118'/0'/0/0")
+  -prefix string
+        set prefix (default "kira")
+  -valadr
+        boolean, if true - output validator address
+  -valkey string
+        path, where validator key json file will be placed
+```
+
 ```bash
 validator-key-gen --mnemonic="mnemonic here" --valkey="private validator key path here" --nodekey="node key path here" --keyid="node id path here"
 ```
 
-E.g.
+
+```bash
+validator-key-gen --mnemonic="swap exercise equip shoot mad inside floor wheel loan visual stereo build frozen always bulb naive subway foster marine erosion shuffle flee action there" --valkey=./priv_validator_key.json --nodekey=./node_key.json --keyid=./node_id.key
+```
+
 ```bash
 validator-key-gen --mnemonic="swap exercise equip shoot mad inside floor wheel loan visual stereo build frozen always bulb naive subway foster marine erosion shuffle flee action there" --valkey=./priv_validator_key.json --nodekey=./node_key.json --keyid=./node_id.key
 ```
