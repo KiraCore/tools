@@ -11,4 +11,4 @@ publish:
 	./scripts/publish.sh
 
 test:
-	. ./scripts/test.sh && test
+	. ./scripts/test.sh
