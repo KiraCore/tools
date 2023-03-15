@@ -34,4 +34,5 @@ cd $WORKDIR
 cd ./validator-key-gen
 make test
 cd $WORKDIR
+
 echoInfo "SUCCESS: Testing finished"

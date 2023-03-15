@@ -1,12 +1,15 @@
-#!/usr/bin/env bash
+#!/usr/bin/sh
 
 mnemonic='"over where supreme taste warrior morning perfect memory glove stereo taste trip sheriff fringe weather finger segment under arrange gain warrior olympic urge vacant"'
 
 
 # Testing address generation with predetermined mnemonic against hard coded results
-declare -a Output=("kira103luqf09g5juctmvrmgnw5gmn2mhpelqhcsy84" "kiravaloper103luqf09g5juctmvrmgnw5gmn2mhpelqy7v8le" "kiravalcons103luqf09g5juctmvrmgnw5gmn2mhpelqsdlmnc")
-declare -a AdrType=("Account address" "Validator address" "Consensus address")
-declare -a Input=("go run . --mnemonic=${mnemonic} --accadr" "go run . --mnemonic=${mnemonic} --valadr" "go run . --mnemonic=${mnemonic} --consadr")
+Output=("kira103luqf09g5juctmvrmgnw5gmn2mhpelqhcsy84" "kiravaloper103luqf09g5juctmvrmgnw5gmn2mhpelqy7v8le" "kiravalcons103luqf09g5juctmvrmgnw5gmn2mhpelqsdlmnc")
+
+AdrType=("Account address" "Validator address" "Consensus address")
+
+Input=("go run . --mnemonic=${mnemonic} --accadr" "go run . --mnemonic=${mnemonic} --valadr" "go run . --mnemonic=${mnemonic} --consadr")
+
 
 testadr(){
     echo "Testing address formation:"
@@ -28,9 +31,9 @@ testadr(){
 
 
 # Checking md5 checksum of created files against hard coded results
-declare -a md5=("8a100779d27e5ae2098498674df32f8b" "d14df3851190d360953989e296db3cf3" "7ab595fe3d53672ac918a351bcaa10b5")
-declare -a files=("./valkey" "./nodekey" "./keyid")
-declare -a cmd=("go run . --mnemonic=${mnemonic} --valkey=${files[0]}" "go run . --mnemonic=${mnemonic} --nodekey=${files[1]}" "go run . --mnemonic=${mnemonic} --keyid=${files[2]}")
+md5=("8a100779d27e5ae2098498674df32f8b" "d14df3851190d360953989e296db3cf3" "7ab595fe3d53672ac918a351bcaa10b5")
+files=("./valkey" "./nodekey" "./keyid")
+cmd=("go run . --mnemonic=${mnemonic} --valkey=${files[0]}" "go run . --mnemonic=${mnemonic} --nodekey=${files[1]}" "go run . --mnemonic=${mnemonic} --keyid=${files[2]}")
 
 testmd5(){
     echo "Checking files md5 checksum:"
