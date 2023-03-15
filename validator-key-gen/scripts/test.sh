@@ -1,12 +1,12 @@
-#!/usr/bin/sh
+#!/usr/bin/bash
 echo "SHELL: $0"
-echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-/usr/bin/env
+echo $($SHELL --version)
+
 
 mnemonic="\"over where supreme taste warrior morning perfect memory glove stereo taste trip sheriff fringe weather finger segment under arrange gain warrior olympic urge vacant\""
-Output=( "kira103luqf09g5juctmvrmgnw5gmn2mhpelqhcsy84" "kiravaloper103luqf09g5juctmvrmgnw5gmn2mhpelqy7v8le" "kiravalcons103luqf09g5juctmvrmgnw5gmn2mhpelqsdlmnc" )
-AdrType=( "Account address" "Validator address" "Consensus address" )
-Input=( "go run . --mnemonic=${mnemonic} --accadr" "go run . --mnemonic=${mnemonic} --valadr" "go run . --mnemonic=${mnemonic} --consadr" )
+Output=("kira103luqf09g5juctmvrmgnw5gmn2mhpelqhcsy84" "kiravaloper103luqf09g5juctmvrmgnw5gmn2mhpelqy7v8le" "kiravalcons103luqf09g5juctmvrmgnw5gmn2mhpelqsdlmnc")
+AdrType=("Account address" "Validator address" "Consensus address")
+Input=("go run . --mnemonic=${mnemonic} --accadr" "go run . --mnemonic=${mnemonic} --valadr" "go run . --mnemonic=${mnemonic} --consadr")
 testadr(){
     echo "Testing address formation:"
     for i in $(seq 0 $((${#Input[@]} - 1))); do
