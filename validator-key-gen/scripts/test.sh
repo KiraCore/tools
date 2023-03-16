@@ -1,38 +1,57 @@
 #!/usr/bin/bash
-mnemonic="\"over where supreme taste warrior morning perfect memory glove stereo taste trip sheriff fringe weather finger segment under arrange gain warrior olympic urge vacant\""
-Output=("kira103luqf09g5juctmvrmgnw5gmn2mhpelqhcsy84" "kiravaloper103luqf09g5juctmvrmgnw5gmn2mhpelqy7v8le" "kiravalcons103luqf09g5juctmvrmgnw5gmn2mhpelqsdlmnc")
-AdrType=("Account address" "Validator address" "Consensus address")
-Input=("go run . --mnemonic=${mnemonic} --accadr" "go run . --mnemonic=${mnemonic} --valadr" "go run . --mnemonic=${mnemonic} --consadr")
+MNEMONIC="\"over where supreme taste warrior morning perfect memory glove stereo taste trip sheriff fringe weather finger segment under arrange gain warrior olympic urge vacant\""
+
+OUTPUT[0]="\"kira103luqf09g5juctmvrmgnw5gmn2mhpelqhcsy84\"" 
+OUTPUT[1]="\"kiravaloper103luqf09g5juctmvrmgnw5gmn2mhpelqy7v8le\"" 
+OUTPUT[2]="\"kiravalcons103luqf09g5juctmvrmgnw5gmn2mhpelqsdlmnc\""
+
+ADRTYPE[0]="Account address" 
+ADRTYPE[1]="Validator address" 
+ADRTYPE[2]="Consensus address"
+
+INPUT[0]="go run . --mnemonic=${MNEMONIC} --accadr" 
+INPUT[1]="go run . --mnemonic=${MNEMONIC} --valadr" 
+INPUT[2]="go run . --mnemonic=${MNEMONIC} --consadr"
+
 testadr(){
     echo "Testing address formation:"
-    for i in $(seq 0 $((${#Input[@]} - 1))); do
-        in=$(eval "${Input[$i]}")
-        out="${Output[$i]}"
-        adr="${AdrType[$i]}"
+    for i in $(seq 0 $((${#INPUT[@]} - 1))); do
+        IN=$(eval "${INPUT[$i]}")
+        OUT="${OUTPUT[$i]}"
+        ADR="${ADRTYPE[$i]}"
         
         if [ "$in" = "$out" ]; then
-                echo "[PASSED]: $adr"
+                echo "[PASSED]: $ADR"
             else
-                echo "[FAILED]: malformed $adr. Want $out, got $in"
+                echo "[FAILED]: malformed $ADR. Want $OUT, got $In"
                 return 1
         fi
     done
     return 0
 }
-md5=( "8a100779d27e5ae2098498674df32f8b" "d14df3851190d360953989e296db3cf3" "7ab595fe3d53672ac918a351bcaa10b5" )
-files=( "./valkey" "./nodekey" "./keyid" )
-cmd=( "go run . --mnemonic=${mnemonic} --valkey=${files[0]}" "go run . --mnemonic=${mnemonic} --nodekey=${files[1]}" "go run . --mnemonic=${mnemonic} --keyid=${files[2]}" )
-testmd5(){
-    echo "Checking files md5 checksum:"
-    for i in $(seq 0 $((${#cmd[@]} - 1))); do
-        eval "${cmd[$i]}"
-        in=$(md5sum ${files[$i]} | awk '{print $1}')
-        out="${md5[$i]}"
+MD5[0]="\"8a100779d27e5ae2098498674df32f8b\"" 
+MD5[1]="\"d14df3851190d360953989e296db3cf3\"" 
+MD5[2]="\"7ab595fe3d53672ac918a351bcaa10b5\""
+
+FILES[0]="./valkey" 
+FILES[1]="./nodekey" 
+FILES[2]="./keyid"
+
+CMD[0]="go run . --mnemonic=${MNEMONIC} --valkey=${FILES[0]}" 
+CMD[1]="go run . --mnemonic=${MNEMONIC} --nodekey=${FILES[1]}"
+CMD[2]="go run . --mnemonic=${MNEMONIC} --keyid=${FILES[2]}"
+
+testMD5(){
+    echo "Checking FILES MD5 checksum:"
+    for i in $(seq 0 $((${#CMD[@]} - 1))); do
+        eval "${CMD[$i]}"
+        IN=$(md5sum ${FILES[$i]} | awk '{print $1}')
+        OUT="${MD5[$i]}"
 
         if [ "$in" = "$out" ]; then
-            echo "[PASSED]: File ${files[$i]} $in"
+            echo "[PASSED]: File ${FILES[$i]} $IN"
         else
-            echo "[FAILED]: File ${files[$i]} wrong MD5. Want $out, got $in"
+            echo "[FAILED]: File ${FILES[$i]} wrong md5 checksum. Want $OUT, got $IN"
             return 1
                 
         fi
@@ -41,21 +60,25 @@ testmd5(){
 }
 clean(){
     echo "Deleting files:"
-    for f in ${files[@]}; do 
+    for f in ${FILES[@]}; do 
         rm "$f" ||  (echo "Failed to delete: $f" &&  return 1)
         echo "File $f deleted"
     done
     return 0
 }
-tests=(testadr testmd5 clean)
+
+TESTS[0]="testadr" 
+TESTS[1]="testMD5" 
+TESTS[2]="clean"
+
 test() {
-    errs=()
-    for test in "${tests[@]}"; do
+    ERRRS=""
+    for test in "${TESTS[@]}"; do
         if ! $test; then
-            errs+=("failed")
+            ERRS[${#ERRS[@]}]+="failed"
         fi
     done
-    if [[ ${#errs[@]} -gt 0 ]]; then
+    if [[ ${#ERRS[@]} -gt 0 ]]; then
         exit 1
     fi
 }
