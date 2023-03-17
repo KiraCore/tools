@@ -124,7 +124,7 @@ bip39gen mnemonic --hex=true --raw-entropy="0xacb5e5e6e31f4a122723da97e1404c28b3
 ```
 
 ```bash
-bip39gen mnemonic --hex=true --raw-entropy="0b10101100101101...."
+bip39gen mnemonic --raw-entropy="0b10101100101101...."
 ```
 
 Use a specific cipher to generate mnemonics:
