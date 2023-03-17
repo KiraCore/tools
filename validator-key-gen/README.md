@@ -1,12 +1,6 @@
 # Private Validator Key Generator
 
-### Local Build
-
-```bash
-go build
-make install
-ln -s ./validator-key-gen /bin/validator-key-gen
-```
+Validator Key Generator is a CLI tool that generates validator keys, node keys, and NodeID files for the Cosmos SDK. The tool uses a BIP39 mnemonic to derive the keys and allows users to set custom Bech32 prefixes and BIP44 paths.
 
 ### Setup from binary file
 
@@ -29,55 +23,57 @@ safeWget ./validator-key-gen.deb \
 # Check validator-key-gen version
 validator-key-gen --version
 ```
+### Installation
 
-### How to use
-
-Two blocks of output:
-
-#### -accadr
-#### -valadr
-#### -consadr
-Sequence doesn't matter. Sends to statndard output generated address evaluated from given mnemonic
-
-#### -valkey
-#### -nodekey
-#### -keyid
-Sequence donesn't matter. Creates files with given paths and names, containg data needed for running validator node.
-
-### Uage: 
-```bash
-Usage: validator-key-gen --mnemonic="over where ..." [OPTIONS]
-
-Options:
-  -accadr
-        boolean, if true - output account address
-  -consadr
-        boolean, if true - output consensus address
-  -keyid string
-        path, where NodeID file will be placed
-  -mnemonic string
-        Valid BIP39 mnemonic(required)
-  -nodekey string
-        path, where node key json file will be placed
-  -path string
-        set derive path (default "44'/118'/0'/0/0")
-  -prefix string
-        set prefix (default "kira")
-  -valadr
-        boolean, if true - output validator address
-  -valkey string
-        path, where validator key json file will be placed
-```
+To install the Validator Key Generator, clone the repository and run make install:
 
 ```bash
-validator-key-gen --mnemonic="mnemonic here" --valkey="private validator key path here" --nodekey="node key path here" --keyid="node id path here"
+git clone https://github.com/yourusername/validator-key-gen.git
+cd validator-key-gen
+make install
 ```
+### Usage
 
+The Validator Key Generator can be used with the following command-line options:
 
 ```bash
-validator-key-gen --mnemonic="swap exercise equip shoot mad inside floor wheel loan visual stereo build frozen always bulb naive subway foster marine erosion shuffle flee action there" --valkey=./priv_validator_key.json --nodekey=./node_key.json --keyid=./node_id.key
+validator-key-gen --mnemonic="your mnemonic phrase" [OPTIONS]
 ```
 
+### Options
+
+- -mnemonic:      A valid BIP39 mnemonic (required)
+- -valkey:        Path to save the validator key JSON file
+- -nodekey:       Path to save the node key JSON file
+- -keyid:         Path to save the NodeID file
+- -accadr:        If true, output the account address
+- -valadr:        If true, output the validator address
+- -consadr:       If true, output the consensus address
+- -prefix:        Set the Bech32 prefix (default: "kira")
+- -path:          Set the BIP44 derivation path (default: "44'/118'/0'/0/0")
+
+### Examples
+
+1. Generate validator, node keys, and NodeID files:
+
 ```bash
-validator-key-gen --mnemonic="swap exercise equip shoot mad inside floor wheel loan visual stereo build frozen always bulb naive subway foster marine erosion shuffle flee action there" --valkey=./priv_validator_key.json --nodekey=./node_key.json --keyid=./node_id.key
+validator-key-gen --mnemonic="your mnemonic phrase" --valkey="validator_key.json" --nodekey="node_key.json" --keyid="node_id.txt"
 ```
+
+2. Output the account, validator, and consensus addresses:
+
+```bash
+validator-key-gen --mnemonic="your mnemonic phrase" --accadr --valadr --consadr
+```
+
+3. Customize the Bech32 prefix and BIP44 derivation path:
+
+```bash
+validator-key-gen --mnemonic="your mnemonic phrase" --prefix="custom_prefix" --path="44'/12345'/0'/0/0"
+```
+
+### Contributing
+If you would like to contribute to this project, please submit bug reports, feature requests, and pull requests on the repository.
+
+### License
+This project is licensed under the Apache License.
