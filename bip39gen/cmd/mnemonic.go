@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strings"
 
 	"github.com/kiracore/tools/bip39gen/pkg/bip39"
 	"github.com/spf13/cobra"
@@ -20,6 +21,7 @@ var (
 	colors              = bip39.NewColors()
 )
 
+// validateLengthFlagInput checks if the provided length is valid.
 func validateLengthFlagInput(length int) error {
 	if length <= 0 || length%3 != 0 || length > 768 {
 		return errWordLength
@@ -27,6 +29,7 @@ func validateLengthFlagInput(length int) error {
 	return nil
 }
 
+// validateEntropyFlagInput checks if the provided entropy string is valid.
 func validateEntropyFlagInput(str string) error {
 	if len(str) > 0 {
 		match, _ := regexp.MatchString("^[0-1]{1,}$", str)
@@ -37,6 +40,7 @@ func validateEntropyFlagInput(str string) error {
 	return nil
 }
 
+// validateHexEntropyFlagInput checks if the provided hex entropy string is valid.
 func validateHexEntropyFlagInput(str string) error {
 	if len(str) > 0 {
 		match, _ := regexp.MatchString("(?:0[xX])?[0-9a-fA-F]+", str)
@@ -47,15 +51,33 @@ func validateHexEntropyFlagInput(str string) error {
 
 	return nil
 }
+
+// Check if string contain hex or binary prefix and return string without it
+func checkInputPrefix(str string) string {
+	if len(str) > 2 {
+		switch str[0:2] {
+		case "0x":
+			return strings.TrimSpace(str[2:])
+		case "0b":
+			return strings.TrimSpace(str[2:])
+		}
+	}
+	return str
+}
+
+// cmdMnemonicPreRun validates the provided flags and sets the required variables.
 func cmdMnemonicPreRun(cmd *cobra.Command, args []string) error {
+
+	userEntropy = checkInputPrefix(userEntropy)
+	rawEntropy = checkInputPrefix(rawEntropy)
+
+	input := []string{userEntropy, rawEntropy}
 
 	if err := validateLengthFlagInput(words); err != nil {
 		return err
 	}
 
 	if (len(userEntropy) > 0 || len(rawEntropy) > 0) && len(cipher) == 0 {
-
-		input := []string{userEntropy, rawEntropy}
 
 		for _, i := range input {
 			switch hex {
@@ -65,7 +87,6 @@ func cmdMnemonicPreRun(cmd *cobra.Command, args []string) error {
 				}
 
 			case false:
-				fmt.Println("Condition got to hex false check. Binary input should be allowed only")
 				if err := validateEntropyFlagInput(i); err != nil {
 					return err
 				}
@@ -139,13 +160,13 @@ func cmdMnemonicPreRun(cmd *cobra.Command, args []string) error {
 
 		case "padding":
 			hex = false
-			if err := validateEntropyFlagInput(userEntropy); err != nil {
+			if err := validateEntropyFlagInput(rawEntropy); err != nil {
 				return err
 			}
 			bits := (words / 3) * 32
-			bitsEnt := len(userEntropy)
+			bitsEnt := len(rawEntropy)
 			for i := bitsEnt; i <= bits; i++ {
-				userEntropy += "0"
+				rawEntropy += "0"
 			}
 			return nil
 		}
@@ -154,6 +175,7 @@ func cmdMnemonicPreRun(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+// cmdMnemonic generates a new mnemonic and prints it.
 func cmdMnemonic(cmd *cobra.Command, args []string) error {
 
 	mnemonic := NewMnemonic()
@@ -162,6 +184,7 @@ func cmdMnemonic(cmd *cobra.Command, args []string) error {
 
 }
 
+// NewMnemonic creates a new mnemonic based on the provided flags.
 func NewMnemonic() bip39.Mnemonic {
 	var m bip39.Mnemonic = bip39.Mnemonic{}
 

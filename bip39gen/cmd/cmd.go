@@ -13,10 +13,7 @@ var (
 	userEntropy string
 	rawEntropy  string
 	cipher      string
-
-	ImpUsrEnt *string = &userEntropy
-
-	hex bool
+	hex         bool
 )
 var rootCmd = &cobra.Command{
 	Use:   "bip39gen [sub]",
