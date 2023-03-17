@@ -144,13 +144,13 @@ func cmdMnemonicPreRun(cmd *cobra.Command, args []string) error {
 
 		case "padding":
 			hex = false
-			if err := validateEntropyFlagInput(userEntropy); err != nil {
+			if err := validateEntropyFlagInput(rawEntropy); err != nil {
 				return err
 			}
 			bits := (words / 3) * 32
-			bitsEnt := len(userEntropy)
+			bitsEnt := len(rawEntropy)
 			for i := bitsEnt; i <= bits; i++ {
-				userEntropy += "0"
+				rawEntropy += "0"
 			}
 			return nil
 		}
