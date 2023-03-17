@@ -73,8 +73,6 @@ func cmdMnemonicPreRun(cmd *cobra.Command, args []string) error {
 
 	input := []string{userEntropy, rawEntropy}
 
-	fmt.Printf("%+v", input)
-
 	if err := validateLengthFlagInput(words); err != nil {
 		return err
 	}
