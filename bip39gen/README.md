@@ -117,6 +117,15 @@ Generate a mnemonic using raw entropy:
 ```bash
 bip39gen mnemonic --raw-entropy "your_raw_entropy_here"
 ```
+Generate a mnemonic using user-provided or human entropy in format "0x.." or "0b..". If hex is provided the flag should be set explicitly: 
+
+```bash
+bip39gen mnemonic --hex=true --raw-entropy="0xacb5e5e6e31f4a122723da97e1404c28b331e643e9aa2dc4d3c1d1be50ce3264"
+```
+
+```bash
+bip39gen mnemonic --hex=true --raw-entropy="0b10101100101101...."
+```
 
 Use a specific cipher to generate mnemonics:
 
