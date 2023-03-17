@@ -17,7 +17,7 @@ import (
 	"github.com/tendermint/tendermint/privval"
 )
 
-const PrivValidatorKeyGenVersion = "v0.3.21"
+const PrivValidatorKeyGenVersion = "v0.3.24"
 
 type Prefix struct {
 	fullPath             *hd.BIP44Params
@@ -213,6 +213,7 @@ func ValKeyGen(mnemonic, defaultPrefix, defaultPath, valkey, nodekey, keyid stri
 
 			if len(valkey) != 0 {
 				filepvkey.Save()
+
 			}
 			if len(nodekey) != 0 {
 				err = filenodekey.SaveAs(nodekey)
