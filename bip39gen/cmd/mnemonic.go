@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strings"
 
 	"github.com/kiracore/tools/bip39gen/pkg/bip39"
 	"github.com/spf13/cobra"
@@ -51,16 +52,34 @@ func validateHexEntropyFlagInput(str string) error {
 	return nil
 }
 
+// Check if string contain hex or binary prefix and return string without it
+func checkInputPrefix(str string) string {
+	if len(str) > 2 {
+		switch str[0:2] {
+		case "0x":
+			return strings.TrimSpace(str[2:])
+		case "0b":
+			return strings.TrimSpace(str[2:])
+		}
+	}
+	return str
+}
+
 // cmdMnemonicPreRun validates the provided flags and sets the required variables.
 func cmdMnemonicPreRun(cmd *cobra.Command, args []string) error {
+
+	userEntropy = checkInputPrefix(userEntropy)
+	rawEntropy = checkInputPrefix(rawEntropy)
+
+	input := []string{userEntropy, rawEntropy}
+
+	fmt.Printf("%+v", input)
 
 	if err := validateLengthFlagInput(words); err != nil {
 		return err
 	}
 
 	if (len(userEntropy) > 0 || len(rawEntropy) > 0) && len(cipher) == 0 {
-
-		input := []string{userEntropy, rawEntropy}
 
 		for _, i := range input {
 			switch hex {
@@ -70,7 +89,6 @@ func cmdMnemonicPreRun(cmd *cobra.Command, args []string) error {
 				}
 
 			case false:
-				fmt.Println("Condition got to hex false check. Binary input should be allowed only")
 				if err := validateEntropyFlagInput(i); err != nil {
 					return err
 				}
