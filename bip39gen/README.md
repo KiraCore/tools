@@ -13,29 +13,37 @@ make install
 ```
 
 #### Quick-Install bash-utils or see root repository README file for secure download
+```bash
 FILE_NAME="bash-utils.sh" && \
  wget "https://github.com/KiraCore/tools/releases/download/$TOOLS_VERSION/${FILE_NAME}" -O ./$FILE_NAME && \
  chmod -v 555 ./$FILE_NAME && ./$FILE_NAME bashUtilsSetup "/var/kiraglob" && . /etc/profile && \
  echoInfo "INFO: Installed bash-utils $(bash-utils bashUtilsVersion)"
+```
 
 #### Install bip39gen for platform specific system & verify signature file
+```bash
 safeWget ./bip39gen.deb \
  "https://github.com/KiraCore/tools/releases/download/$TOOLS_VERSION/bip39gen-$(getPlatform)-$(getArch).deb" \
  "QmeqFDLGfwoWgCy2ZEFXerVC5XW8c5xgRyhK5bLArBr2ue" && rm -rfv ./bip39gen && \
  dpkg-deb -x ./bip39gen.deb ./bip39gen && cp -fv ./bip39gen/bin/bip39gen /usr/local/bin/bip39gen && \
  chmod +x "/usr/local/bin/bip39gen" && rm -rfv ./bip39gen ./bip39gen.deb
+```
 
 
 ### Usage
 
 To use the Bip39 Mnemonic Generator, execute the tool with the desired options and flags. The following commands and flags are available:
 
-#### Commands
+```bash
+bip39gen [COMMANDS] [OPTIONS]
+```
+
+### Commands
 
 - mnemonic: Generate mnemonic words
 - version: Check the current version of the tool
 
-#### Flags
+### Options
 - -length (-l):       Specify the number of mnemonic words to generate (default: 24)
 - -entropy (-e):      Provide entropy for mixing and generating new mnemonic sentences
 - -raw-entropy (-r):  Provide entropy to regenerate mnemonic sentences from
