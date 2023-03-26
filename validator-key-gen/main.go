@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -17,7 +18,7 @@ import (
 	"github.com/tendermint/tendermint/privval"
 )
 
-const PrivValidatorKeyGenVersion = "v0.3.24"
+const PrivValidatorKeyGenVersion = "v0.3.30"
 
 type Prefix struct {
 	fullPath             *hd.BIP44Params
@@ -131,19 +132,17 @@ func checkPath(path []string) (ok bool, err error) {
 		}
 	}
 
-	// Condition: require 3 paths to be provided
-	// if empty_path > 0 && empty_path <= 2 {
-	// 	return false, fmt.Errorf("please provide all flags: --valkey, --nodekey, --keyid")
-
-	// }
-
 	// Check if paths are exist
 	if empty_path == 0 {
 		for _, p := range path {
-			if _, err := os.Stat(p); os.IsNotExist(err) {
-				return false, fmt.Errorf("path %s doesn't exist!", p)
-
+			dir := filepath.Dir(p)
+			// Check if the directory exists
+			_, err := os.Stat(dir)
+			switch os.IsNotExist(err) {
+			case true:
+				return false, err
 			}
+
 		}
 	}
 
