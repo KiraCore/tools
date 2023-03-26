@@ -179,6 +179,7 @@ func writeFiles(ctx context.Context, bs *blockstore.ReadWrite, paths ...string) 
 		if err != nil {
 			return cid.Undef, err
 		}
+		fmt.Println(p, l, l.String())
 		name := filepath.Base(p)
 		entry, err := builder.BuildUnixFSDirectoryEntry(name, int64(size), l)
 		topLevel = append(topLevel, entry)
@@ -196,7 +197,7 @@ func writeFiles(ctx context.Context, bs *blockstore.ReadWrite, paths ...string) 
 	if !ok {
 		return cid.Undef, fmt.Errorf("could not interpret %s", root)
 	}
-	fmt.Println("return string: ", root.(cidlink.Link).Cid.)
+	fmt.Println("return string: ", root.(cidlink.Link).Cid)
 
 	return rcl.Cid, nil
 }
