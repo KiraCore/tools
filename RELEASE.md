@@ -1,3 +1,2 @@
 Features:
-* validator-key-gen: fix directory check logic
-* ipfs-api: fix typo
+* ipfs-api: add get cid func
