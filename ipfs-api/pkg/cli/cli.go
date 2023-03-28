@@ -45,6 +45,10 @@ func Start() {
 	pinCommand.PersistentFlags().BoolVarP(&overwrite, "overwrite", "o", false, "will delete and pin again given file/folder (default false)")
 	pinCommand.PersistentFlags().StringVarP(&meta, "metadata", "m", "", "additional metadata, coma-separated. Example: -m=key,value,key,value")
 
+	dagCommand.PersistentFlags().BoolVarP(&export, "export", "e", false, "export CID to stdout")
+	dagCommand.PersistentFlags().Int8VarP(&verCAR, "version", "c", 2, "set CAR version. default v2")
+	dagCommand.PersistentFlags().StringVarP(&out, "out", "o", "./file.car", "path to save car file. default .")
+
 	pinnedCommand.PersistentFlags().StringVarP(&key, "key", "k", "", "path to your key")
 	unpinCommand.PersistentFlags().StringVarP(&key, "key", "k", "", "path to your key")
 
@@ -56,6 +60,7 @@ func Start() {
 	rootCmd.AddCommand(pinCommand)
 	rootCmd.AddCommand(versionCommand)
 	rootCmd.AddCommand(unpinCommand)
+	rootCmd.AddCommand(dagCommand)
 
 	rootCmd.AddCommand(testCommand)
 	cobra.CheckErr(rootCmd.Execute())
