@@ -18,6 +18,7 @@ import (
 	"github.com/ipld/go-car/v2/blockstore"
 	dagpb "github.com/ipld/go-codec-dagpb"
 	"github.com/ipld/go-ipld-prime"
+	"github.com/ipld/go-ipld-prime/datamodel"
 	cidlink "github.com/ipld/go-ipld-prime/linking/cid"
 	"github.com/multiformats/go-multicodec"
 	"github.com/multiformats/go-multihash"
@@ -55,10 +56,48 @@ func validPath(cmd *cobra.Command, args []string) error {
 
 	return nil
 }
+func getCID(path string, link *datamodel.Link) error {
+	store := NewInMemoryBlockStore()
+	paths := []string{} // recursively add every file path
+	if err := filepath.WalkDir(path, func(path string, d fs.DirEntry, err error) error {
+
+		paths = append(paths, path)
+
+		return nil
+
+	}); err != nil {
+		return err
+	}
+	ls := cidlink.DefaultLinkSystem()
+	ls.TrustedStorage = true
+	ls.SetWriteStorage(store)
+	l, size, err := builder.BuildUnixFSRecursive(path, &ls)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return err
+	}
+	name := filepath.Base(path)
+	entry, err := builder.BuildUnixFSDirectoryEntry(name, int64(size), l)
+	if err != nil {
+		return err
+	}
+	_ = entry
+	*link = l
+	return nil
+}
 
 func dagCmd(cmd *cobra.Command, args []string) error {
-	if !export {
-		createDag(cmd.Flags().Arg(0))
+	path := cmd.Flags().Arg(0)
+	switch export {
+	case false:
+		createDag(path)
+	case true:
+		var cid datamodel.Link
+		err := getCID(path, &cid)
+		if err != nil {
+			return err
+		}
+		fmt.Fprintln(os.Stdout, cid.String())
 	}
 	return nil
 }
