@@ -1,2 +1,2 @@
 Features:
-* validator-key-gen: change ed25519 -> secp256k1
+* validator-key-gen: add --version flag
