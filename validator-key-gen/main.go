@@ -273,6 +273,7 @@ func main() {
 		acadr   bool
 		valadr  bool
 		consadr bool
+		version bool
 	)
 
 	fs := flag.NewFlagSet("validator-key-gen", flag.ExitOnError)
@@ -286,9 +287,10 @@ func main() {
 	fs.StringVar(&keyid, "keyid", "", "path, where NodeID file will be placed")
 
 	// Ouput config
-	fs.BoolVar(&acadr, "accadr", false, "boolean, if true - output account address")
-	fs.BoolVar(&valadr, "valadr", false, "boolean, if true - output validator address")
-	fs.BoolVar(&consadr, "consadr", false, "boolean, if true - output consensus address")
+	fs.BoolVar(&acadr, "accadr", false, "boolean, if true - yield account address")
+	fs.BoolVar(&valadr, "valadr", false, "boolean, if true - yield validator address")
+	fs.BoolVar(&consadr, "consadr", false, "boolean, if true - yield consensus address")
+	fs.BoolVar(&version, "version", false, "boolean , if true - yield current version")
 
 	//Set prefix
 
@@ -308,7 +310,12 @@ func main() {
 	if !fs.Parsed() {
 		fmt.Fprintln(os.Stderr, fmt.Errorf("flags were not parsed!"))
 	}
-
-	ValKeyGen(mnemonic, defaultPrefix, defaultPath, valkey, nodekey, keyid, acadr, valadr, consadr)
+	switch version {
+	case true:
+		fmt.Fprintln(os.Stdout, PrivValidatorKeyGenVersion)
+		os.Exit(0)
+	case false:
+		ValKeyGen(mnemonic, defaultPrefix, defaultPath, valkey, nodekey, keyid, acadr, valadr, consadr)
+	}
 
 }
