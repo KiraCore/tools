@@ -26,7 +26,7 @@ function bashUtilsVersion() {
 # this is default installation script for utils
 # ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
 function bashUtilsSetup() {
-    local BASH_UTILS_VERSION="v0.3.35"
+    local BASH_UTILS_VERSION="v0.3.36"
     local COSIGN_VERSION="v1.13.1"
     if [ "$1" == "version" ] ; then
         echo "$BASH_UTILS_VERSION"
@@ -97,7 +97,7 @@ function bashUtilsSetup() {
         if (! $(isCommand cosign)) ; then
             echoWarn "WARNING: Cosign tool is not installed, setting up $COSIGN_VERSION..."
             if [[ "$(uname -m)" == *"ar"* ]] ; then ARCH="arm64"; else ARCH="amd64" ; fi && \
-             PLATFORM=$(uname) && FILE_NAME=$(echo "cosign-${PLATFORM}-${ARCH}" | tr '[:upper:]' '[:lower:]') && \
+             declare -l FILE_NAME=$(echo "cosign-$(uname)-${ARCH}") && \
              TMP_FILE="/tmp/${FILE_NAME}.tmp" && rm -fv "$TMP_FILE" && \
              wget --user-agent="$UBUNTU_AGENT" https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/$FILE_NAME -O "$TMP_FILE" && \
              chmod +x -v "$TMP_FILE" && mv -fv "$TMP_FILE" /usr/local/bin/cosign
@@ -201,7 +201,7 @@ function isInteger() {
 
 function isBoolean() {
     if ($(bash-utils isNullOrEmpty "$1")) ; then echo "false" ; else
-        local val=$(bash-utils toLower "$1")
+        declare -l val="$1"
         if [ "$val" == "false" ] || [ "$val" == "true" ] ; then echo "true"
         else echo "false" ; fi
     fi
@@ -220,11 +220,11 @@ function isNaturalNumber() {
 }
 
 function isLetters() {
-    [[ "$1" =~ [^a-zA-Z] ]] && echo "false" || echo "true"
+    ( [ -z "$1" ] || [[ "$1" =~ [^a-zA-Z] ]] ) && echo "false" || echo "true"
 }
 
 function isAlphanumeric() {
-    [[ "$1" =~ [^a-zA-Z0-9] ]] && echo "false" || echo "true"
+    ( [ -z "$1" ] || [[ "$1" =~ [^a-zA-Z0-9] ]] ) && echo "false" || echo "true"
 }
 
 function isPort() {
@@ -504,6 +504,14 @@ function strSplitTakeN() {
     echo "${arr[$2]}"
 }
 
+# trims string from whitespace characters but not newlines etc
+function strTrim() {
+    local str="$1"
+    str=${str##*( )}
+    str=${str%%*( )}
+    echo "$str"
+}
+
 # getArgs --test="lol1" --tes-t="lol-l" --test2="lol 2" -e=ok -t=ok2 --silent=true --invisible=yes
 # internally supported flags:
 # gargs_verbose (default true), gargs_throw (default true)
@@ -513,22 +521,29 @@ function getArgs() {
     local gargs_throw="true"
     for arg in "$@" ; do
         [ -z "$arg" ] && continue
-        ($(strStartsWith "$arg" "-")) && (! $(strStartsWith "$arg" "--")) && arg="-${arg}"
-        if ($(strStartsWith "$arg" "--")) && [[ "$arg" == *"="* ]] && [[ "$arg" != "--="* ]] && [[ "$arg" != "-="* ]] ; then
-            local arg_len=$(strLength "$arg")
+        [[ "$arg" =~ ^-[^-].* ]] && arg="-${arg}"
+        if [[ "$arg" == "--"*"="* ]] && [[ "$arg" != "--="* ]] ; then
+            local arg_len=$(echo "$arg" | awk '{print length}')
             local prefix=$(echo $arg | cut -d'=' -f1)
-            local prefix_len=$(strLength "$prefix")
+            local prefix_len=$(echo "$prefix" | awk '{print length}')
             local n="-$((arg_len - prefix_len - 1))"
             local val="${arg:$n}"
-            prefix="$(echo $prefix  | sed -z 's/^-*//')"
+            prefix="$(echo $prefix | sed -z 's/^-*//')"
             local key=$(echo "$prefix" | tr '-' '_')
-            if [ "$arg" == "-$key=''" ] || [ "$arg" == "-$key=\"\"" ] || [ "$arg" == "--$key=''" ] || [ "$arg" == "--$key=\"\"" ] || [ "$arg" == "--$key=" ] || [ "$arg" == "-$key=" ] ; then
-                val=""
-            fi
 
-            [ "$key" == "gargs_verbose" ] && [ "$(echo "$(toLower "$val")" | xargs)" == "false" ] && gargs_verbose="false"
-            [ "$key" == "gargs_throw" ] && [ "$(echo "$(toLower "$val")" | xargs)" == "false" ] && gargs_throw="false"
-            ( [ "$key" == "gargs_throw" ] || [ "$key" == "gargs_verbose" ] ) && continue
+            case "$arg" in
+                "-$key=''") val="" ;;
+                "-$key=\"\"") val="" ;;
+                "--$key=''") val="" ;;
+                "--$key=\"\"") val="" ;;
+                "--$key=") val="" ;;
+                "-$key=") val="" ;;
+                esac
+
+            case "$key" in
+                "gargs_verbose") [ "$val" == "false" ] && gargs_verbose="false" && continue || continue ;;
+                "gargs_throw") [ "$val" == "false" ] && gargs_throw="false" && continue || continue ;;
+                esac
 
             [ "$gargs_verbose" == "true" ] && echoInfo "$key='$val'"
             if [ "$gargs_throw" == "true" ]; then
@@ -826,19 +841,18 @@ function getRamTotal() {
 
 # allowed modes: 'default', 'short', 'long'
 function getArch() {
-    local mode="$1"
-    local ARCH=$(uname -m)
-    mode="$(bash-utils toLower $mode)"
-    if [[ "$ARCH" == *"arm"* ]] || [[ "$ARCH" == *"aarch"* ]] ; then
+    declare -l mode="$1"
+    declare -l arch="$(uname -m)"
+    if [[ "$arch" == *"arm"* ]] || [[ "$arch" == *"aarch"* ]] ; then
         echo "arm64"
-    elif [[ "$ARCH" == *"x64"* ]] || [[ "$ARCH" == *"x86_64"* ]] || [[ "$ARCH" == *"amd64"* ]] || [[ "$ARCH" == *"amd"* ]] ; then
+    elif [[ "$arch" == *"x64"* ]] || [[ "$arch" == *"x86_64"* ]] || [[ "$arch" == *"amd64"* ]] || [[ "$arch" == *"amd"* ]] ; then
         if [ "$mode" == "short" ] ; then
             echo "x64"
         else
             echo "amd64"
         fi
     else
-        echo "$ARCH"
+        echo "$arch"
     fi
 }
 
@@ -847,7 +861,8 @@ function getArchX() {
 }
 
 function getPlatform() {
-    echo "$(delWhitespaces $(bash-utils toLower $(uname)))"
+    declare -l platform="$(uname)"
+    echo "$(bu delWhitespaces "$platform")"
 }
 
 function tryMkDir {
@@ -1010,9 +1025,13 @@ function jsonEdit() {
     local VALUE="$2"
     [ ! -z "$3" ] && FIN=$(realpath $3 2> /dev/null || echo -n "")
     [ ! -z "$4" ] && FOUT=$(realpath $4 2> /dev/null || echo -n "")
-    [ "$(bash-utils toLower "$VALUE")" == "null" ] && VALUE="None"
-    [ "$(bash-utils toLower "$VALUE")" == "true" ] && VALUE="True"
-    [ "$(bash-utils toLower "$VALUE")" == "false" ] && VALUE="False"
+
+    case "$(bu toLower "$VALUE")" in
+        "null") VALUE="None" ;;
+        "true") VALUE="True" ;;
+        "false") VALUE="False" ;;
+        esac
+
     if [ ! -z "$INPUT" ] ; then
         for k in ${INPUT//./ } ; do
             k=$(echo $k | xargs 2> /dev/null || echo -n "") && [ -z "$k" ] && continue
@@ -1041,9 +1060,13 @@ function jsonObjEdit() {
     [ ! -z "$2" ] && FVAL=$(realpath $2 2> /dev/null || echo -n "")
     [ ! -z "$3" ] && FIN=$(realpath $3 2> /dev/null || echo -n "")
     [ ! -z "$4" ] && FOUT=$(realpath $4 2> /dev/null || echo -n "")
-    [ "$(bash-utils toLower "$VALUE")" == "null" ] && VALUE="None"
-    [ "$(bash-utils toLower "$VALUE")" == "true" ] && VALUE="True"
-    [ "$(bash-utils toLower "$VALUE")" == "false" ] && VALUE="False"
+
+    case "$(bu toLower "$VALUE")" in
+        "null") VALUE="None" ;;
+        "true") VALUE="True" ;;
+        "false") VALUE="False" ;;
+        esac
+
     if [ ! -z "$INPUT" ] ; then
         for k in ${INPUT//./ } ; do
             k=$(echo $k | xargs 2> /dev/null || echo -n "") && [ -z "$k" ] && continue
@@ -1335,8 +1358,8 @@ function isCommand {
 }
 
 function isServiceActive {
-    local ISACT=$(systemctl is-active "$1" 2> /dev/null || echo "inactive")
-    [ "$(bash-utils toLower "$ISACT")" == "active" ] && echo "true" || echo "false"
+    declare -l ISACT=$(systemctl is-active "$1" 2> /dev/null || echo "inactive")
+    [ "$ISACT" == "active" ] && echo "true" || echo "false"
 }
 
 function isWSL {
@@ -1356,20 +1379,35 @@ function pingTime() {
 }
 
 # sets global var with user selection, default var name is OPTION
-# e.g.: pressToContinue --glob=TEST --timeout=1 a b c
+# e.g.: echoNC "bli;whi" "Press a, b or c: " && pressToContinue --glob=TEST --cursor=true --timeout=100 a b c 
+# e.g.: echoNC "bli;whi" "Press any key to continue..." && pressToContinue --cursor=false
 function pressToContinue {
+    function pressToContinueCleanup() {
+        setterm -cursor on
+        trap - SIGINT || :
+        return 130
+    }
+
+    trap pressToContinueCleanup SIGINT
+
     local glob="OPTION"
     local timeout=0
-    getArgs --gargs_verbose=false --gargs_throw=false "$1" "$2"
+    local cursor=true
+    getArgs --gargs_verbose=false --gargs_throw=false "$1" "$2" "$3"
     (! $(isNaturalNumber "$timeout")) && timeout=0
+    [ "$cursor" != "false" ] && cursor=true
 
     local OPTION=""
     local FOUND=false
     local TIME_START="$(date -u +%s)"
     local TIME_END="$TIME_START"
     local TIME_SPAN=0
+    local EXIT_CODE=0
+    local ALL_FLAGS=true
 
-    if ($(bu isNullOrEmpty "$1")) ; then
+    [ "$cursor" == "false" ] && setterm -cursor off || setterm -cursor on
+
+    if ($(isNullOrEmpty "$1")) ; then
         OPTION=""
         if [[ $timeout -gt 0 ]] ; then
             read -t "$timeout" -n 1 -s OPTION
@@ -1386,25 +1424,34 @@ function pressToContinue {
             else
                 read -n 1 -s OPTION
             fi
-            OPTION=$(bu toLower "$OPTION")
+            
+            declare -l lopt="$OPTION"
             for kg_var in "$@" ; do
-                kg_var=$(echo "$kg_var" | tr -d '\011\012\013\014\015\040' 2>/dev/null || echo -n "")
-                [ "$(bu toLower "$kg_var")" == "$OPTION" ] && globSet "$glob" "$OPTION" && FOUND=true && break
+                declare -l var=$(echo "$kg_var" | tr -d '\011\012\013\014\015\040' 2>/dev/null || echo -n "")
+                ( [ ! -z "$var" ] && [ "$var" == "$lopt" ] ) && globSet "$glob" "$lopt" && FOUND=true && break
+                [[ "${var:0:2}" != "--" ]] && ALL_FLAGS="false"
             done
 
             [ "$FOUND" == "true" ] && break
+            [ "$ALL_FLAGS" == "true" ] && break
 
             TIME_END="$(date -u +%s)"
             TIME_SPAN=$((TIME_END - TIME_START))
             if [[ $timeout -gt 0 ]] && [[ $TIME_SPAN -gt $timeout ]] ; then
                 globSet "$glob" ""
-                echo ""
-                return 142
+                EXIT_CODE=142
+                break
             fi
         done 
     fi
+
+    if [ "$cursor" == "false" ] ; then
+        setterm -cursor on
+    fi
+
+    trap - SIGINT || :
     echo ""
-    return 0
+    return $EXIT_CODE
 }
 
 displayAlign() {
