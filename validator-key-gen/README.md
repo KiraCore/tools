@@ -71,6 +71,10 @@ validator-key-gen --mnemonic="your mnemonic phrase" --accadr --valadr --consadr
 ```bash
 validator-key-gen --mnemonic="your mnemonic phrase" --prefix="custom_prefix" --path="44'/12345'/0'/0/0"
 ```
+4. Version
+```bash
+validator-key-gen --version
+```
 
 ### Contributing
 If you would like to contribute to this project, please submit bug reports, feature requests, and pull requests on the repository.
