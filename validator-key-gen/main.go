@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -17,7 +18,7 @@ import (
 	"github.com/tendermint/tendermint/privval"
 )
 
-const PrivValidatorKeyGenVersion = "v0.3.24"
+const PrivValidatorKeyGenVersion = "v0.3.35"
 
 type Prefix struct {
 	fullPath             *hd.BIP44Params
@@ -131,19 +132,17 @@ func checkPath(path []string) (ok bool, err error) {
 		}
 	}
 
-	// Condition: require 3 paths to be provided
-	// if empty_path > 0 && empty_path <= 2 {
-	// 	return false, fmt.Errorf("please provide all flags: --valkey, --nodekey, --keyid")
-
-	// }
-
 	// Check if paths are exist
 	if empty_path == 0 {
 		for _, p := range path {
-			if _, err := os.Stat(p); os.IsNotExist(err) {
-				return false, fmt.Errorf("path %s doesn't exist!", p)
-
+			dir := filepath.Dir(p)
+			// Check if the directory exists
+			_, err := os.Stat(dir)
+			switch os.IsNotExist(err) {
+			case true:
+				return false, err
 			}
+
 		}
 	}
 
@@ -172,28 +171,39 @@ var out io.Writer = os.Stdout
 
 func ValKeyGen(mnemonic, defaultPrefix, defaultPath, valkey, nodekey, keyid string, acadr, valadr, consadr bool) {
 	prefix := Prefix{}
+
 	// Setting up prefix with default or provided values
 	err := prefix.New(defaultPrefix, defaultPath)
 	if err != nil {
 		panic(fmt.Errorf("malformed prefix %v", err))
 	}
 
-	// mnemonic should be provided
+	// Check if mnemonic is provided and valid
 	if err := checkMnemonic(mnemonic); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	seed := bip39.NewSeed(mnemonic, "")
-	master, ch := hd.ComputeMastersFromSeed(seed)
-	priv, err := hd.DerivePrivateKeyForPath(master, ch, prefix.fullPath.String())
+
+	// Generate HD(Hierarchical Deterministic) path from string
+	hdPath, err := hd.NewParamsFromPath(defaultPath)
 	if err != nil {
 		panic(err)
 	}
-	privKey := ed25519.GenPrivKeyFromSecret(priv)
+
+	// Generate tendermint MASTER private key from mnemonic
+	tmPrivKey := ed25519.GenPrivKeyFromSecret([]byte(mnemonic))
+
+	// Generate tenderming private key from MASTER key
+	//tmPrivKey := ed25519.GenPrivKeyFromSecret(tmMasterPrivKey.Bytes())
+
+	// Derive MASTER key from mnemonic and HD path
+	masterPrivKey, err := hd.Secp256k1.Derive()(mnemonic, "", hdPath.String())
+
+	// Generate private key from MASTER key
+	privKey := hd.Secp256k1.Generate()(masterPrivKey)
 	pubKey := privKey.PubKey()
 
 	config := sdk.GetConfig()
-
 	config.SetBech32PrefixForAccount(prefix.GetBech32PrefixAccAddr(), prefix.GetBech32PrefixAccPub())
 	config.SetBech32PrefixForValidator(prefix.GetBech32PrefixValAddr(), prefix.GetBech32PrefixValPub())
 	config.SetBech32PrefixForConsensusNode(prefix.GetBech32PrefixConsAddr(), prefix.GetBech32PrefixConsPub())
@@ -206,9 +216,9 @@ func ValKeyGen(mnemonic, defaultPrefix, defaultPath, valkey, nodekey, keyid stri
 		os.Exit(1)
 	} else {
 		if ok {
-			filepvkey := privval.NewFilePV(privKey, valkey, "").Key
+			filepvkey := privval.NewFilePV(tmPrivKey, valkey, "").Key
 			filenodekey := p2p.NodeKey{
-				PrivKey: privKey,
+				PrivKey: tmPrivKey,
 			}
 
 			if len(valkey) != 0 {
@@ -243,6 +253,7 @@ func ValKeyGen(mnemonic, defaultPrefix, defaultPath, valkey, nodekey, keyid stri
 	}
 
 }
+
 func main() {
 
 	var (
@@ -262,6 +273,7 @@ func main() {
 		acadr   bool
 		valadr  bool
 		consadr bool
+		version bool
 	)
 
 	fs := flag.NewFlagSet("validator-key-gen", flag.ExitOnError)
@@ -275,9 +287,10 @@ func main() {
 	fs.StringVar(&keyid, "keyid", "", "path, where NodeID file will be placed")
 
 	// Ouput config
-	fs.BoolVar(&acadr, "accadr", false, "boolean, if true - output account address")
-	fs.BoolVar(&valadr, "valadr", false, "boolean, if true - output validator address")
-	fs.BoolVar(&consadr, "consadr", false, "boolean, if true - output consensus address")
+	fs.BoolVar(&acadr, "accadr", false, "boolean, if true - yield account address")
+	fs.BoolVar(&valadr, "valadr", false, "boolean, if true - yield validator address")
+	fs.BoolVar(&consadr, "consadr", false, "boolean, if true - yield consensus address")
+	fs.BoolVar(&version, "version", false, "boolean , if true - yield current version")
 
 	//Set prefix
 
@@ -297,9 +310,12 @@ func main() {
 	if !fs.Parsed() {
 		fmt.Fprintln(os.Stderr, fmt.Errorf("flags were not parsed!"))
 	}
-
-	ValKeyGen(mnemonic, defaultPrefix, defaultPath, valkey, nodekey, keyid, acadr, valadr, consadr)
-
-	// Wrap this logic to some function!
+	switch version {
+	case true:
+		fmt.Fprintln(os.Stdout, PrivValidatorKeyGenVersion)
+		os.Exit(0)
+	case false:
+		ValKeyGen(mnemonic, defaultPrefix, defaultPath, valkey, nodekey, keyid, acadr, valadr, consadr)
+	}
 
 }

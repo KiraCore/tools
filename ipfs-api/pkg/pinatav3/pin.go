@@ -7,6 +7,8 @@ import (
 	"io"
 	"net/http/httputil"
 	"os"
+
+	log "github.com/kiracore/tools/ipfs-api/pkg/ipfslog"
 )
 
 func (p *PinataApi) Pin(path string) error {

@@ -1,3 +1,4 @@
 Features:
-* added cursor flag to the press to continue command
+
+* added cursor flag to the pressToContinue command
 * speedup args parsing

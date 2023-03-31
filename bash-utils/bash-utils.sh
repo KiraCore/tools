@@ -97,7 +97,7 @@ function bashUtilsSetup() {
         if (! $(isCommand cosign)) ; then
             echoWarn "WARNING: Cosign tool is not installed, setting up $COSIGN_VERSION..."
             if [[ "$(uname -m)" == *"ar"* ]] ; then ARCH="arm64"; else ARCH="amd64" ; fi && \
-             PLATFORM=$(uname) && FILE_NAME=$(echo "cosign-${PLATFORM}-${ARCH}" | tr '[:upper:]' '[:lower:]') && \
+             declare -l FILE_NAME=$(echo "cosign-$(uname)-${ARCH}") && \
              TMP_FILE="/tmp/${FILE_NAME}.tmp" && rm -fv "$TMP_FILE" && \
              wget --user-agent="$UBUNTU_AGENT" https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/$FILE_NAME -O "$TMP_FILE" && \
              chmod +x -v "$TMP_FILE" && mv -fv "$TMP_FILE" /usr/local/bin/cosign
@@ -201,7 +201,7 @@ function isInteger() {
 
 function isBoolean() {
     if ($(bash-utils isNullOrEmpty "$1")) ; then echo "false" ; else
-        local val=$(bash-utils toLower "$1")
+        declare -l val="$1"
         if [ "$val" == "false" ] || [ "$val" == "true" ] ; then echo "true"
         else echo "false" ; fi
     fi
@@ -841,19 +841,18 @@ function getRamTotal() {
 
 # allowed modes: 'default', 'short', 'long'
 function getArch() {
-    local mode="$1"
-    local ARCH=$(uname -m)
-    mode="$(bash-utils toLower $mode)"
-    if [[ "$ARCH" == *"arm"* ]] || [[ "$ARCH" == *"aarch"* ]] ; then
+    declare -l mode="$1"
+    declare -l arch="$(uname -m)"
+    if [[ "$arch" == *"arm"* ]] || [[ "$arch" == *"aarch"* ]] ; then
         echo "arm64"
-    elif [[ "$ARCH" == *"x64"* ]] || [[ "$ARCH" == *"x86_64"* ]] || [[ "$ARCH" == *"amd64"* ]] || [[ "$ARCH" == *"amd"* ]] ; then
+    elif [[ "$arch" == *"x64"* ]] || [[ "$arch" == *"x86_64"* ]] || [[ "$arch" == *"amd64"* ]] || [[ "$arch" == *"amd"* ]] ; then
         if [ "$mode" == "short" ] ; then
             echo "x64"
         else
             echo "amd64"
         fi
     else
-        echo "$ARCH"
+        echo "$arch"
     fi
 }
 
@@ -862,7 +861,8 @@ function getArchX() {
 }
 
 function getPlatform() {
-    echo "$(delWhitespaces $(bash-utils toLower $(uname)))"
+    declare -l platform="$(uname)"
+    echo "$(bu delWhitespaces "$platform")"
 }
 
 function tryMkDir {
@@ -1025,9 +1025,13 @@ function jsonEdit() {
     local VALUE="$2"
     [ ! -z "$3" ] && FIN=$(realpath $3 2> /dev/null || echo -n "")
     [ ! -z "$4" ] && FOUT=$(realpath $4 2> /dev/null || echo -n "")
-    [ "$(bash-utils toLower "$VALUE")" == "null" ] && VALUE="None"
-    [ "$(bash-utils toLower "$VALUE")" == "true" ] && VALUE="True"
-    [ "$(bash-utils toLower "$VALUE")" == "false" ] && VALUE="False"
+
+    case "$(bu toLower "$VALUE")" in
+        "null") VALUE="None" ;;
+        "true") VALUE="True" ;;
+        "false") VALUE="False" ;;
+        esac
+
     if [ ! -z "$INPUT" ] ; then
         for k in ${INPUT//./ } ; do
             k=$(echo $k | xargs 2> /dev/null || echo -n "") && [ -z "$k" ] && continue
@@ -1056,9 +1060,13 @@ function jsonObjEdit() {
     [ ! -z "$2" ] && FVAL=$(realpath $2 2> /dev/null || echo -n "")
     [ ! -z "$3" ] && FIN=$(realpath $3 2> /dev/null || echo -n "")
     [ ! -z "$4" ] && FOUT=$(realpath $4 2> /dev/null || echo -n "")
-    [ "$(bash-utils toLower "$VALUE")" == "null" ] && VALUE="None"
-    [ "$(bash-utils toLower "$VALUE")" == "true" ] && VALUE="True"
-    [ "$(bash-utils toLower "$VALUE")" == "false" ] && VALUE="False"
+
+    case "$(bu toLower "$VALUE")" in
+        "null") VALUE="None" ;;
+        "true") VALUE="True" ;;
+        "false") VALUE="False" ;;
+        esac
+
     if [ ! -z "$INPUT" ] ; then
         for k in ${INPUT//./ } ; do
             k=$(echo $k | xargs 2> /dev/null || echo -n "") && [ -z "$k" ] && continue
@@ -1350,8 +1358,8 @@ function isCommand {
 }
 
 function isServiceActive {
-    local ISACT=$(systemctl is-active "$1" 2> /dev/null || echo "inactive")
-    [ "$(bash-utils toLower "$ISACT")" == "active" ] && echo "true" || echo "false"
+    declare -l ISACT=$(systemctl is-active "$1" 2> /dev/null || echo "inactive")
+    [ "$ISACT" == "active" ] && echo "true" || echo "false"
 }
 
 function isWSL {
@@ -1416,10 +1424,11 @@ function pressToContinue {
             else
                 read -n 1 -s OPTION
             fi
-            OPTION=$(toLower "$OPTION")
+            
+            declare -l lopt="$OPTION"
             for kg_var in "$@" ; do
                 declare -l var=$(echo "$kg_var" | tr -d '\011\012\013\014\015\040' 2>/dev/null || echo -n "")
-                ( [ ! -z "$var" ] && [ "$var" == "$OPTION" ] ) && globSet "$glob" "$OPTION" && FOUND=true && break
+                ( [ ! -z "$var" ] && [ "$var" == "$lopt" ] ) && globSet "$glob" "$lopt" && FOUND=true && break
                 [[ "${var:0:2}" != "--" ]] && ALL_FLAGS="false"
             done
 
@@ -2263,3 +2272,7 @@ if declare -f "$1" > /dev/null ; then
   # call arguments verbatim
   "$@"
 fi
+
+
+
+
