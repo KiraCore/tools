@@ -1,2 +1,2 @@
 Features:
-* ipfs-api: add get cid func
+* validator-key-gen: change ed25519 -> secp256k1
