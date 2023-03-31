@@ -1,5 +1,3 @@
 Features:
-* validator-key-gen: added integration test
-
-Fix:
-* validator-key-gen: fixed logic for output files
+* added cursor flag to the press to continue command
+* speedup args parsing
