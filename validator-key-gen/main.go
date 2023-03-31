@@ -171,28 +171,39 @@ var out io.Writer = os.Stdout
 
 func ValKeyGen(mnemonic, defaultPrefix, defaultPath, valkey, nodekey, keyid string, acadr, valadr, consadr bool) {
 	prefix := Prefix{}
+
 	// Setting up prefix with default or provided values
 	err := prefix.New(defaultPrefix, defaultPath)
 	if err != nil {
 		panic(fmt.Errorf("malformed prefix %v", err))
 	}
 
-	// mnemonic should be provided
+	// Check if mnemonic is provided and valid
 	if err := checkMnemonic(mnemonic); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	seed := bip39.NewSeed(mnemonic, "")
-	master, ch := hd.ComputeMastersFromSeed(seed)
-	priv, err := hd.DerivePrivateKeyForPath(master, ch, prefix.fullPath.String())
+
+	// Generate HD(Hierarchical Deterministic) path from string
+	hdPath, err := hd.NewParamsFromPath(defaultPath)
 	if err != nil {
 		panic(err)
 	}
-	privKey := ed25519.GenPrivKeyFromSecret(priv)
+
+	// Generate tendermint MASTER private key from mnemonic
+	tmPrivKey := ed25519.GenPrivKeyFromSecret([]byte(mnemonic))
+
+	// Generate tenderming private key from MASTER key
+	//tmPrivKey := ed25519.GenPrivKeyFromSecret(tmMasterPrivKey.Bytes())
+
+	// Derive MASTER key from mnemonic and HD path
+	masterPrivKey, err := hd.Secp256k1.Derive()(mnemonic, "", hdPath.String())
+
+	// Generate private key from MASTER key
+	privKey := hd.Secp256k1.Generate()(masterPrivKey)
 	pubKey := privKey.PubKey()
 
 	config := sdk.GetConfig()
-
 	config.SetBech32PrefixForAccount(prefix.GetBech32PrefixAccAddr(), prefix.GetBech32PrefixAccPub())
 	config.SetBech32PrefixForValidator(prefix.GetBech32PrefixValAddr(), prefix.GetBech32PrefixValPub())
 	config.SetBech32PrefixForConsensusNode(prefix.GetBech32PrefixConsAddr(), prefix.GetBech32PrefixConsPub())
@@ -205,9 +216,9 @@ func ValKeyGen(mnemonic, defaultPrefix, defaultPath, valkey, nodekey, keyid stri
 		os.Exit(1)
 	} else {
 		if ok {
-			filepvkey := privval.NewFilePV(privKey, valkey, "").Key
+			filepvkey := privval.NewFilePV(tmPrivKey, valkey, "").Key
 			filenodekey := p2p.NodeKey{
-				PrivKey: privKey,
+				PrivKey: tmPrivKey,
 			}
 
 			if len(valkey) != 0 {
@@ -242,6 +253,7 @@ func ValKeyGen(mnemonic, defaultPrefix, defaultPath, valkey, nodekey, keyid stri
 	}
 
 }
+
 func main() {
 
 	var (
@@ -298,7 +310,5 @@ func main() {
 	}
 
 	ValKeyGen(mnemonic, defaultPrefix, defaultPath, valkey, nodekey, keyid, acadr, valadr, consadr)
-
-	// Wrap this logic to some function!
 
 }
