@@ -760,7 +760,8 @@ function safeWget() {
     if ( (! $(isFileEmpty $COSIGN_PUB_KEY)) || ($(urlExists "${COSIGN_PUB_KEY}" 1)) ) && (! $(isFileEmpty $TMP_PATH)) ; then
         echoInfo "INFO: Using cosign to verify temporary file integrity..."
         COSIGN_VERIFIED="true"  
-        cosign verify-blob --key="$COSIGN_PUB_KEY" --signature="$TMP_PATH_SIG" "$TMP_PATH" --insecure-ignore-tlog --insecure-ignore-sct || COSIGN_VERIFIED="false"
+        cosign verify-blob --key="$COSIGN_PUB_KEY" --signature="$TMP_PATH_SIG" "$TMP_PATH" --insecure-ignore-tlog --insecure-ignore-sct || \
+        cosign verify-blob --key="$COSIGN_PUB_KEY" --signature="$TMP_PATH_SIG" "$TMP_PATH" || COSIGN_VERIFIED="false"
 
         if [ "$COSIGN_VERIFIED" == "true" ] ; then
             echoInfo "INFO: Cosign successfully verified integrity of an already existing temporary file"
@@ -795,7 +796,8 @@ function safeWget() {
 
         echoInfo "INFO: Using cosign to verify final file integrity..."
         COSIGN_VERIFIED="true"
-        cosign verify-blob --key="$COSIGN_PUB_KEY" --signature="$TMP_PATH_SIG" "$OUT_PATH" --insecure-ignore-tlog --insecure-ignore-sct || COSIGN_VERIFIED="false"
+        cosign verify-blob --key="$COSIGN_PUB_KEY" --signature="$TMP_PATH_SIG" "$OUT_PATH" --insecure-ignore-tlog --insecure-ignore-sct || \
+        cosign verify-blob --key="$COSIGN_PUB_KEY" --signature="$TMP_PATH_SIG" "$OUT_PATH" || COSIGN_VERIFIED="false"
 
         if [ "$COSIGN_VERIFIED" == "true" ] ; then
             echoInfo "INFO: Cosign successfully verified integrity of downloaded file"
