@@ -20,14 +20,14 @@ REGEX_URL2="^(https?|ftp|file)://$REGEX_URL1"
 UBUNTU_AGENT="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.85 Safari/537.36"
 
 function bashUtilsVersion() {
-    bashUtilsSetup "version" 2> /dev/null || bash-utils bashUtilsSetup "version"
+    bashUtilsSetup "version" 2> /dev/null || bu bashUtilsSetup "version"
 }
 
 # this is default installation script for utils
 # ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
 function bashUtilsSetup() {
-    local BASH_UTILS_VERSION="v0.3.36"
-    local COSIGN_VERSION="v1.13.1"
+    local BASH_UTILS_VERSION="v0.3.37"
+    local COSIGN_VERSION="v2.0.0"
     if [ "$1" == "version" ] ; then
         echo "$BASH_UTILS_VERSION"
         return 0
@@ -84,17 +84,17 @@ function bashUtilsSetup() {
             bash-utils setGlobPath "/usr/local/bin"
             bash-utils setGlobPath "/bin"
 
-            local AUTOLOAD_SET=$(bash-utils getLastLineByPrefix "source $UTILS_DESTINATION" /etc/profile 2> /dev/null || echo "-1")
+            local AUTOLOAD_SET=$(bu getLastLineByPrefix "source $UTILS_DESTINATION" /etc/profile 2> /dev/null || echo "-1")
 
             if [[ $AUTOLOAD_SET -lt 0 ]] ; then
                 echo "source $UTILS_DESTINATION || echo \"ERROR: Failed to load kira bash-utils from '$UTILS_DESTINATION'\"" >> /etc/profile
             fi
 
             bu loadGlobEnvs
-            echoInfo "INFO: SUCCESS!, Installed kira bash-utils $(bashUtilsVersion)"
+            bu echoInfo "INFO: SUCCESS!, Installed kira bash-utils $(bu bashUtilsVersion)"
         fi
 
-        if (! $(isCommand cosign)) ; then
+        if (! $(bu isCommand cosign)) ; then
             echoWarn "WARNING: Cosign tool is not installed, setting up $COSIGN_VERSION..."
             if [[ "$(uname -m)" == *"ar"* ]] ; then ARCH="arm64"; else ARCH="amd64" ; fi && \
              declare -l FILE_NAME=$(echo "cosign-$(uname)-${ARCH}") && \
@@ -760,7 +760,7 @@ function safeWget() {
     if ( (! $(isFileEmpty $COSIGN_PUB_KEY)) || ($(urlExists "${COSIGN_PUB_KEY}" 1)) ) && (! $(isFileEmpty $TMP_PATH)) ; then
         echoInfo "INFO: Using cosign to verify temporary file integrity..."
         COSIGN_VERIFIED="true"  
-        cosign verify-blob --key="$COSIGN_PUB_KEY" --signature="$TMP_PATH_SIG" "$TMP_PATH" || COSIGN_VERIFIED="false"
+        cosign verify-blob --key="$COSIGN_PUB_KEY" --signature="$TMP_PATH_SIG" "$TMP_PATH" --insecure-ignore-tlog --insecure-ignore-sct || COSIGN_VERIFIED="false"
 
         if [ "$COSIGN_VERIFIED" == "true" ] ; then
             echoInfo "INFO: Cosign successfully verified integrity of an already existing temporary file"
@@ -795,7 +795,7 @@ function safeWget() {
 
         echoInfo "INFO: Using cosign to verify final file integrity..."
         COSIGN_VERIFIED="true"
-        cosign verify-blob --key="$COSIGN_PUB_KEY" --signature="$TMP_PATH_SIG" "$OUT_PATH" || COSIGN_VERIFIED="false"
+        cosign verify-blob --key="$COSIGN_PUB_KEY" --signature="$TMP_PATH_SIG" "$OUT_PATH" --insecure-ignore-tlog --insecure-ignore-sct || COSIGN_VERIFIED="false"
 
         if [ "$COSIGN_VERIFIED" == "true" ] ; then
             echoInfo "INFO: Cosign successfully verified integrity of downloaded file"
