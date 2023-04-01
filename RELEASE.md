@@ -1,2 +1,4 @@
 Features:
-* validator-key-gen: add --version flag
+
+* added cursor flag to the pressToContinue command
+* speedup args parsing
