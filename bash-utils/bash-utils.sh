@@ -26,7 +26,7 @@ function bashUtilsVersion() {
 # this is default installation script for utils
 # ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
 function bashUtilsSetup() {
-    local BASH_UTILS_VERSION="v0.3.39"
+    local BASH_UTILS_VERSION="v0.3.40"
     local COSIGN_VERSION="v2.0.0"
     if [ "$1" == "version" ] ; then
         echo "$BASH_UTILS_VERSION"
@@ -46,20 +46,21 @@ function bashUtilsSetup() {
         echo "INFO: Loaded utils from '$UTILS_SOURCE', installing bash-utils & setting up glob dir in '$KIRA_GLOBS_DIR'..."
 
         if [ "$VERSION" != "$BASH_UTILS_VERSION" ] ; then
-            bash-utils echoErr "ERROR: Self check version mismatch, expected '$BASH_UTILS_VERSION', but got '$VERSION'"
+            bu echoErr "ERROR: Self check version mismatch, expected '$BASH_UTILS_VERSION', but got '$VERSION'"
             return 1
         elif [ "$UTILS_SOURCE" == "$UTILS_DESTINATION" ] ; then
-            bash-utils echoErr "ERROR: Installation source script and destination can't be the same"
+            bu echoErr "ERROR: Installation source script and destination can't be the same"
             return 1
         elif [ ! -f "$UTILS_SOURCE" ] ; then
-            bash-utils echoErr "ERROR: utils source was NOT found"
+            bu echoErr "ERROR: utils source was NOT found"
             return 1
         else
             mkdir -p "/usr/local/bin" "/bin" "/tmp"
             cp -fv "$UTILS_SOURCE" "$UTILS_DESTINATION"
             cp -fv "$UTILS_SOURCE" "/usr/local/bin/bash-utils"
             cp -fv "$UTILS_SOURCE" "/usr/local/bin/bu"
-            chmod +x "$UTILS_DESTINATION" "/usr/local/bin/bash-utils" "/bin/bu"
+            cp -fv "$UTILS_SOURCE" "/bin/bu"
+            chmod +x "$UTILS_DESTINATION" "/usr/local/bin/bash-utils" "/usr/local/bin/bu" "/bin/bu"
 
             local SUDOUSER="${SUDO_USER}" 
             local USERNAME="${USER}" 
@@ -94,15 +95,18 @@ function bashUtilsSetup() {
             bu echoInfo "INFO: SUCCESS!, Installed kira bash-utils $(bu bashUtilsVersion)"
         fi
 
-        if (! $(bu isCommand cosign)) ; then
+        COSIGN_INSTALLED="$(timeout 30 cosign version && echo "true" || echo "false")"
+        if [ "$COSIGN_INSTALLED" == "false" ] ; then
             bu echoWarn "WARNING: Cosign tool is not installed, setting up $COSIGN_VERSION..."
-            if [[ "$(uname -m)" == *"ar"* ]] ; then ARCH="arm64"; else ARCH="amd64" ; fi && \
-             declare -l FILE_NAME=$(echo "cosign-$(uname)-${ARCH}") && \
-             TMP_FILE="/tmp/${FILE_NAME}.tmp" && rm -fv "$TMP_FILE" && \
-             wget --user-agent="$UBUNTU_AGENT" https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/$FILE_NAME -O "$TMP_FILE" && \
-             chmod +x -v "$TMP_FILE" && mv -fv "$TMP_FILE" /usr/local/bin/cosign
-
-             cosign version
+            declare -l ARCH="$(uname -m)"
+            [[ "$ARCH" == *"ar"* ]] && ARCH="arm64" || ARCH="amd64"
+            declare -l PLATFORM="$(uname)"
+            declare -l FILE_NAME=$(echo "cosign-${PLATFORM}-${ARCH}")
+            TMP_FILE="/tmp/${FILE_NAME}.tmp"
+            rm -fv "$TMP_FILE"
+            wget --user-agent="$UBUNTU_AGENT" https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/$FILE_NAME -O "$TMP_FILE" && \
+            chmod +x -v "$TMP_FILE" && mv -fv "$TMP_FILE" /usr/local/bin/cosign && \
+            cosign version || bu echoErr "ERROR: Failed to install cosign tool, some BU commands might NOT function."
         fi
     fi
 }
@@ -200,7 +204,7 @@ function isInteger() {
 }
 
 function isBoolean() {
-    if ($(bash-utils isNullOrEmpty "$1")) ; then echo "false" ; else
+    if ($(bu isNullOrEmpty "$1")) ; then echo "false" ; else
         declare -l val="$1"
         if [ "$val" == "false" ] || [ "$val" == "true" ] ; then echo "true"
         else echo "false" ; fi
@@ -212,7 +216,7 @@ function isNodeId() {
 }
 
 function isNumber() {
-     if ($(bash-utils isNullOrEmpty "$1")) ; then echo "false" ; else [[ "$1" =~ $REGEX_NUMBER ]] && echo "true" || echo "false" ; fi
+     if ($(bu isNullOrEmpty "$1")) ; then echo "false" ; else [[ "$1" =~ $REGEX_NUMBER ]] && echo "true" || echo "false" ; fi
 }
 
 function isNaturalNumber() {
@@ -1843,15 +1847,15 @@ function getFirstLineByPrefixAfterPrefix() {
     local result=0
     local index=0
     local min_line=0
-    (! $(bash-utils isNullOrWhitespaces "$tag")) && \
-     min_line=$(bash-utils getFirstLineByPrefix "$tag" "$file")
+    (! $(bu isNullOrWhitespaces "$tag")) && \
+     min_line=$(bu getFirstLineByPrefix "$tag" "$file")
 
     if [[ $min_line -le -1 ]] ; then
         result="-1"
     else
         while [[ result -le min_line ]] ; do
             index="$((index+1))"
-            result=$(bash-utils getNLineByPrefix $index "$prefix" "$file")
+            result=$(bu getNLineByPrefix $index "$prefix" "$file")
             [[ $result -le -1 ]] && break
         done
     fi
@@ -1940,7 +1944,7 @@ function setTomlVar() {
                 echoWarn "WARNING: Brackets will be added, value '$VAR_VALUE' contains whitespaces"
                 VAR_VALUE="\"$VAR_VALUE\""
             elif ( (! $(isBoolean "$VAR_VALUE")) && (! $(isNumber "$VAR_VALUE")) ) ; then
-                echoWarn "WARNING: Brackets will be added, value '$VAR_VALUE' in neither a number or boolean"
+                echoWarn "WARNING: Brackets will be added, value '$VAR_VALUE' is neither a number or boolean"
                 VAR_VALUE="\"$VAR_VALUE\""       
             fi
         fi
@@ -2237,7 +2241,7 @@ fileFollow() {
     if (! $(isFileEmpty "$file")) ; then
         trap fileFollowInt INT
         trap fileFollowErr ERR
-        tail -f "$file" &
+        tail -n 1000 -f "$file" &
         pid=$!
 
         pressToContinue "q"
