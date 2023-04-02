@@ -13,6 +13,8 @@ MAIN_DIR=$ROOT_DIR/cmd/ipfs-api/main.go
 ENTRY_DIR=$ROOT_DIR/test_dir
 SECOND_DIR=$ENTRY_DIR/test_dir1
 
+JWT="${PINATA_API_JWT_TEST}"
+
 echo -e "\e[0m\e[36;1mCreating directory tree...\e[0m"
 mkdir -p $ENTRY_DIR || echo -e "\e[0m\e[31;1mFailed to create directory $ENTRY_DIR\e[0m"
 mkdir -p $SECOND_DIR || echo -e "\e[0m\e[31;1mFailed to create directory $SECOND_DIR\e[0m"
@@ -52,7 +54,7 @@ function pinTest(){
     echo -en "\e[0m\e[36;1m[    ] pinTest\e[0m"
     
     local WANT="bafybeiajf7mv3htewce3zozleukne3vfmagrc7bmk7uzzcsy7gjexkuwg4"
-    local GOT=$(go run $MAIN_DIR pin $ENTRY_DIR --key="${{secrets.PINATA_API_JWT_TEST}}" | jq -r .hash)
+    local GOT=$(go run $MAIN_DIR pin $ENTRY_DIR --key="$JWT" | jq -r .hash)
 
     if [[ $WANT -eq $GOT ]]; 
     then
@@ -70,7 +72,7 @@ function deleteByHashTest(){
     echo -en "\e[0m\e[36;1m[    ] deleteByHashTest\e[0m"
     
     local WANT="bafybeiajf7mv3htewce3zozleukne3vfmagrc7bmk7uzzcsy7gjexkuwg4"
-    local GOT=$(go run $MAIN_DIR delete $WANT --key="${{secrets.PINATA_API_JWT_TEST}}" | jq .success)
+    local GOT=$(go run $MAIN_DIR delete $WANT --key="$JWT" | jq .success)
     
     if [[ $GOT -eq $WANT ]];
     then
@@ -85,7 +87,7 @@ function pinWithMetaTest(){
     echo -en "\e[0m\e[36;1m[    ] pinWithMetaTest\e[0m"
 
     local WANT="bafybeiajf7mv3htewce3zozleukne3vfmagrc7bmk7uzzcsy7gjexkuwg4"
-    local GOT=$(go run $MAIN_DIR pin $ENTRY_DIR meta --key="${{secrets.PINATA_API_JWT_TEST}}" | jq -r .hash)
+    local GOT=$(go run $MAIN_DIR pin $ENTRY_DIR meta --key="$JWT" | jq -r .hash)
 
     if [[ $WANT -eq $GOT ]]; 
     then
@@ -101,7 +103,7 @@ function pinWithMetaForceTest(){
     echo -en "\e[0m\e[36;1m[    ] pinWithMetaForceTest\e[0m"
 
     local WANT="bafybeiajf7mv3htewce3zozleukne3vfmagrc7bmk7uzzcsy7gjexkuwg4"
-    local GOT=$(go run $MAIN_DIR pin $ENTRY_DIR foobar --key="${{secrets.PINATA_API_JWT_TEST}}" | jq -r .hash)
+    local GOT=$(go run $MAIN_DIR pin $ENTRY_DIR foobar --key="$JWT" | jq -r .hash)
 
     if [[ $WANT -eq $GOT ]]; 
     then
@@ -116,7 +118,7 @@ function pinWithMetaOverwriteTest(){
     echo -en "\e[0m\e[36;1m[    ] pinWithMetaOverwriteTest\e[0m"
 
     local WANT="OK"
-    local GOT=$(go run $MAIN_DIR pin $ENTRY_DIR foobar --overwrite --key="${{secrets.PINATA_API_JWT_TEST}}")
+    local GOT=$(go run $MAIN_DIR pin $ENTRY_DIR foobar --overwrite --key="$JWT")
     if [[ $WANT -eq $GOT ]]; 
     then
        echo -en "\e[0m\e[36;1m\033[1G[PASS] pinWithMetaOverwriteTest\e[0m"; echo
@@ -131,7 +133,7 @@ function deleteByMetaTest(){
     echo -en "\e[0m\e[36;1m[PASS] deleteByMetaTest\e[0m"
 
     local WANT=true
-    local GOT=$(go run $MAIN_DIR delete meta --key="${{secrets.PINATA_API_JWT_TEST}}" | jq .success)
+    local GOT=$(go run $MAIN_DIR delete meta --key="$JWT" | jq .success)
     if [[ $GOT -eq $WANT ]];
      then
         echo -en "\e[0m\e[36;1m\033[1G[PASS] deleteByMetaTest\e[0m"; echo
@@ -145,7 +147,7 @@ function deleteByMetaOverwriteTest(){
     echo -en "\e[0m\e[36;1m[PASS] deleteByMetaOverwriteTest\e[0m"
 
     local WANT="bafybeiajf7mv3htewce3zozleukne3vfmagrc7bmk7uzzcsy7gjexkuwg4"
-    local GOT=$(go run $MAIN_DIR delete foobar --key="${{secrets.PINATA_API_JWT_TEST}}" | jq .success)
+    local GOT=$(go run $MAIN_DIR delete foobar --key="$JWT" | jq .success)
 
     if [[ $GOT -eq true ]];
      then
