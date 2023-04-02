@@ -1,3 +1,3 @@
 Features:
 
-* auto-update cosign version
+* added timeout and retry to safeWget
