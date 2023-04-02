@@ -82,54 +82,69 @@ func (p *PinataApi) Test() error {
 	return nil
 }
 
+// Unpin removes the content from the Pinata API by its IPFS hash or metadata name.
+// This function returns an error if the unpinning operation fails.
+//
+// hash: A string containing either the IPFS hash or the metadata name of the content.
+//
+// Returns an error if any operation fails.
 func (p *PinataApi) Unpin(hash string) error {
+	// Initialize a Url instance.
 	url := Url{}
+
+	// Check if the provided hash is a valid CID.
 	if ValidateCid(hash) {
+		// Set the URL for unpinning by IPFS hash.
 		url.Set(tp.BASE_URL + tp.UNPIN + "/" + hash)
 		log.Debug("unpin: url: %v", url.Get())
 	} else {
+		// Retrieve the pinned content by metadata name.
 		err := p.Pinned(hash)
 		if err != nil {
 			return err
 		}
+
+		// Unmarshal the response into a PinnedResponse struct.
 		s := PinnedResponse{}
 		if err := json.Unmarshal(p.resp, &s); err != nil {
 			log.Error("unpin: failed to unmarshal")
 			return err
 		}
 
+		// Check the count of pinned content with the given metadata name.
 		switch s.Count {
 		case 0:
 			return fmt.Errorf(`not found. data with name %s doesn't exist`, hash)
 		case 1:
-			url.Set(tp.BASE_URL + tp.UNPIN + "/" + s.Rows[0].CID) //TODO: refactor
+			// Set the URL for unpinning by IPFS hash.
+			url.Set(tp.BASE_URL + tp.UNPIN + "/" + s.Rows[0].CID)
 			p.SetData(s.Rows[0].CID)
-
 		default:
 			return errors.New("more than one result returned")
 		}
-
 	}
 
+	// Create a new DELETE request using the PinataApi request object.
 	req, err := p.request.Del(url.Get())
-
 	if err != nil {
 		return err
 	}
+
+	// Send the request and get the response.
 	resp, err := p.client.Do(req)
 	if err != nil {
-
 		return err
 	}
-
 	defer resp.Body.Close()
 
+	// Read the response body.
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
-	p.SaveResp(b)
 
+	// Save the response body and status code to the PinataApi instance.
+	p.SaveResp(b)
 	p.SetRespCode(resp.StatusCode)
 
 	return nil
