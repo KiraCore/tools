@@ -2035,7 +2035,7 @@ function setVar() {
 }
 
 function trySetVar() {
-    setVar "$1" "$2" "$3" 2> /dev/null || :
+    setVar "$1" "$2" "$3" 2> /dev/null 
 } 
 
 function setEnv() {
