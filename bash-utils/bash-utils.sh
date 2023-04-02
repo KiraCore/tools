@@ -26,7 +26,7 @@ function bashUtilsVersion() {
 # this is default installation script for utils
 # ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
 function bashUtilsSetup() {
-    local BASH_UTILS_VERSION="v0.3.40"
+    local BASH_UTILS_VERSION="v0.3.41"
     local COSIGN_VERSION="v2.0.0"
     if [ "$1" == "version" ] ; then
         echo "$BASH_UTILS_VERSION"
@@ -95,9 +95,9 @@ function bashUtilsSetup() {
             bu echoInfo "INFO: SUCCESS!, Installed kira bash-utils $(bu bashUtilsVersion)"
         fi
 
-        COSIGN_INSTALLED="$(timeout 30 cosign version && echo "true" || echo "false")"
-        if [ "$COSIGN_INSTALLED" == "false" ] ; then
-            bu echoWarn "WARNING: Cosign tool is not installed, setting up $COSIGN_VERSION..."
+        OLD_COSIGN_VER="$(timeout 30 cosign version --json 2>&1 | bu jsonParse "gitVersion" || echo "v0.0.0")"
+        if [[ $(versionToNumber "$OLD_COSIGN_VER") -lt $(versionToNumber "$COSIGN_VERSION") ]] ; then
+            bu echoWarn "WARNING: Cosign tool is not installed or requires update $OLD_COSIGN_VER -> $COSIGN_VERSION..."
             declare -l ARCH="$(uname -m)"
             [[ "$ARCH" == *"ar"* ]] && ARCH="arm64" || ARCH="amd64"
             declare -l PLATFORM="$(uname)"

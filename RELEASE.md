@@ -1,3 +1,3 @@
 Features:
 
-* fileFollow now shows more lines when starting
+* auto-update cosign version
