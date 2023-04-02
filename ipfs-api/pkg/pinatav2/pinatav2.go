@@ -60,13 +60,13 @@ type PinResponse struct {
 }
 type PinataPutMetadataJSON struct {
 	IpfsHash  string            `json:"ipfsPinHash"`
-	Name      string            `json:"name"`      // By default name of the file/directory
-	KeyValues map[string]string `json:"keyvalues"` // Some additional data
+	Name      string            `json:"name"`                // By default name of the file/directory
+	KeyValues map[string]string `json:"keyvalues,omitempty"` // Some additional data
 
 }
 type PinataMetadataJSON struct {
-	Name      string            `json:"name"`      // By default name of the file/directory
-	KeyValues map[string]string `json:"keyvalues"` // Some additional data
+	Name      string            `json:"name"`                // By default name of the file/directory
+	KeyValues map[string]string `json:"keyvalues,omitempty"` // Some additional data
 }
 
 type PinataMetadata struct {
