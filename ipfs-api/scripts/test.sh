@@ -1,26 +1,23 @@
 set -e
-set +x
-
-. ../bash-utils/bash-utils.sh
-
 set -x
 
-echoInfo "Starting unit tests..."
+echo -e "\e[0m\e[36;1mStarting unit tests...\e[0m"
+
 go test ./... -vet=off -v || echo "IPFS-API test finished successfully"
 
-echoInfo "Starting integration tests..."
-
+echo -e "\e[0m\e[36;1mStarting integration tests...\e[0m"
 ROOT_DIR=$(pwd)
 MAIN_DIR=$ROOT_DIR/cmd/ipfs-api/main.go
 ENTRY_DIR=$ROOT_DIR/test_dir
 SECOND_DIR=$ENTRY_DIR/test_dir1
 
-echoInfo "Creating directory tree..."
+echo -e "\e[0m\e[36;1mCreating directory tree...\e[0m"
 mkdir -p $ENTRY_DIR || echoError "Failed to create directory $ENTRY_DIR"
 mkdir -p $SECOND_DIR || echoError "Failed to create directory $SECOND_DIR"
 
 
-echoInfo "Populating directory tree with files..."
+echo -e "\e[0m\e[36;1mPopulating directory tree with files...\e[0m"
+
 # Populate dir with files L1
 set +x 
 for i in {1..5}; 
@@ -36,7 +33,7 @@ done
 
 
 function dagExportTest(){
-    echoNInfo "[    ] dagExportTest"
+    echo -en "\e[0m\e[36;1m[    ] dagExportTest\e[0m"
 
     local WANT="bafybeiajf7mv3htewce3zozleukne3vfmagrc7bmk7uzzcsy7gjexkuwg4"
     local GOT=$(go run $MAIN_DIR dag $ENTRY_DIR --export)
@@ -51,7 +48,8 @@ function dagExportTest(){
 }
 
 function pinTest(){
-    echoNInfo "[    ] pinTest"
+    echo -en "\e[0m\e[36;1m[    ] pinTest\e[0m"
+    
     local WANT="bafybeiajf7mv3htewce3zozleukne3vfmagrc7bmk7uzzcsy7gjexkuwg4"
     local GOT=$(go run $MAIN_DIR pin $ENTRY_DIR --key="${{secrets.PINATA_API_JWT_TEST}}" | jq -r .hash)
 
@@ -68,7 +66,7 @@ function pinTest(){
 }
 
 function deleteByHashTest(){
-    echoNInfo "[    ] deleteByHashTest"
+    echo -en "\e[0m\e[36;1m[    ] deleteByHashTest\e[0m"
     
     local WANT="bafybeiajf7mv3htewce3zozleukne3vfmagrc7bmk7uzzcsy7gjexkuwg4"
     local GOT=$(go run $MAIN_DIR delete $WANT --key="${{secrets.PINATA_API_JWT_TEST}}" | jq .success)
@@ -83,7 +81,7 @@ function deleteByHashTest(){
 }
 
 function pinWithMetaTest(){
-    echoNInfo "[    ] pinWithMetaTest"
+    echo -en "\e[0m\e[36;1m[    ] pinWithMetaTest\e[0m"
 
     local WANT="bafybeiajf7mv3htewce3zozleukne3vfmagrc7bmk7uzzcsy7gjexkuwg4"
     local GOT=$(go run $MAIN_DIR pin $ENTRY_DIR meta --key="${{secrets.PINATA_API_JWT_TEST}}" | jq -r .hash)
@@ -99,7 +97,7 @@ function pinWithMetaTest(){
 }
 
 function pinWithMetaForceTest(){
-    echoNInfo "[    ] pinWithMetaForceTest"
+    echo -en "\e[0m\e[36;1m[    ] pinWithMetaForceTest\e[0m"
 
     local WANT="bafybeiajf7mv3htewce3zozleukne3vfmagrc7bmk7uzzcsy7gjexkuwg4"
     local GOT=$(go run $MAIN_DIR pin $ENTRY_DIR foobar --key="${{secrets.PINATA_API_JWT_TEST}}" | jq -r .hash)
@@ -114,7 +112,7 @@ function pinWithMetaForceTest(){
 
 }
 function pinWithMetaOverwriteTest(){
-    echoNInfo "[    ] pinWithMetaOverwriteTest"
+    echo -en "\e[0m\e[36;1m[    ] pinWithMetaOverwriteTest\e[0m"
 
     local WANT="OK"
     local GOT=$(go run $MAIN_DIR pin $ENTRY_DIR foobar --overwrite --key="${{secrets.PINATA_API_JWT_TEST}}")
@@ -129,7 +127,7 @@ function pinWithMetaOverwriteTest(){
 }
 
 function deleteByMetaTest(){
-    echoNInfo "[PASS] deleteByMetaTest"
+    echo -en "\e[0m\e[36;1m[PASS] deleteByMetaTest\e[0m"
 
     local WANT=true
     local GOT=$(go run $MAIN_DIR delete meta --key="${{secrets.PINATA_API_JWT_TEST}}" | jq .success)
@@ -143,7 +141,7 @@ function deleteByMetaTest(){
 }
 
 function deleteByMetaOverwriteTest(){
-    echoNInfo "[PASS] deleteByMetaOverwriteTest"
+    echo -en "\e[0m\e[36;1m[PASS] deleteByMetaOverwriteTest\e[0m"
 
     local WANT="bafybeiajf7mv3htewce3zozleukne3vfmagrc7bmk7uzzcsy7gjexkuwg4"
     local GOT=$(go run $MAIN_DIR delete foobar --key="${{secrets.PINATA_API_JWT_TEST}}" | jq .success)
@@ -156,12 +154,16 @@ function deleteByMetaOverwriteTest(){
         exit 1
     fi
 }
-echoInfo "Starting tests..."
+echo -e "\e[0m\e[36;1mStarting tests...\e[0m"
+
 TESTS=(dagExportTest pinTest deleteByHashTest pinWithMetaTest deleteByMetaTest pinWithMetaTest pinWithMetaOverwriteTest deleteByMetaOverwriteTest pinWithMetaTest pinWithMetaForceTest deleteByMetaOverwriteTest)
 for TEST in "${TESTS[@]}"; do
     $TEST
 done
-echoInfo "All tests finished. Cleaning up the environment..."
+echo -e "\e[0m\e[36;1mAll tests finished. Cleaning up the environment...\e[0m"
+
 set -x
-rm -rf $ENTRY_DIR || echoError "Failed to clean up an the environment"
-echoInfo "All done..."
+
+rm -rf $ENTRY_DIR || echo -e "\e[0m\e[31;1mFailed to clean up an the environment\e[0m"
+
+echo -e "\e[0m\e[36;1mAll done...\e[0m"
