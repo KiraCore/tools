@@ -55,6 +55,8 @@ change={
     "../bip39gen/cmd/version.go":updateVersion,
     "../ipfs-api/types/constants.go":updateVersion,
     "../validator-key-gen/main.go":updateVersion,
+    "../validator-key-gen/README.md":updateVersion,
+    "../ipfs-api/README.md":updateVersion,
     }
 
 new_release = sys.argv[1]
