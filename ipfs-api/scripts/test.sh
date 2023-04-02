@@ -1,8 +1,8 @@
 set -e
 set +x
 . /etc/profile
-#. ../../bash-utils/bash-utils.sh
-. ../bash-utils/bash-utils.sh
+. ../../bash-utils/bash-utils.sh
+
 set -x
 
 echoInfo "Starting unit tests..."
