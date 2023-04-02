@@ -2259,7 +2259,7 @@ fileFollow() {
     if (! $(isFileEmpty "$file")) ; then
         trap fileFollowInt INT
         trap fileFollowErr ERR
-        tail -n 1000 -f "$file" &
+        tail -n 2147483646 -f "$file" &
         pid=$!
 
         pressToContinue "q"
