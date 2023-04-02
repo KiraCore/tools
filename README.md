@@ -27,6 +27,7 @@ EOL
 # download desired files and the corresponding .sig file from: https://github.com/KiraCore/tools/releases
 
 # verify signature of downloaded files
+# NOTE: You might need insecure-ignore-tlog and/or insecure-ignore-sct if you verify old signatures from before v2.0.0
 cosign verify-blob --key=./cosign.pub --signature=./<file>.sig ./<file> --insecure-ignore-tlog --insecure-ignore-sct
 ```
 
@@ -50,10 +51,10 @@ A simple and secure bip39 words generator that is able to mix computer and human
 
 ```bash
 # once BU is installed, you can easily and securely install all tools for a relevant architecture and platform
-# one line install
+# one line install with verification of IPFS CID referencing a public key used to sign the release
 TOOLS_VERSION="v0.3.36" && TOOL_NAME="bip39gen" && cd /tmp && \
  bu safeWget ./${TOOL_NAME}.deb "https://github.com/KiraCore/tools/releases/download/$TOOLS_VERSION/${TOOL_NAME}-$(getPlatform)-$(getArch).deb" \
- "$KIRA_COSIGN_PUB" && rm -rfv ./$TOOL_NAME&& dpkg-deb -x ./${TOOL_NAME}.deb ./$TOOL_NAME && \
+ "QmeqFDLGfwoWgCy2ZEFXerVC5XW8c5xgRyhK5bLArBr2ue" && rm -rfv ./$TOOL_NAME&& dpkg-deb -x ./${TOOL_NAME}.deb ./$TOOL_NAME && \
  cp -fv ./$TOOL_NAME/bin/$TOOL_NAME /usr/local/bin/$TOOL_NAME && chmod +x "/usr/local/bin/$TOOL_NAME" && \
  rm -rfv ./$TOOL_NAME ./${TOOL_NAME}.deb
 

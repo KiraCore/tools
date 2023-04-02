@@ -225,7 +225,7 @@ jobs:
       id-token: write
       pull-requests: write
     steps:
-            # ref.: https://github.com/sigstore/cosign-installer, v2.2.0
+            # ref.: https://github.com/sigstore/cosign-installer, v3.0.1
           - name: Install cosign
             uses: sigstore/cosign-installer@c3667d99424e7e6047999fb6246c0da843953c65
             with:
@@ -298,7 +298,7 @@ jobs:
               COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
             run: |
               echo "$KEY" > ../cosign.key
-              for FILE in *; do FILE_NAME=$(basename $FILE); cosign sign-blob --key=../cosign.key --output-signature=./${FILE_NAME}.sig ./$FILE_NAME; done
+              for FILE in *; do FILE_NAME=$(basename $FILE); cosign sign-blob --key=../cosign.key --output-signature=./${FILE_NAME}.sig ./$FILE_NAME --yes; done
               rm -fv ../cosign.key
           # ref: https://github.com/softprops/action-gh-release, v0.1.14
           # Release on merge only (push action) - this should run only once
