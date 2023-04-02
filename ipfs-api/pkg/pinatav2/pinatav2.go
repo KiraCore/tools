@@ -58,6 +58,8 @@ type PinResponse struct {
 	timestamp string
 	pinSize   int64
 }
+
+// PinataPutMetadataJSON is a structure that holds the data required to update the metadata of an IPFS hash in Pinata.
 type PinataPutMetadataJSON struct {
 	IpfsHash  string            `json:"ipfsPinHash"`
 	Name      string            `json:"name"`                // By default name of the file/directory
