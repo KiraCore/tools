@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 
+	"github.com/ipld/go-ipld-prime/datamodel"
 	log "github.com/kiracore/tools/ipfs-api/pkg/ipfslog"
 	pnt "github.com/kiracore/tools/ipfs-api/pkg/pinatav2"
 	"github.com/spf13/cobra"
@@ -60,12 +61,10 @@ func pinCmd(cmd *cobra.Command, args []string) error {
 		p.SetMetaData(m)
 	}
 
-	// Assign args[0] and args[1] to descriptive variable names
-	content := args[0]
-	name := args[1]
-
 	switch len(args) {
 	case 1:
+		// Assign args[0] to descriptive variable names
+		content := args[0]
 		if force {
 			log.Error("pinCmd: can't force if metadata is not provided")
 			return errors.New("can't force if metadata is not provided")
@@ -78,6 +77,9 @@ func pinCmd(cmd *cobra.Command, args []string) error {
 		}
 
 	case 2:
+		// Assign args[0] and args[1] to descriptive variable names
+		content := args[0]
+		name := args[1]
 		// Set the name metadata.
 		if err := p.SetMetaName(name); err != nil {
 			log.Error("failed to add metadata %v", err)
@@ -138,8 +140,12 @@ func pinAndForce(p *pnt.PinataApi, content string, name string) error {
 
 // pinAndOverwrite unpins previous content, pins the new content, and updates metadata.
 func pinAndOverwrite(p *pnt.PinataApi, content string, name string) error {
+	var cid datamodel.Link
+	if err := getCID(content, &cid); err != nil {
+		return err
+	}
 	// Unpin the previous content.
-	if err := p.Unpin(name); err != nil {
+	if err := p.Unpin(cid.String()); err != nil {
 		log.Error("failed to unpin previous content: %v", err)
 		return err
 	}
