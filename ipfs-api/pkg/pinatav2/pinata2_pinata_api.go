@@ -135,18 +135,32 @@ func (p *PinataApi) Unpin(hash string) error {
 	return nil
 }
 
+// Pinned retrieves the pinned content by hash or metadata name from the Pinata API.
+// This function returns an error if the request to the Pinata API fails.
+//
+// hash: A string containing either the IPFS hash or the metadata name of the content.
+//
+// Returns an error if any operation fails.
 func (p *PinataApi) Pinned(hash string) error {
+	// Initialize a Url instance.
 	url := Url{}
+
+	// Check if the provided hash is a valid CID.
 	if ValidateCid(hash) {
+		// Set the URL to search by IPFS hash.
 		url.Set(tp.BASE_URL + tp.PINNEDDATA + "/?status=pinned&hashContains=" + hash)
 	} else {
+		// Set the URL to search by metadata name.
 		url.Set(tp.BASE_URL + tp.PINNEDDATA + "/?status=pinned&metadata[name]=" + hash)
 	}
+
+	// Create a new request using the PinataApi request object.
 	req, err := p.request.Get(url.Get())
 	if err != nil {
 		return err
 	}
 
+	// Send the request and get the response.
 	resp, err := p.client.Do(req)
 	if err != nil {
 		log.Debug("Ipfs-api: test: invalid response: %v", err)
@@ -154,10 +168,13 @@ func (p *PinataApi) Pinned(hash string) error {
 	}
 	defer resp.Body.Close()
 
+	// Read the response body.
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
+
+	// Save the response body and status code to the PinataApi instance.
 	p.SaveResp(b)
 	p.SetRespCode(resp.StatusCode)
 
@@ -296,6 +313,13 @@ func (p *PinataApi) GetMeta() string {
 	}
 	return string(j)
 }
+
+// SetMeta updates the metadata associated with an IPFS hash in Pinata.
+//
+// h: The IPFS hash of the content to update the metadata for.
+// n: The new name to be associated with the IPFS hash.
+//
+// Returns an error if the update operation fails.
 func (p *PinataApi) SetMeta(h string, n string) error {
 	r := PinataPutMetadataJSON{
 		IpfsHash:  h,
