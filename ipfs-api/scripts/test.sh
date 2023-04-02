@@ -1,7 +1,7 @@
 set -e
 set +x
 
-. ../../bash-utils/bash-utils.sh
+. ../bash-utils/bash-utils.sh
 
 set -x
 
