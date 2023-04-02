@@ -79,10 +79,10 @@ function bashUtilsSetup() {
 
             mkdir -p "$KIRA_GLOBS_DIR"
 
-            bash-utils setGlobEnv KIRA_GLOBS_DIR "$KIRA_GLOBS_DIR"
-            bash-utils setGlobEnv KIRA_TOOLS_SRC "$UTILS_DESTINATION"
-            bash-utils setGlobPath "/usr/local/bin"
-            bash-utils setGlobPath "/bin"
+            bu setGlobEnv KIRA_GLOBS_DIR "$KIRA_GLOBS_DIR"
+            bu setGlobEnv KIRA_TOOLS_SRC "$UTILS_DESTINATION"
+            bu setGlobPath "/usr/local/bin"
+            bu setGlobPath "/bin"
 
             local AUTOLOAD_SET=$(bu getLastLineByPrefix "source $UTILS_DESTINATION" /etc/profile 2> /dev/null || echo "-1")
 
@@ -95,7 +95,7 @@ function bashUtilsSetup() {
         fi
 
         if (! $(bu isCommand cosign)) ; then
-            echoWarn "WARNING: Cosign tool is not installed, setting up $COSIGN_VERSION..."
+            bu echoWarn "WARNING: Cosign tool is not installed, setting up $COSIGN_VERSION..."
             if [[ "$(uname -m)" == *"ar"* ]] ; then ARCH="arm64"; else ARCH="amd64" ; fi && \
              declare -l FILE_NAME=$(echo "cosign-$(uname)-${ARCH}") && \
              TMP_FILE="/tmp/${FILE_NAME}.tmp" && rm -fv "$TMP_FILE" && \
@@ -859,7 +859,7 @@ function getArch() {
 }
 
 function getArchX() {
-    echo $(bash-utils getArch 'short')
+    echo $(bu getArch 'short')
 }
 
 function getPlatform() {
@@ -871,10 +871,10 @@ function tryMkDir {
     for kg_var in "$@" ; do
         kg_var=$(echo "$kg_var" | tr -d '\011\012\013\014\015\040' 2>/dev/null || echo -n "")
         [ -z "$kg_var" ] && continue
-        [ "$(bash-utils toLower "$kg_var")" == "-v" ] && continue
+        [ "$(bu toLower "$kg_var")" == "-v" ] && continue
         
         if [ -f "$kg_var" ] ; then
-            if [ "$(bash-utils toLower "$1")" == "-v" ] ; then
+            if [ "$(bu toLower "$1")" == "-v" ] ; then
                 rm -f "$kg_var" 2> /dev/null || : 
                 [ ! -f "$kg_var" ] && echo "removed file '$kg_var'" || echo "failed to remove file '$kg_var'"
             else
@@ -882,7 +882,7 @@ function tryMkDir {
             fi
         fi
 
-        if [ "$(bash-utils toLower "$1")" == "-v" ]  ; then
+        if [ "$(bu toLower "$1")" == "-v" ]  ; then
             [ ! -d "$kg_var" ] && mkdir -p "$var" 2> /dev/null || :
             [ -d "$kg_var" ] && echo "created directory '$kg_var'" || echo "failed to create direcotry '$kg_var'"
         elif [ ! -d "$kg_var" ] ; then
@@ -908,9 +908,9 @@ function isDirEmpty() {
 function isSimpleJsonObjOrArr() {
     if ($(isNullOrEmpty "$1")) ; then echo "false"
     else
-        kg_HEADS=$(echo "$1" | head -c 8)
-        kg_TAILS=$(echo "$1" | tail -c 8)
-        kg_STR=$(echo "${kg_HEADS}${kg_TAILS}" | tr -d '\n' | tr -d '\r' | tr -d '\a' | tr -d '\t' | tr -d ' ')
+        local kg_HEADS=$(echo "$1" | head -c 8)
+        local kg_TAILS=$(echo "$1" | tail -c 8)
+        local kg_STR=$(echo "${kg_HEADS}${kg_TAILS}" | tr -d '\n' | tr -d '\r' | tr -d '\a' | tr -d '\t' | tr -d ' ')
         if ($(isNullOrEmpty "$kg_STR")) ; then echo "false"
         elif [[ "$kg_STR" =~ ^\{.*\}$ ]] ; then echo "true"
         elif [[ "$kg_STR" =~ ^\[.*\]$ ]] ; then echo "true"
@@ -921,8 +921,8 @@ function isSimpleJsonObjOrArr() {
 function isSimpleJsonObjOrArrFile() {
     if [ ! -f "$1" ] ; then echo "false"
     else
-        kg_HEADS=$(head -c 8 $1 2>/dev/null || echo -ne "")
-        kg_TAILS=$(tail -c 8 $1 2>/dev/null || echo -ne "")
+        local kg_HEADS=$(head -c 8 $1 2>/dev/null || echo -ne "")
+        local kg_TAILS=$(tail -c 8 $1 2>/dev/null || echo -ne "")
         echo $(isSimpleJsonObjOrArr "${kg_HEADS}${kg_TAILS}")
     fi
 }

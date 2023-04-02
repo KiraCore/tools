@@ -62,7 +62,7 @@ jobs:
           - name: Print debug data before build
             run: |
               set -x
-              echo "Bash Utils version: $(bash-utils bashUtilsVersion)"
+              echo "Bash Utils version: $(bu bashUtilsVersion)"
               echo "     Source branch: ${{ env.SOURCE_BRANCH }}"
               echo "Destination branch: ${{ env.DESTINATION_BRANCH }}"
               echo "        Event name: ${{ github.event_name }}"
