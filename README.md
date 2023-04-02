@@ -37,7 +37,7 @@ KIRA bash-utils (BU) is a general purpose tool for simplifying scripts & command
 
 ```bash
 # one line install
-TOOLS_VERSION="v0.3.36" && cd /tmp && FILE_NAME="bash-utils.sh" && \
+TOOLS_VERSION="v0.3.40" && cd /tmp && FILE_NAME="bash-utils.sh" && \
  wget "https://github.com/KiraCore/tools/releases/download/$TOOLS_VERSION/${FILE_NAME}" -O ./$FILE_NAME && \
  wget "https://github.com/KiraCore/tools/releases/download/$TOOLS_VERSION/${FILE_NAME}.sig" -O ./${FILE_NAME}.sig && \
  cosign verify-blob --key="$KIRA_COSIGN_PUB" --signature=./${FILE_NAME}.sig ./$FILE_NAME --insecure-ignore-tlog && \
@@ -52,7 +52,7 @@ A simple and secure bip39 words generator that is able to mix computer and human
 ```bash
 # once BU is installed, you can easily and securely install all tools for a relevant architecture and platform
 # one line install with verification of IPFS CID referencing a public key used to sign the release
-TOOLS_VERSION="v0.3.36" && TOOL_NAME="bip39gen" && cd /tmp && \
+TOOLS_VERSION="v0.3.40" && TOOL_NAME="bip39gen" && cd /tmp && \
  bu safeWget ./${TOOL_NAME}.deb "https://github.com/KiraCore/tools/releases/download/$TOOLS_VERSION/${TOOL_NAME}-$(getPlatform)-$(getArch).deb" \
  "QmeqFDLGfwoWgCy2ZEFXerVC5XW8c5xgRyhK5bLArBr2ue" && rm -rfv ./$TOOL_NAME&& dpkg-deb -x ./${TOOL_NAME}.deb ./$TOOL_NAME && \
  cp -fv ./$TOOL_NAME/bin/$TOOL_NAME /usr/local/bin/$TOOL_NAME && chmod +x "/usr/local/bin/$TOOL_NAME" && \
