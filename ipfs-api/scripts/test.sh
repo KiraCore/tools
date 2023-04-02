@@ -1,3 +1,5 @@
+#!/bin/bash
+
 set -e
 set -x
 
@@ -12,9 +14,8 @@ ENTRY_DIR=$ROOT_DIR/test_dir
 SECOND_DIR=$ENTRY_DIR/test_dir1
 
 echo -e "\e[0m\e[36;1mCreating directory tree...\e[0m"
-mkdir -p $ENTRY_DIR || echoError "Failed to create directory $ENTRY_DIR"
-mkdir -p $SECOND_DIR || echoError "Failed to create directory $SECOND_DIR"
-
+mkdir -p $ENTRY_DIR || echo -e "\e[0m\e[31;1mFailed to create directory $ENTRY_DIR\e[0m"
+mkdir -p $SECOND_DIR || echo -e "\e[0m\e[31;1mFailed to create directory $SECOND_DIR\e[0m"
 
 echo -e "\e[0m\e[36;1mPopulating directory tree with files...\e[0m"
 
@@ -22,13 +23,13 @@ echo -e "\e[0m\e[36;1mPopulating directory tree with files...\e[0m"
 set +x 
 for i in {1..5}; 
 do
-    echo "file$i">"$ENTRY_DIR/file$i.txt" || echoError "Failed to create file$i.txt"
+    echo "file$i">"$ENTRY_DIR/file$i.txt" || echo -e "\e[0m\e[31;1mFailed to create file$i.txt\e[0m"
 done
 
 # Populate dir with files L2
 for i in {6..10};
 do
-    echo "file$i">"$SECOND_DIR/file$i.txt" || echoError "Failed to create file$i.txt"
+    echo "file$i">"$SECOND_DIR/file$i.txt" || echo -e "\e[0m\e[31;1mFailed to create file$i.txt\e[0m"
 done
 
 
@@ -160,10 +161,11 @@ TESTS=(dagExportTest pinTest deleteByHashTest pinWithMetaTest deleteByMetaTest p
 for TEST in "${TESTS[@]}"; do
     $TEST
 done
+
 echo -e "\e[0m\e[36;1mAll tests finished. Cleaning up the environment...\e[0m"
 
 set -x
 
-rm -rf $ENTRY_DIR || echo -e "\e[0m\e[31;1mFailed to clean up an the environment\e[0m"
+rm -rf $ENTRY_DIR || echo -e "\e[0m\e[31;1mFailed to clean up the environment\e[0m"
 
 echo -e "\e[0m\e[36;1mAll done...\e[0m"
