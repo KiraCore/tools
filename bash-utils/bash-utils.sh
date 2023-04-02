@@ -26,7 +26,7 @@ function bashUtilsVersion() {
 # this is default installation script for utils
 # ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
 function bashUtilsSetup() {
-    local BASH_UTILS_VERSION="v0.3.41"
+    local BASH_UTILS_VERSION="v0.3.42"
     local COSIGN_VERSION="v2.0.0"
     if [ "$1" == "version" ] ; then
         echo "$BASH_UTILS_VERSION"
@@ -652,12 +652,14 @@ function ipfsGet() {
     local file=""
     local url=""
     local timeout=""
+    local tries=""
 
-    getArgs --gargs_throw=false --gargs_verbose=false "$1" "$2" "$3" "$4"
+    getArgs --gargs_throw=false --gargs_verbose=false "$1" "$2" "$3" "$4" "$5"
 
     [ -z "$file" ] && file="$1"
-    [ -z "$cid" ] && cid="$2"
-    [ -z $timeout ] && timeout="30"
+    (! $(isCID "$cid")) && cid="$2"
+    (! $(isNaturalNumber "$timeout")) && timeout=30
+    (! $(isNaturalNumber "$tries")) && tries=2
 
     local PUB_URL=""
     local DOWNLOAD_SUCCESS="false"
@@ -668,33 +670,39 @@ function ipfsGet() {
         if [ ! -z "$url" ] ; then
             PUB_URL="${url}/${cid}"
             if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $timeout) -gt 1 ]] ) ; then
-                wget --timeout="$timeout" --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$file" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ${url} :("
+                wget --tries="$tries" --waitretry=1 --timeout="$timeout" --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$file" && \
+                 DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ${url} :("
             fi
         fi
 
         PUB_URL="https://gateway.ipfs.io/ipfs/${cid}"
         if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $timeout) -gt 1 ]] ) ; then
-            wget --timeout="$timeout" --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$file" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from gateway.ipfs.io :("
+            wget --tries="$tries" --waitretry=1 --timeout="$timeout" --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$file" && \
+             DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from gateway.ipfs.io :("
         fi
 
         PUB_URL="https://dweb.link/ipfs/${cid}"
         if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $timeout) -gt 1 ]] ) ; then
-            wget --timeout="$timeout" --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$file" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from dweb.link :("
+            wget --tries="$tries" --waitretry=1 --timeout="$timeout" --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$file" && \
+             DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from dweb.link :("
         fi
 
         PUB_URL="https://ipfs.joaoleitao.org/ipfs/${cid}" 
         if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $timeout) -gt 1 ]] ) ; then
-            wget --timeout="$timeout" --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$file" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
+            wget --tries="$tries" --waitretry=1 --timeout="$timeout" --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$file" && \
+             DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
         fi
 
         PUB_URL="https://ipfs.kira.network/ipfs/${cid}"
         if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $timeout) -gt 1 ]] ) ; then
-            wget --timeout="$timeout" --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$file" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.kira.network :("
+            wget --tries="$tries" --waitretry=1 --timeout="$timeout" --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$file" && \
+             DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.kira.network :("
         fi
 
         PUB_URL="https://ipfs.snggle.com/ipfs/${cid}"
         if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $timeout) -gt 1 ]] ) ; then
-            wget --timeout="$timeout" --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$file" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.snggle.com :("
+            wget --tries="$tries" --waitretry=1 --timeout="$timeout" --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$file" && \
+             DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.snggle.com :("
         fi
 
         if ( [ "$DOWNLOAD_SUCCESS" != "true" ] || [ ! -f "$file" ] ) ; then
@@ -716,9 +724,19 @@ function ipfsGet() {
 # safeWget <file> <url> <hash>,<hash>,<hash>...
 # safeWget <file> <url> <CID>
 function safeWget() {
-    local OUT_PATH=$1
-    local FILE_URL=$2
-    local EXPECTED_HASH=$3
+    local OUT_PATH="$1"
+    local FILE_URL="$2"
+    local EXPECTED_HASH="$3"
+    local timeout=""
+    local sig_timeout=""
+    local waitretry=""
+    local tries=""
+    getArgs --gargs_throw=false --gargs_verbose=false "$1" "$2" "$3" "$4" "$5" "$6" "$7"
+
+    (! $(isNaturalNumber "$timeout")) && timeout=900
+    (! $(isNaturalNumber "$sig_timeout")) && sig_timeout=30
+    (! $(isNaturalNumber "$waitretry")) && waitretry=1
+    (! $(isNaturalNumber "$tries")) && tries=2
 
     # we need to use MD5 for TMP files to ensure that we download the file again if URL changes
     local OUT_NAME=$(echo "$OUT_PATH" | md5)
@@ -749,7 +767,7 @@ function safeWget() {
         if ($(isCID "$EXPECTED_HASH_FIRST")) ; then
             echoInfo "INFO: Detected IPFS CID, searching available gatewys..."
             COSIGN_PUB_KEY="$TMP_PATH_PUB"
-            ipfsGet --file="$COSIGN_PUB_KEY" --cid="$EXPECTED_HASH_FIRST" --timeout="30"
+            ipfsGet --file="$COSIGN_PUB_KEY" --cid="$EXPECTED_HASH_FIRST" --timeout="$sig_timeout"
 
             if ($(isFileEmpty $COSIGN_PUB_KEY)); then
                 echoErr "ERROR: Failed to locate or download public key file '$EXPECTED_HASH_FIRST' from any public IPFS gateway :("
@@ -762,7 +780,7 @@ function safeWget() {
 
         if (! $(isFileEmpty $COSIGN_PUB_KEY)) || ($(urlExists "$COSIGN_PUB_KEY")) ; then
             echoWarn "WARNING: Attempting to fetch signature file..."
-            wget --user-agent="$UBUNTU_AGENT" "$SIG_URL" -O $TMP_PATH_SIG
+            wget --timeout="$sig_timeout" --tries="$tries" --waitretry=1 --user-agent="$UBUNTU_AGENT" "$SIG_URL" -O $TMP_PATH_SIG
         else
             echoErr "ERROR: Public key was not found in '$COSIGN_PUB_KEY'"
             return 1
@@ -801,7 +819,7 @@ function safeWget() {
     
     if [ "$HASH_MATCH" == "false" ] ; then
         rm -fv $OUT_PATH
-        wget --user-agent="$UBUNTU_AGENT" "$FILE_URL" -O $TMP_PATH
+        wget --timeout="$timeout" --tries="$tries" --waitretry=1 --user-agent="$UBUNTU_AGENT" "$FILE_URL" -O $TMP_PATH
         [ "$TMP_PATH" != "$OUT_PATH" ] && cp -fv $TMP_PATH $OUT_PATH
         FILE_HASH=$(sha256 $OUT_PATH)
     fi
