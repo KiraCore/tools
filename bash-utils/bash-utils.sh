@@ -642,54 +642,65 @@ function getLocalIp() {
 # Host list: https://ipfs.github.io/public-gateway-checker
 # Given file CID downloads content from a known public IPFS gateway
 # ipfsGet <file> <CID>
+# ipfsGet --file=<file> --cid=<CID> --timeout="30" --url="https://ipfs.example.com/ipfs"
 function ipfsGet() {
-    local OUT_PATH=$1
-    local FILE_CID=$2
+    local cid=""
+    local file=""
+    local url=""
+    local timeout=""
+
+    getArgs --gargs_throw=false --gargs_verbose=false "$1" "$2" "$3" "$4"
+
+    [ -z "$file" ] && file="$1"
+    [ -z "$cid" ] && cid="$2"
+    [ -z $timeout ] && timeout="30"
+
     local PUB_URL=""
+    local DOWNLOAD_SUCCESS="false"
 
-    local TIMEOUT=30
+    if ($(isCID "$cid")) ; then
+        echoInfo "INFO: Cleaning up '$file' and searching for available gatewys..."
 
-    if ($(isCID "$FILE_CID")) ; then
-        echoInfo "INFO: Cleaning up '$OUT_PATH' and searching for available gatewys..."
-
-        PUB_URL="https://gateway.ipfs.io/ipfs/${FILE_CID}"
-        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $TIMEOUT) -gt 1 ]] ) ; then
-            wget --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from gateway.ipfs.io :("
+        if [ ! -z "$url" ] ; then
+            PUB_URL="${url}/${cid}"
+            if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $timeout) -gt 1 ]] ) ; then
+                wget --timeout="$timeout" --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$file" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ${url} :("
+            fi
         fi
 
-        PUB_URL="https://dweb.link/ipfs/${FILE_CID}"
-        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $TIMEOUT) -gt 1 ]] ) ; then
-            wget --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from dweb.link :("
+        PUB_URL="https://gateway.ipfs.io/ipfs/${cid}"
+        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $timeout) -gt 1 ]] ) ; then
+            wget --timeout="$timeout" --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$file" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from gateway.ipfs.io :("
         fi
 
-        PUB_URL="https://ipfs.joaoleitao.org/ipfs/${FILE_CID}" 
-        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $TIMEOUT) -gt 1 ]] ) ; then
-            wget --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
+        PUB_URL="https://dweb.link/ipfs/${cid}"
+        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $timeout) -gt 1 ]] ) ; then
+            wget --timeout="$timeout" --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$file" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from dweb.link :("
         fi
 
-        PUB_URL="https://ipfs.kira.network/ipfs/${FILE_CID}"
-        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $TIMEOUT) -gt 1 ]] ) ; then
-            wget --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
+        PUB_URL="https://ipfs.joaoleitao.org/ipfs/${cid}" 
+        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $timeout) -gt 1 ]] ) ; then
+            wget --timeout="$timeout" --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$file" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
         fi
 
-        PUB_URL="https://ipfs.kira.network/ipfs/${FILE_CID}"
-        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $TIMEOUT) -gt 1 ]] ) ; then
-            wget --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
+        PUB_URL="https://ipfs.kira.network/ipfs/${cid}"
+        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $timeout) -gt 1 ]] ) ; then
+            wget --timeout="$timeout" --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$file" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.kira.network :("
         fi
 
-        PUB_URL="https://ipfs.snggle.com/ipfs/${FILE_CID}"
-        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $TIMEOUT) -gt 1 ]] ) ; then
-            wget --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
+        PUB_URL="https://ipfs.snggle.com/ipfs/${cid}"
+        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $timeout) -gt 1 ]] ) ; then
+            wget --timeout="$timeout" --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$file" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.snggle.com :("
         fi
 
-        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] || [ ! -f "$OUT_PATH" ] ) ; then
-            echoErr "ERROR: Failed to locate or download '$FILE_CID' file from any public IPFS gateway :("
+        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] || [ ! -f "$file" ] ) ; then
+            echoErr "ERROR: Failed to locate or download '$cid' file from any public IPFS gateway :("
             return 1
         else
-            echoInfo "INFO: Success, file '$FILE_CID' was downloaded to '$OUT_PATH' from '$PUB_URL'"
+            echoInfo "INFO: Success, file '$cid' was downloaded to '$file' from '$PUB_URL'"
         fi
     else
-        echoErr "ERROR: Specified file CID '$FILE_CID' is NOT valid"
+        echoErr "ERROR: Specified file CID '$cid' is NOT valid"
         return 1
     fi
 }
@@ -726,7 +737,7 @@ function safeWget() {
     local DOWNLOAD_SUCCESS="false"
 
     if (! $(isCommand cosign)) ; then
-        echoErr "ERROR: Cosign tool is not installed, please install version v1.13.1 or later."
+        echoErr "ERROR: Cosign tool is not installed, please install version v2.0.0 or later."
         return 1
     fi
 
@@ -734,7 +745,7 @@ function safeWget() {
         if ($(isCID "$EXPECTED_HASH_FIRST")) ; then
             echoInfo "INFO: Detected IPFS CID, searching available gatewys..."
             COSIGN_PUB_KEY="$TMP_PATH_PUB"
-            ipfsGet "$COSIGN_PUB_KEY" "$EXPECTED_HASH_FIRST"
+            ipfsGet --file="$COSIGN_PUB_KEY" --cid="$EXPECTED_HASH_FIRST" --timeout="30"
 
             if ($(isFileEmpty $COSIGN_PUB_KEY)); then
                 echoErr "ERROR: Failed to locate or download public key file '$EXPECTED_HASH_FIRST' from any public IPFS gateway :("
