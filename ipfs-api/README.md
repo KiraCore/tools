@@ -2,7 +2,14 @@
 A command-line interface (CLI) for interacting with the IPFS API, providing functionality to pin, unpin, and manage data and metadata using the Pinata service.
 
 ## Installation
-To install the CLI, clone the repository and build the project using Go.
+To install the CLI, clone the repository and build the project using Go.= or dowload from existing release
+
+```
+TOOLS_VERSION="v0.3.39" && rm -rfv /tmp/ipfs-api && \
+ safeWget /tmp/ipfs-api.deb "https://github.com/KiraCore/tools/releases/download/$TOOLS_VERSION/ipfs-api-$(getPlatform)-$(getArch).deb" "QmeqFDLGfwoWgCy2ZEFXerVC5XW8c5xgRyhK5bLArBr2ue" && \
+ dpkg-deb -x /tmp/ipfs-api.deb /tmp/ipfs-api && cp -fv "/tmp/ipfs-api/bin/ipfs-api" /usr/local/bin/ipfs-api && chmod -v 755 /usr/local/bin/ipfs-api && \
+ ipfs-api version
+```
 
 ## Usage
 The CLI provides several subcommands to interact with the IPFS API:
@@ -32,7 +39,7 @@ ipfs-api pin [options] <path>
 ### Pinned Command
 Retrieve pinned content by its IPFS hash or metadata name using the Pinata API.
 
-```
+```bash
 ipfs-api pinned [options] <hash_or_name>
 ```
 
@@ -42,7 +49,7 @@ ipfs-api pinned [options] <hash_or_name>
 ### Unpin Command
 Unpin content from IPFS using the Pinata API.
 
-```
+```bash
 ipfs-api unpin [options] <hash_or_name>
 ```
 
@@ -52,7 +59,7 @@ ipfs-api unpin [options] <hash_or_name>
 ### DAG Command
 Interact with IPFS DAGs (Directed Acyclic Graphs).
 
-```
+```bash
 ipfs-api dag [options] <subcommand>
 ```
 

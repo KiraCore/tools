@@ -62,7 +62,7 @@ jobs:
           - name: Print debug data before build
             run: |
               set -x
-              echo "Bash Utils version: $(bash-utils bashUtilsVersion)"
+              echo "Bash Utils version: $(bu bashUtilsVersion)"
               echo "     Source branch: ${{ env.SOURCE_BRANCH }}"
               echo "Destination branch: ${{ env.DESTINATION_BRANCH }}"
               echo "        Event name: ${{ github.event_name }}"
@@ -225,11 +225,11 @@ jobs:
       id-token: write
       pull-requests: write
     steps:
-            # ref.: https://github.com/sigstore/cosign-installer, v2.2.0
+            # ref.: https://github.com/sigstore/cosign-installer, v3.0.1
           - name: Install cosign
-            uses: sigstore/cosign-installer@d6a3abf1bdea83574e28d40543793018b6035605
+            uses: sigstore/cosign-installer@c3667d99424e7e6047999fb6246c0da843953c65
             with:
-              cosign-release: 'v1.7.2'
+              cosign-release: 'v2.0.0'
           - name: Download AMD64 artifacts
             # ref.: https://github.com/actions/download-artifact, v3.0.0
             uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741
@@ -298,7 +298,7 @@ jobs:
               COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
             run: |
               echo "$KEY" > ../cosign.key
-              for FILE in *; do FILE_NAME=$(basename $FILE); cosign sign-blob --key=../cosign.key --output-signature=./${FILE_NAME}.sig ./$FILE_NAME; done
+              for FILE in *; do FILE_NAME=$(basename $FILE); cosign sign-blob --key=../cosign.key --output-signature=./${FILE_NAME}.sig ./$FILE_NAME --yes; done
               rm -fv ../cosign.key
           # ref: https://github.com/softprops/action-gh-release, v0.1.14
           # Release on merge only (push action) - this should run only once
