@@ -20,14 +20,14 @@ REGEX_URL2="^(https?|ftp|file)://$REGEX_URL1"
 UBUNTU_AGENT="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.85 Safari/537.36"
 
 function bashUtilsVersion() {
-    bashUtilsSetup "version" 2> /dev/null || bash-utils bashUtilsSetup "version"
+    bashUtilsSetup "version" 2> /dev/null || bu bashUtilsSetup "version"
 }
 
 # this is default installation script for utils
 # ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
 function bashUtilsSetup() {
-    local BASH_UTILS_VERSION="v0.3.35"
-    local COSIGN_VERSION="v1.13.1"
+    local BASH_UTILS_VERSION="v0.3.38"
+    local COSIGN_VERSION="v2.0.0"
     if [ "$1" == "version" ] ; then
         echo "$BASH_UTILS_VERSION"
         return 0
@@ -79,25 +79,25 @@ function bashUtilsSetup() {
 
             mkdir -p "$KIRA_GLOBS_DIR"
 
-            bash-utils setGlobEnv KIRA_GLOBS_DIR "$KIRA_GLOBS_DIR"
-            bash-utils setGlobEnv KIRA_TOOLS_SRC "$UTILS_DESTINATION"
-            bash-utils setGlobPath "/usr/local/bin"
-            bash-utils setGlobPath "/bin"
+            bu setGlobEnv KIRA_GLOBS_DIR "$KIRA_GLOBS_DIR"
+            bu setGlobEnv KIRA_TOOLS_SRC "$UTILS_DESTINATION"
+            bu setGlobPath "/usr/local/bin"
+            bu setGlobPath "/bin"
 
-            local AUTOLOAD_SET=$(bash-utils getLastLineByPrefix "source $UTILS_DESTINATION" /etc/profile 2> /dev/null || echo "-1")
+            local AUTOLOAD_SET=$(bu getLastLineByPrefix "source $UTILS_DESTINATION" /etc/profile 2> /dev/null || echo "-1")
 
             if [[ $AUTOLOAD_SET -lt 0 ]] ; then
                 echo "source $UTILS_DESTINATION || echo \"ERROR: Failed to load kira bash-utils from '$UTILS_DESTINATION'\"" >> /etc/profile
             fi
 
             bu loadGlobEnvs
-            echoInfo "INFO: SUCCESS!, Installed kira bash-utils $(bashUtilsVersion)"
+            bu echoInfo "INFO: SUCCESS!, Installed kira bash-utils $(bu bashUtilsVersion)"
         fi
 
-        if (! $(isCommand cosign)) ; then
-            echoWarn "WARNING: Cosign tool is not installed, setting up $COSIGN_VERSION..."
+        if (! $(bu isCommand cosign)) ; then
+            bu echoWarn "WARNING: Cosign tool is not installed, setting up $COSIGN_VERSION..."
             if [[ "$(uname -m)" == *"ar"* ]] ; then ARCH="arm64"; else ARCH="amd64" ; fi && \
-             PLATFORM=$(uname) && FILE_NAME=$(echo "cosign-${PLATFORM}-${ARCH}" | tr '[:upper:]' '[:lower:]') && \
+             declare -l FILE_NAME=$(echo "cosign-$(uname)-${ARCH}") && \
              TMP_FILE="/tmp/${FILE_NAME}.tmp" && rm -fv "$TMP_FILE" && \
              wget --user-agent="$UBUNTU_AGENT" https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/$FILE_NAME -O "$TMP_FILE" && \
              chmod +x -v "$TMP_FILE" && mv -fv "$TMP_FILE" /usr/local/bin/cosign
@@ -201,7 +201,7 @@ function isInteger() {
 
 function isBoolean() {
     if ($(bash-utils isNullOrEmpty "$1")) ; then echo "false" ; else
-        local val=$(bash-utils toLower "$1")
+        declare -l val="$1"
         if [ "$val" == "false" ] || [ "$val" == "true" ] ; then echo "true"
         else echo "false" ; fi
     fi
@@ -220,11 +220,11 @@ function isNaturalNumber() {
 }
 
 function isLetters() {
-    [[ "$1" =~ [^a-zA-Z] ]] && echo "false" || echo "true"
+    ( [ -z "$1" ] || [[ "$1" =~ [^a-zA-Z] ]] ) && echo "false" || echo "true"
 }
 
 function isAlphanumeric() {
-    [[ "$1" =~ [^a-zA-Z0-9] ]] && echo "false" || echo "true"
+    ( [ -z "$1" ] || [[ "$1" =~ [^a-zA-Z0-9] ]] ) && echo "false" || echo "true"
 }
 
 function isPort() {
@@ -504,6 +504,14 @@ function strSplitTakeN() {
     echo "${arr[$2]}"
 }
 
+# trims string from whitespace characters but not newlines etc
+function strTrim() {
+    local str="$1"
+    str=${str##*( )}
+    str=${str%%*( )}
+    echo "$str"
+}
+
 # getArgs --test="lol1" --tes-t="lol-l" --test2="lol 2" -e=ok -t=ok2 --silent=true --invisible=yes
 # internally supported flags:
 # gargs_verbose (default true), gargs_throw (default true)
@@ -513,22 +521,29 @@ function getArgs() {
     local gargs_throw="true"
     for arg in "$@" ; do
         [ -z "$arg" ] && continue
-        ($(strStartsWith "$arg" "-")) && (! $(strStartsWith "$arg" "--")) && arg="-${arg}"
-        if ($(strStartsWith "$arg" "--")) && [[ "$arg" == *"="* ]] && [[ "$arg" != "--="* ]] && [[ "$arg" != "-="* ]] ; then
-            local arg_len=$(strLength "$arg")
+        [[ "$arg" =~ ^-[^-].* ]] && arg="-${arg}"
+        if [[ "$arg" == "--"*"="* ]] && [[ "$arg" != "--="* ]] ; then
+            local arg_len=$(echo "$arg" | awk '{print length}')
             local prefix=$(echo $arg | cut -d'=' -f1)
-            local prefix_len=$(strLength "$prefix")
+            local prefix_len=$(echo "$prefix" | awk '{print length}')
             local n="-$((arg_len - prefix_len - 1))"
             local val="${arg:$n}"
-            prefix="$(echo $prefix  | sed -z 's/^-*//')"
+            prefix="$(echo $prefix | sed -z 's/^-*//')"
             local key=$(echo "$prefix" | tr '-' '_')
-            if [ "$arg" == "-$key=''" ] || [ "$arg" == "-$key=\"\"" ] || [ "$arg" == "--$key=''" ] || [ "$arg" == "--$key=\"\"" ] || [ "$arg" == "--$key=" ] || [ "$arg" == "-$key=" ] ; then
-                val=""
-            fi
 
-            [ "$key" == "gargs_verbose" ] && [ "$(echo "$(toLower "$val")" | xargs)" == "false" ] && gargs_verbose="false"
-            [ "$key" == "gargs_throw" ] && [ "$(echo "$(toLower "$val")" | xargs)" == "false" ] && gargs_throw="false"
-            ( [ "$key" == "gargs_throw" ] || [ "$key" == "gargs_verbose" ] ) && continue
+            case "$arg" in
+                "-$key=''") val="" ;;
+                "-$key=\"\"") val="" ;;
+                "--$key=''") val="" ;;
+                "--$key=\"\"") val="" ;;
+                "--$key=") val="" ;;
+                "-$key=") val="" ;;
+                esac
+
+            case "$key" in
+                "gargs_verbose") [ "$val" == "false" ] && gargs_verbose="false" && continue || continue ;;
+                "gargs_throw") [ "$val" == "false" ] && gargs_throw="false" && continue || continue ;;
+                esac
 
             [ "$gargs_verbose" == "true" ] && echoInfo "$key='$val'"
             if [ "$gargs_throw" == "true" ]; then
@@ -627,54 +642,65 @@ function getLocalIp() {
 # Host list: https://ipfs.github.io/public-gateway-checker
 # Given file CID downloads content from a known public IPFS gateway
 # ipfsGet <file> <CID>
+# ipfsGet --file=<file> --cid=<CID> --timeout="30" --url="https://ipfs.example.com/ipfs"
 function ipfsGet() {
-    local OUT_PATH=$1
-    local FILE_CID=$2
+    local cid=""
+    local file=""
+    local url=""
+    local timeout=""
+
+    getArgs --gargs_throw=false --gargs_verbose=false "$1" "$2" "$3" "$4"
+
+    [ -z "$file" ] && file="$1"
+    [ -z "$cid" ] && cid="$2"
+    [ -z $timeout ] && timeout="30"
+
     local PUB_URL=""
+    local DOWNLOAD_SUCCESS="false"
 
-    local TIMEOUT=30
+    if ($(isCID "$cid")) ; then
+        echoInfo "INFO: Cleaning up '$file' and searching for available gatewys..."
 
-    if ($(isCID "$FILE_CID")) ; then
-        echoInfo "INFO: Cleaning up '$OUT_PATH' and searching for available gatewys..."
-
-        PUB_URL="https://gateway.ipfs.io/ipfs/${FILE_CID}"
-        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $TIMEOUT) -gt 1 ]] ) ; then
-            wget --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from gateway.ipfs.io :("
+        if [ ! -z "$url" ] ; then
+            PUB_URL="${url}/${cid}"
+            if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $timeout) -gt 1 ]] ) ; then
+                wget --timeout="$timeout" --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$file" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ${url} :("
+            fi
         fi
 
-        PUB_URL="https://dweb.link/ipfs/${FILE_CID}"
-        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $TIMEOUT) -gt 1 ]] ) ; then
-            wget --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from dweb.link :("
+        PUB_URL="https://gateway.ipfs.io/ipfs/${cid}"
+        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $timeout) -gt 1 ]] ) ; then
+            wget --timeout="$timeout" --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$file" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from gateway.ipfs.io :("
         fi
 
-        PUB_URL="https://ipfs.joaoleitao.org/ipfs/${FILE_CID}" 
-        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $TIMEOUT) -gt 1 ]] ) ; then
-            wget --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
+        PUB_URL="https://dweb.link/ipfs/${cid}"
+        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $timeout) -gt 1 ]] ) ; then
+            wget --timeout="$timeout" --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$file" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from dweb.link :("
         fi
 
-        PUB_URL="https://ipfs.kira.network/ipfs/${FILE_CID}"
-        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $TIMEOUT) -gt 1 ]] ) ; then
-            wget --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
+        PUB_URL="https://ipfs.joaoleitao.org/ipfs/${cid}" 
+        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $timeout) -gt 1 ]] ) ; then
+            wget --timeout="$timeout" --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$file" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
         fi
 
-        PUB_URL="https://ipfs.kira.network/ipfs/${FILE_CID}"
-        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $TIMEOUT) -gt 1 ]] ) ; then
-            wget --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
+        PUB_URL="https://ipfs.kira.network/ipfs/${cid}"
+        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $timeout) -gt 1 ]] ) ; then
+            wget --timeout="$timeout" --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$file" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.kira.network :("
         fi
 
-        PUB_URL="https://ipfs.snggle.com/ipfs/${FILE_CID}"
-        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $TIMEOUT) -gt 1 ]] ) ; then
-            wget --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
+        PUB_URL="https://ipfs.snggle.com/ipfs/${cid}"
+        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $timeout) -gt 1 ]] ) ; then
+            wget --timeout="$timeout" --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$file" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.snggle.com :("
         fi
 
-        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] || [ ! -f "$OUT_PATH" ] ) ; then
-            echoErr "ERROR: Failed to locate or download '$FILE_CID' file from any public IPFS gateway :("
+        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] || [ ! -f "$file" ] ) ; then
+            echoErr "ERROR: Failed to locate or download '$cid' file from any public IPFS gateway :("
             return 1
         else
-            echoInfo "INFO: Success, file '$FILE_CID' was downloaded to '$OUT_PATH' from '$PUB_URL'"
+            echoInfo "INFO: Success, file '$cid' was downloaded to '$file' from '$PUB_URL'"
         fi
     else
-        echoErr "ERROR: Specified file CID '$FILE_CID' is NOT valid"
+        echoErr "ERROR: Specified file CID '$cid' is NOT valid"
         return 1
     fi
 }
@@ -711,7 +737,7 @@ function safeWget() {
     local DOWNLOAD_SUCCESS="false"
 
     if (! $(isCommand cosign)) ; then
-        echoErr "ERROR: Cosign tool is not installed, please install version v1.13.1 or later."
+        echoErr "ERROR: Cosign tool is not installed, please install version v2.0.0 or later."
         return 1
     fi
 
@@ -719,7 +745,7 @@ function safeWget() {
         if ($(isCID "$EXPECTED_HASH_FIRST")) ; then
             echoInfo "INFO: Detected IPFS CID, searching available gatewys..."
             COSIGN_PUB_KEY="$TMP_PATH_PUB"
-            ipfsGet "$COSIGN_PUB_KEY" "$EXPECTED_HASH_FIRST"
+            ipfsGet --file="$COSIGN_PUB_KEY" --cid="$EXPECTED_HASH_FIRST" --timeout="30"
 
             if ($(isFileEmpty $COSIGN_PUB_KEY)); then
                 echoErr "ERROR: Failed to locate or download public key file '$EXPECTED_HASH_FIRST' from any public IPFS gateway :("
@@ -745,6 +771,7 @@ function safeWget() {
     if ( (! $(isFileEmpty $COSIGN_PUB_KEY)) || ($(urlExists "${COSIGN_PUB_KEY}" 1)) ) && (! $(isFileEmpty $TMP_PATH)) ; then
         echoInfo "INFO: Using cosign to verify temporary file integrity..."
         COSIGN_VERIFIED="true"  
+        cosign verify-blob --key="$COSIGN_PUB_KEY" --signature="$TMP_PATH_SIG" "$TMP_PATH" --insecure-ignore-tlog --insecure-ignore-sct || \
         cosign verify-blob --key="$COSIGN_PUB_KEY" --signature="$TMP_PATH_SIG" "$TMP_PATH" || COSIGN_VERIFIED="false"
 
         if [ "$COSIGN_VERIFIED" == "true" ] ; then
@@ -780,6 +807,7 @@ function safeWget() {
 
         echoInfo "INFO: Using cosign to verify final file integrity..."
         COSIGN_VERIFIED="true"
+        cosign verify-blob --key="$COSIGN_PUB_KEY" --signature="$TMP_PATH_SIG" "$OUT_PATH" --insecure-ignore-tlog --insecure-ignore-sct || \
         cosign verify-blob --key="$COSIGN_PUB_KEY" --signature="$TMP_PATH_SIG" "$OUT_PATH" || COSIGN_VERIFIED="false"
 
         if [ "$COSIGN_VERIFIED" == "true" ] ; then
@@ -826,38 +854,38 @@ function getRamTotal() {
 
 # allowed modes: 'default', 'short', 'long'
 function getArch() {
-    local mode="$1"
-    local ARCH=$(uname -m)
-    mode="$(bash-utils toLower $mode)"
-    if [[ "$ARCH" == *"arm"* ]] || [[ "$ARCH" == *"aarch"* ]] ; then
+    declare -l mode="$1"
+    declare -l arch="$(uname -m)"
+    if [[ "$arch" == *"arm"* ]] || [[ "$arch" == *"aarch"* ]] ; then
         echo "arm64"
-    elif [[ "$ARCH" == *"x64"* ]] || [[ "$ARCH" == *"x86_64"* ]] || [[ "$ARCH" == *"amd64"* ]] || [[ "$ARCH" == *"amd"* ]] ; then
+    elif [[ "$arch" == *"x64"* ]] || [[ "$arch" == *"x86_64"* ]] || [[ "$arch" == *"amd64"* ]] || [[ "$arch" == *"amd"* ]] ; then
         if [ "$mode" == "short" ] ; then
             echo "x64"
         else
             echo "amd64"
         fi
     else
-        echo "$ARCH"
+        echo "$arch"
     fi
 }
 
 function getArchX() {
-    echo $(bash-utils getArch 'short')
+    echo $(bu getArch 'short')
 }
 
 function getPlatform() {
-    echo "$(delWhitespaces $(bash-utils toLower $(uname)))"
+    declare -l platform="$(uname)"
+    echo "$(bu delWhitespaces "$platform")"
 }
 
 function tryMkDir {
     for kg_var in "$@" ; do
         kg_var=$(echo "$kg_var" | tr -d '\011\012\013\014\015\040' 2>/dev/null || echo -n "")
         [ -z "$kg_var" ] && continue
-        [ "$(bash-utils toLower "$kg_var")" == "-v" ] && continue
+        [ "$(bu toLower "$kg_var")" == "-v" ] && continue
         
         if [ -f "$kg_var" ] ; then
-            if [ "$(bash-utils toLower "$1")" == "-v" ] ; then
+            if [ "$(bu toLower "$1")" == "-v" ] ; then
                 rm -f "$kg_var" 2> /dev/null || : 
                 [ ! -f "$kg_var" ] && echo "removed file '$kg_var'" || echo "failed to remove file '$kg_var'"
             else
@@ -865,7 +893,7 @@ function tryMkDir {
             fi
         fi
 
-        if [ "$(bash-utils toLower "$1")" == "-v" ]  ; then
+        if [ "$(bu toLower "$1")" == "-v" ]  ; then
             [ ! -d "$kg_var" ] && mkdir -p "$var" 2> /dev/null || :
             [ -d "$kg_var" ] && echo "created directory '$kg_var'" || echo "failed to create direcotry '$kg_var'"
         elif [ ! -d "$kg_var" ] ; then
@@ -891,9 +919,9 @@ function isDirEmpty() {
 function isSimpleJsonObjOrArr() {
     if ($(isNullOrEmpty "$1")) ; then echo "false"
     else
-        kg_HEADS=$(echo "$1" | head -c 8)
-        kg_TAILS=$(echo "$1" | tail -c 8)
-        kg_STR=$(echo "${kg_HEADS}${kg_TAILS}" | tr -d '\n' | tr -d '\r' | tr -d '\a' | tr -d '\t' | tr -d ' ')
+        local kg_HEADS=$(echo "$1" | head -c 8)
+        local kg_TAILS=$(echo "$1" | tail -c 8)
+        local kg_STR=$(echo "${kg_HEADS}${kg_TAILS}" | tr -d '\n' | tr -d '\r' | tr -d '\a' | tr -d '\t' | tr -d ' ')
         if ($(isNullOrEmpty "$kg_STR")) ; then echo "false"
         elif [[ "$kg_STR" =~ ^\{.*\}$ ]] ; then echo "true"
         elif [[ "$kg_STR" =~ ^\[.*\]$ ]] ; then echo "true"
@@ -904,8 +932,8 @@ function isSimpleJsonObjOrArr() {
 function isSimpleJsonObjOrArrFile() {
     if [ ! -f "$1" ] ; then echo "false"
     else
-        kg_HEADS=$(head -c 8 $1 2>/dev/null || echo -ne "")
-        kg_TAILS=$(tail -c 8 $1 2>/dev/null || echo -ne "")
+        local kg_HEADS=$(head -c 8 $1 2>/dev/null || echo -ne "")
+        local kg_TAILS=$(tail -c 8 $1 2>/dev/null || echo -ne "")
         echo $(isSimpleJsonObjOrArr "${kg_HEADS}${kg_TAILS}")
     fi
 }
@@ -1010,9 +1038,13 @@ function jsonEdit() {
     local VALUE="$2"
     [ ! -z "$3" ] && FIN=$(realpath $3 2> /dev/null || echo -n "")
     [ ! -z "$4" ] && FOUT=$(realpath $4 2> /dev/null || echo -n "")
-    [ "$(bash-utils toLower "$VALUE")" == "null" ] && VALUE="None"
-    [ "$(bash-utils toLower "$VALUE")" == "true" ] && VALUE="True"
-    [ "$(bash-utils toLower "$VALUE")" == "false" ] && VALUE="False"
+
+    case "$(bu toLower "$VALUE")" in
+        "null") VALUE="None" ;;
+        "true") VALUE="True" ;;
+        "false") VALUE="False" ;;
+        esac
+
     if [ ! -z "$INPUT" ] ; then
         for k in ${INPUT//./ } ; do
             k=$(echo $k | xargs 2> /dev/null || echo -n "") && [ -z "$k" ] && continue
@@ -1041,9 +1073,13 @@ function jsonObjEdit() {
     [ ! -z "$2" ] && FVAL=$(realpath $2 2> /dev/null || echo -n "")
     [ ! -z "$3" ] && FIN=$(realpath $3 2> /dev/null || echo -n "")
     [ ! -z "$4" ] && FOUT=$(realpath $4 2> /dev/null || echo -n "")
-    [ "$(bash-utils toLower "$VALUE")" == "null" ] && VALUE="None"
-    [ "$(bash-utils toLower "$VALUE")" == "true" ] && VALUE="True"
-    [ "$(bash-utils toLower "$VALUE")" == "false" ] && VALUE="False"
+
+    case "$(bu toLower "$VALUE")" in
+        "null") VALUE="None" ;;
+        "true") VALUE="True" ;;
+        "false") VALUE="False" ;;
+        esac
+
     if [ ! -z "$INPUT" ] ; then
         for k in ${INPUT//./ } ; do
             k=$(echo $k | xargs 2> /dev/null || echo -n "") && [ -z "$k" ] && continue
@@ -1335,8 +1371,8 @@ function isCommand {
 }
 
 function isServiceActive {
-    local ISACT=$(systemctl is-active "$1" 2> /dev/null || echo "inactive")
-    [ "$(bash-utils toLower "$ISACT")" == "active" ] && echo "true" || echo "false"
+    declare -l ISACT=$(systemctl is-active "$1" 2> /dev/null || echo "inactive")
+    [ "$ISACT" == "active" ] && echo "true" || echo "false"
 }
 
 function isWSL {
@@ -1356,20 +1392,35 @@ function pingTime() {
 }
 
 # sets global var with user selection, default var name is OPTION
-# e.g.: pressToContinue --glob=TEST --timeout=1 a b c
+# e.g.: echoNC "bli;whi" "Press a, b or c: " && pressToContinue --glob=TEST --cursor=true --timeout=100 a b c 
+# e.g.: echoNC "bli;whi" "Press any key to continue..." && pressToContinue --cursor=false
 function pressToContinue {
+    function pressToContinueCleanup() {
+        setterm -cursor on
+        trap - SIGINT || :
+        return 130
+    }
+
+    trap pressToContinueCleanup SIGINT
+
     local glob="OPTION"
     local timeout=0
-    getArgs --gargs_verbose=false --gargs_throw=false "$1" "$2"
+    local cursor=true
+    getArgs --gargs_verbose=false --gargs_throw=false "$1" "$2" "$3"
     (! $(isNaturalNumber "$timeout")) && timeout=0
+    [ "$cursor" != "false" ] && cursor=true
 
     local OPTION=""
     local FOUND=false
     local TIME_START="$(date -u +%s)"
     local TIME_END="$TIME_START"
     local TIME_SPAN=0
+    local EXIT_CODE=0
+    local ALL_FLAGS=true
 
-    if ($(bu isNullOrEmpty "$1")) ; then
+    [ "$cursor" == "false" ] && setterm -cursor off || setterm -cursor on
+
+    if ($(isNullOrEmpty "$1")) ; then
         OPTION=""
         if [[ $timeout -gt 0 ]] ; then
             read -t "$timeout" -n 1 -s OPTION
@@ -1386,25 +1437,34 @@ function pressToContinue {
             else
                 read -n 1 -s OPTION
             fi
-            OPTION=$(bu toLower "$OPTION")
+            
+            declare -l lopt="$OPTION"
             for kg_var in "$@" ; do
-                kg_var=$(echo "$kg_var" | tr -d '\011\012\013\014\015\040' 2>/dev/null || echo -n "")
-                [ "$(bu toLower "$kg_var")" == "$OPTION" ] && globSet "$glob" "$OPTION" && FOUND=true && break
+                declare -l var=$(echo "$kg_var" | tr -d '\011\012\013\014\015\040' 2>/dev/null || echo -n "")
+                ( [ ! -z "$var" ] && [ "$var" == "$lopt" ] ) && globSet "$glob" "$lopt" && FOUND=true && break
+                [[ "${var:0:2}" != "--" ]] && ALL_FLAGS="false"
             done
 
             [ "$FOUND" == "true" ] && break
+            [ "$ALL_FLAGS" == "true" ] && break
 
             TIME_END="$(date -u +%s)"
             TIME_SPAN=$((TIME_END - TIME_START))
             if [[ $timeout -gt 0 ]] && [[ $TIME_SPAN -gt $timeout ]] ; then
                 globSet "$glob" ""
-                echo ""
-                return 142
+                EXIT_CODE=142
+                break
             fi
         done 
     fi
+
+    if [ "$cursor" == "false" ] ; then
+        setterm -cursor on
+    fi
+
+    trap - SIGINT || :
     echo ""
-    return 0
+    return $EXIT_CODE
 }
 
 displayAlign() {

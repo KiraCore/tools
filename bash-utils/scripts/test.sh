@@ -100,7 +100,7 @@ if ($(isFileEmpty $TEST_FILE)); then
 fi
 
 rm -fv $TEST_FILE
-ipfsGet "$TEST_FILE" "QmNPG6RQSDa6jKqaPbNDyP9iM9CRxmv1kaHaPMCw2aQcec" || :
+ipfsGet --timeout="30" --file="$TEST_FILE" --cid="QmNPG6RQSDa6jKqaPbNDyP9iM9CRxmv1kaHaPMCw2aQcec" --url="https://ipfs.snggle.com/ipfs" || :
 
 if (! $(isFileEmpty $TEST_FILE)); then
     echoErr "ERROR: Expected non existent file to be empty when attempted to be downloaded from IPFS"
