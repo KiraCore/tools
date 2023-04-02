@@ -1,5 +1,4 @@
 Features:
 
-* added cursor flag to the pressToContinue command
-* speedup args parsing
-* updated cosign to v2.0.0
+ipfs-api: refactor code
+ipfs-api: improve documentation
