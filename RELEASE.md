@@ -1,4 +1,3 @@
 Features:
 
-ipfs-api: refactor code
-ipfs-api: improve documentation
+* fileFollow now shows more lines when starting
