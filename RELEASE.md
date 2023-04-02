@@ -1,4 +1,3 @@
 Features:
 
-ipfs-api: refactor code
-ipfs-api: improve documentation
+* added timeout and retry to safeWget

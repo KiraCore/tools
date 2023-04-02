@@ -26,7 +26,7 @@ function bashUtilsVersion() {
 # this is default installation script for utils
 # ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
 function bashUtilsSetup() {
-    local BASH_UTILS_VERSION="v0.3.39"
+    local BASH_UTILS_VERSION="v0.3.42"
     local COSIGN_VERSION="v2.0.0"
     if [ "$1" == "version" ] ; then
         echo "$BASH_UTILS_VERSION"
@@ -46,20 +46,21 @@ function bashUtilsSetup() {
         echo "INFO: Loaded utils from '$UTILS_SOURCE', installing bash-utils & setting up glob dir in '$KIRA_GLOBS_DIR'..."
 
         if [ "$VERSION" != "$BASH_UTILS_VERSION" ] ; then
-            bash-utils echoErr "ERROR: Self check version mismatch, expected '$BASH_UTILS_VERSION', but got '$VERSION'"
+            bu echoErr "ERROR: Self check version mismatch, expected '$BASH_UTILS_VERSION', but got '$VERSION'"
             return 1
         elif [ "$UTILS_SOURCE" == "$UTILS_DESTINATION" ] ; then
-            bash-utils echoErr "ERROR: Installation source script and destination can't be the same"
+            bu echoErr "ERROR: Installation source script and destination can't be the same"
             return 1
         elif [ ! -f "$UTILS_SOURCE" ] ; then
-            bash-utils echoErr "ERROR: utils source was NOT found"
+            bu echoErr "ERROR: utils source was NOT found"
             return 1
         else
             mkdir -p "/usr/local/bin" "/bin" "/tmp"
             cp -fv "$UTILS_SOURCE" "$UTILS_DESTINATION"
             cp -fv "$UTILS_SOURCE" "/usr/local/bin/bash-utils"
             cp -fv "$UTILS_SOURCE" "/usr/local/bin/bu"
-            chmod +x "$UTILS_DESTINATION" "/usr/local/bin/bash-utils" "/bin/bu"
+            cp -fv "$UTILS_SOURCE" "/bin/bu"
+            chmod +x "$UTILS_DESTINATION" "/usr/local/bin/bash-utils" "/usr/local/bin/bu" "/bin/bu"
 
             local SUDOUSER="${SUDO_USER}" 
             local USERNAME="${USER}" 
@@ -94,15 +95,18 @@ function bashUtilsSetup() {
             bu echoInfo "INFO: SUCCESS!, Installed kira bash-utils $(bu bashUtilsVersion)"
         fi
 
-        if (! $(bu isCommand cosign)) ; then
-            bu echoWarn "WARNING: Cosign tool is not installed, setting up $COSIGN_VERSION..."
-            if [[ "$(uname -m)" == *"ar"* ]] ; then ARCH="arm64"; else ARCH="amd64" ; fi && \
-             declare -l FILE_NAME=$(echo "cosign-$(uname)-${ARCH}") && \
-             TMP_FILE="/tmp/${FILE_NAME}.tmp" && rm -fv "$TMP_FILE" && \
-             wget --user-agent="$UBUNTU_AGENT" https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/$FILE_NAME -O "$TMP_FILE" && \
-             chmod +x -v "$TMP_FILE" && mv -fv "$TMP_FILE" /usr/local/bin/cosign
-
-             cosign version
+        OLD_COSIGN_VER="$(timeout 30 cosign version --json 2>&1 | bu jsonParse "gitVersion" || echo "v0.0.0")"
+        if [[ $(versionToNumber "$OLD_COSIGN_VER") -lt $(versionToNumber "$COSIGN_VERSION") ]] ; then
+            bu echoWarn "WARNING: Cosign tool is not installed or requires update $OLD_COSIGN_VER -> $COSIGN_VERSION..."
+            declare -l ARCH="$(uname -m)"
+            [[ "$ARCH" == *"ar"* ]] && ARCH="arm64" || ARCH="amd64"
+            declare -l PLATFORM="$(uname)"
+            declare -l FILE_NAME=$(echo "cosign-${PLATFORM}-${ARCH}")
+            TMP_FILE="/tmp/${FILE_NAME}.tmp"
+            rm -fv "$TMP_FILE"
+            wget --user-agent="$UBUNTU_AGENT" https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/$FILE_NAME -O "$TMP_FILE" && \
+            chmod +x -v "$TMP_FILE" && mv -fv "$TMP_FILE" /usr/local/bin/cosign && \
+            cosign version || bu echoErr "ERROR: Failed to install cosign tool, some BU commands might NOT function."
         fi
     fi
 }
@@ -200,7 +204,7 @@ function isInteger() {
 }
 
 function isBoolean() {
-    if ($(bash-utils isNullOrEmpty "$1")) ; then echo "false" ; else
+    if ($(bu isNullOrEmpty "$1")) ; then echo "false" ; else
         declare -l val="$1"
         if [ "$val" == "false" ] || [ "$val" == "true" ] ; then echo "true"
         else echo "false" ; fi
@@ -212,7 +216,7 @@ function isNodeId() {
 }
 
 function isNumber() {
-     if ($(bash-utils isNullOrEmpty "$1")) ; then echo "false" ; else [[ "$1" =~ $REGEX_NUMBER ]] && echo "true" || echo "false" ; fi
+     if ($(bu isNullOrEmpty "$1")) ; then echo "false" ; else [[ "$1" =~ $REGEX_NUMBER ]] && echo "true" || echo "false" ; fi
 }
 
 function isNaturalNumber() {
@@ -648,12 +652,14 @@ function ipfsGet() {
     local file=""
     local url=""
     local timeout=""
+    local tries=""
 
-    getArgs --gargs_throw=false --gargs_verbose=false "$1" "$2" "$3" "$4"
+    getArgs --gargs_throw=false --gargs_verbose=false "$1" "$2" "$3" "$4" "$5"
 
     [ -z "$file" ] && file="$1"
-    [ -z "$cid" ] && cid="$2"
-    [ -z $timeout ] && timeout="30"
+    (! $(isCID "$cid")) && cid="$2"
+    (! $(isNaturalNumber "$timeout")) && timeout=30
+    (! $(isNaturalNumber "$tries")) && tries=2
 
     local PUB_URL=""
     local DOWNLOAD_SUCCESS="false"
@@ -664,33 +670,39 @@ function ipfsGet() {
         if [ ! -z "$url" ] ; then
             PUB_URL="${url}/${cid}"
             if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $timeout) -gt 1 ]] ) ; then
-                wget --timeout="$timeout" --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$file" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ${url} :("
+                wget --tries="$tries" --waitretry=1 --timeout="$timeout" --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$file" && \
+                 DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ${url} :("
             fi
         fi
 
         PUB_URL="https://gateway.ipfs.io/ipfs/${cid}"
         if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $timeout) -gt 1 ]] ) ; then
-            wget --timeout="$timeout" --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$file" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from gateway.ipfs.io :("
+            wget --tries="$tries" --waitretry=1 --timeout="$timeout" --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$file" && \
+             DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from gateway.ipfs.io :("
         fi
 
         PUB_URL="https://dweb.link/ipfs/${cid}"
         if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $timeout) -gt 1 ]] ) ; then
-            wget --timeout="$timeout" --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$file" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from dweb.link :("
+            wget --tries="$tries" --waitretry=1 --timeout="$timeout" --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$file" && \
+             DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from dweb.link :("
         fi
 
         PUB_URL="https://ipfs.joaoleitao.org/ipfs/${cid}" 
         if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $timeout) -gt 1 ]] ) ; then
-            wget --timeout="$timeout" --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$file" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
+            wget --tries="$tries" --waitretry=1 --timeout="$timeout" --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$file" && \
+             DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
         fi
 
         PUB_URL="https://ipfs.kira.network/ipfs/${cid}"
         if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $timeout) -gt 1 ]] ) ; then
-            wget --timeout="$timeout" --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$file" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.kira.network :("
+            wget --tries="$tries" --waitretry=1 --timeout="$timeout" --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$file" && \
+             DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.kira.network :("
         fi
 
         PUB_URL="https://ipfs.snggle.com/ipfs/${cid}"
         if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $timeout) -gt 1 ]] ) ; then
-            wget --timeout="$timeout" --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$file" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.snggle.com :("
+            wget --tries="$tries" --waitretry=1 --timeout="$timeout" --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$file" && \
+             DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.snggle.com :("
         fi
 
         if ( [ "$DOWNLOAD_SUCCESS" != "true" ] || [ ! -f "$file" ] ) ; then
@@ -712,9 +724,19 @@ function ipfsGet() {
 # safeWget <file> <url> <hash>,<hash>,<hash>...
 # safeWget <file> <url> <CID>
 function safeWget() {
-    local OUT_PATH=$1
-    local FILE_URL=$2
-    local EXPECTED_HASH=$3
+    local OUT_PATH="$1"
+    local FILE_URL="$2"
+    local EXPECTED_HASH="$3"
+    local timeout=""
+    local sig_timeout=""
+    local waitretry=""
+    local tries=""
+    getArgs --gargs_throw=false --gargs_verbose=false "$1" "$2" "$3" "$4" "$5" "$6" "$7"
+
+    (! $(isNaturalNumber "$timeout")) && timeout=900
+    (! $(isNaturalNumber "$sig_timeout")) && sig_timeout=30
+    (! $(isNaturalNumber "$waitretry")) && waitretry=1
+    (! $(isNaturalNumber "$tries")) && tries=2
 
     # we need to use MD5 for TMP files to ensure that we download the file again if URL changes
     local OUT_NAME=$(echo "$OUT_PATH" | md5)
@@ -745,7 +767,7 @@ function safeWget() {
         if ($(isCID "$EXPECTED_HASH_FIRST")) ; then
             echoInfo "INFO: Detected IPFS CID, searching available gatewys..."
             COSIGN_PUB_KEY="$TMP_PATH_PUB"
-            ipfsGet --file="$COSIGN_PUB_KEY" --cid="$EXPECTED_HASH_FIRST" --timeout="30"
+            ipfsGet --file="$COSIGN_PUB_KEY" --cid="$EXPECTED_HASH_FIRST" --timeout="$sig_timeout"
 
             if ($(isFileEmpty $COSIGN_PUB_KEY)); then
                 echoErr "ERROR: Failed to locate or download public key file '$EXPECTED_HASH_FIRST' from any public IPFS gateway :("
@@ -758,7 +780,7 @@ function safeWget() {
 
         if (! $(isFileEmpty $COSIGN_PUB_KEY)) || ($(urlExists "$COSIGN_PUB_KEY")) ; then
             echoWarn "WARNING: Attempting to fetch signature file..."
-            wget --user-agent="$UBUNTU_AGENT" "$SIG_URL" -O $TMP_PATH_SIG
+            wget --timeout="$sig_timeout" --tries="$tries" --waitretry=1 --user-agent="$UBUNTU_AGENT" "$SIG_URL" -O $TMP_PATH_SIG
         else
             echoErr "ERROR: Public key was not found in '$COSIGN_PUB_KEY'"
             return 1
@@ -797,7 +819,7 @@ function safeWget() {
     
     if [ "$HASH_MATCH" == "false" ] ; then
         rm -fv $OUT_PATH
-        wget --user-agent="$UBUNTU_AGENT" "$FILE_URL" -O $TMP_PATH
+        wget --timeout="$timeout" --tries="$tries" --waitretry=1 --user-agent="$UBUNTU_AGENT" "$FILE_URL" -O $TMP_PATH
         [ "$TMP_PATH" != "$OUT_PATH" ] && cp -fv $TMP_PATH $OUT_PATH
         FILE_HASH=$(sha256 $OUT_PATH)
     fi
@@ -1843,15 +1865,15 @@ function getFirstLineByPrefixAfterPrefix() {
     local result=0
     local index=0
     local min_line=0
-    (! $(bash-utils isNullOrWhitespaces "$tag")) && \
-     min_line=$(bash-utils getFirstLineByPrefix "$tag" "$file")
+    (! $(bu isNullOrWhitespaces "$tag")) && \
+     min_line=$(bu getFirstLineByPrefix "$tag" "$file")
 
     if [[ $min_line -le -1 ]] ; then
         result="-1"
     else
         while [[ result -le min_line ]] ; do
             index="$((index+1))"
-            result=$(bash-utils getNLineByPrefix $index "$prefix" "$file")
+            result=$(bu getNLineByPrefix $index "$prefix" "$file")
             [[ $result -le -1 ]] && break
         done
     fi
@@ -1940,7 +1962,7 @@ function setTomlVar() {
                 echoWarn "WARNING: Brackets will be added, value '$VAR_VALUE' contains whitespaces"
                 VAR_VALUE="\"$VAR_VALUE\""
             elif ( (! $(isBoolean "$VAR_VALUE")) && (! $(isNumber "$VAR_VALUE")) ) ; then
-                echoWarn "WARNING: Brackets will be added, value '$VAR_VALUE' in neither a number or boolean"
+                echoWarn "WARNING: Brackets will be added, value '$VAR_VALUE' is neither a number or boolean"
                 VAR_VALUE="\"$VAR_VALUE\""       
             fi
         fi
@@ -2237,7 +2259,7 @@ fileFollow() {
     if (! $(isFileEmpty "$file")) ; then
         trap fileFollowInt INT
         trap fileFollowErr ERR
-        tail -f "$file" &
+        tail -n 2147483646 -f "$file" &
         pid=$!
 
         pressToContinue "q"
