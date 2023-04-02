@@ -1,2 +1,5 @@
 Features:
-* validator-key-gen: add --version flag
+ipfs-api: refactor code
+ipfs-api: improve documentation
+
+
