@@ -20,14 +20,14 @@ REGEX_URL2="^(https?|ftp|file)://$REGEX_URL1"
 UBUNTU_AGENT="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.85 Safari/537.36"
 
 function bashUtilsVersion() {
-    bashUtilsSetup "version" 2> /dev/null || bash-utils bashUtilsSetup "version"
+    bashUtilsSetup "version" 2> /dev/null || bu bashUtilsSetup "version"
 }
 
 # this is default installation script for utils
 # ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
 function bashUtilsSetup() {
-    local BASH_UTILS_VERSION="v0.3.36"
-    local COSIGN_VERSION="v1.13.1"
+    local BASH_UTILS_VERSION="v0.3.38"
+    local COSIGN_VERSION="v2.0.0"
     if [ "$1" == "version" ] ; then
         echo "$BASH_UTILS_VERSION"
         return 0
@@ -79,23 +79,23 @@ function bashUtilsSetup() {
 
             mkdir -p "$KIRA_GLOBS_DIR"
 
-            bash-utils setGlobEnv KIRA_GLOBS_DIR "$KIRA_GLOBS_DIR"
-            bash-utils setGlobEnv KIRA_TOOLS_SRC "$UTILS_DESTINATION"
-            bash-utils setGlobPath "/usr/local/bin"
-            bash-utils setGlobPath "/bin"
+            bu setGlobEnv KIRA_GLOBS_DIR "$KIRA_GLOBS_DIR"
+            bu setGlobEnv KIRA_TOOLS_SRC "$UTILS_DESTINATION"
+            bu setGlobPath "/usr/local/bin"
+            bu setGlobPath "/bin"
 
-            local AUTOLOAD_SET=$(bash-utils getLastLineByPrefix "source $UTILS_DESTINATION" /etc/profile 2> /dev/null || echo "-1")
+            local AUTOLOAD_SET=$(bu getLastLineByPrefix "source $UTILS_DESTINATION" /etc/profile 2> /dev/null || echo "-1")
 
             if [[ $AUTOLOAD_SET -lt 0 ]] ; then
                 echo "source $UTILS_DESTINATION || echo \"ERROR: Failed to load kira bash-utils from '$UTILS_DESTINATION'\"" >> /etc/profile
             fi
 
             bu loadGlobEnvs
-            echoInfo "INFO: SUCCESS!, Installed kira bash-utils $(bashUtilsVersion)"
+            bu echoInfo "INFO: SUCCESS!, Installed kira bash-utils $(bu bashUtilsVersion)"
         fi
 
-        if (! $(isCommand cosign)) ; then
-            echoWarn "WARNING: Cosign tool is not installed, setting up $COSIGN_VERSION..."
+        if (! $(bu isCommand cosign)) ; then
+            bu echoWarn "WARNING: Cosign tool is not installed, setting up $COSIGN_VERSION..."
             if [[ "$(uname -m)" == *"ar"* ]] ; then ARCH="arm64"; else ARCH="amd64" ; fi && \
              declare -l FILE_NAME=$(echo "cosign-$(uname)-${ARCH}") && \
              TMP_FILE="/tmp/${FILE_NAME}.tmp" && rm -fv "$TMP_FILE" && \
@@ -642,54 +642,65 @@ function getLocalIp() {
 # Host list: https://ipfs.github.io/public-gateway-checker
 # Given file CID downloads content from a known public IPFS gateway
 # ipfsGet <file> <CID>
+# ipfsGet --file=<file> --cid=<CID> --timeout="30" --url="https://ipfs.example.com/ipfs"
 function ipfsGet() {
-    local OUT_PATH=$1
-    local FILE_CID=$2
+    local cid=""
+    local file=""
+    local url=""
+    local timeout=""
+
+    getArgs --gargs_throw=false --gargs_verbose=false "$1" "$2" "$3" "$4"
+
+    [ -z "$file" ] && file="$1"
+    [ -z "$cid" ] && cid="$2"
+    [ -z $timeout ] && timeout="30"
+
     local PUB_URL=""
+    local DOWNLOAD_SUCCESS="false"
 
-    local TIMEOUT=30
+    if ($(isCID "$cid")) ; then
+        echoInfo "INFO: Cleaning up '$file' and searching for available gatewys..."
 
-    if ($(isCID "$FILE_CID")) ; then
-        echoInfo "INFO: Cleaning up '$OUT_PATH' and searching for available gatewys..."
-
-        PUB_URL="https://gateway.ipfs.io/ipfs/${FILE_CID}"
-        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $TIMEOUT) -gt 1 ]] ) ; then
-            wget --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from gateway.ipfs.io :("
+        if [ ! -z "$url" ] ; then
+            PUB_URL="${url}/${cid}"
+            if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $timeout) -gt 1 ]] ) ; then
+                wget --timeout="$timeout" --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$file" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ${url} :("
+            fi
         fi
 
-        PUB_URL="https://dweb.link/ipfs/${FILE_CID}"
-        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $TIMEOUT) -gt 1 ]] ) ; then
-            wget --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from dweb.link :("
+        PUB_URL="https://gateway.ipfs.io/ipfs/${cid}"
+        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $timeout) -gt 1 ]] ) ; then
+            wget --timeout="$timeout" --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$file" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from gateway.ipfs.io :("
         fi
 
-        PUB_URL="https://ipfs.joaoleitao.org/ipfs/${FILE_CID}" 
-        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $TIMEOUT) -gt 1 ]] ) ; then
-            wget --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
+        PUB_URL="https://dweb.link/ipfs/${cid}"
+        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $timeout) -gt 1 ]] ) ; then
+            wget --timeout="$timeout" --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$file" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from dweb.link :("
         fi
 
-        PUB_URL="https://ipfs.kira.network/ipfs/${FILE_CID}"
-        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $TIMEOUT) -gt 1 ]] ) ; then
-            wget --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
+        PUB_URL="https://ipfs.joaoleitao.org/ipfs/${cid}" 
+        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $timeout) -gt 1 ]] ) ; then
+            wget --timeout="$timeout" --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$file" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
         fi
 
-        PUB_URL="https://ipfs.kira.network/ipfs/${FILE_CID}"
-        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $TIMEOUT) -gt 1 ]] ) ; then
-            wget --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
+        PUB_URL="https://ipfs.kira.network/ipfs/${cid}"
+        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $timeout) -gt 1 ]] ) ; then
+            wget --timeout="$timeout" --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$file" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.kira.network :("
         fi
 
-        PUB_URL="https://ipfs.snggle.com/ipfs/${FILE_CID}"
-        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $TIMEOUT) -gt 1 ]] ) ; then
-            wget --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$OUT_PATH" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.joaoleitao.org :("
+        PUB_URL="https://ipfs.snggle.com/ipfs/${cid}"
+        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] && [[ $(urlContentLength "$PUB_URL" $timeout) -gt 1 ]] ) ; then
+            wget --timeout="$timeout" --user-agent="$UBUNTU_AGENT" "$PUB_URL" -O "$file" && DOWNLOAD_SUCCESS="true" || echoWarn "WARNING: Faild download from ipfs.snggle.com :("
         fi
 
-        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] || [ ! -f "$OUT_PATH" ] ) ; then
-            echoErr "ERROR: Failed to locate or download '$FILE_CID' file from any public IPFS gateway :("
+        if ( [ "$DOWNLOAD_SUCCESS" != "true" ] || [ ! -f "$file" ] ) ; then
+            echoErr "ERROR: Failed to locate or download '$cid' file from any public IPFS gateway :("
             return 1
         else
-            echoInfo "INFO: Success, file '$FILE_CID' was downloaded to '$OUT_PATH' from '$PUB_URL'"
+            echoInfo "INFO: Success, file '$cid' was downloaded to '$file' from '$PUB_URL'"
         fi
     else
-        echoErr "ERROR: Specified file CID '$FILE_CID' is NOT valid"
+        echoErr "ERROR: Specified file CID '$cid' is NOT valid"
         return 1
     fi
 }
@@ -726,7 +737,7 @@ function safeWget() {
     local DOWNLOAD_SUCCESS="false"
 
     if (! $(isCommand cosign)) ; then
-        echoErr "ERROR: Cosign tool is not installed, please install version v1.13.1 or later."
+        echoErr "ERROR: Cosign tool is not installed, please install version v2.0.0 or later."
         return 1
     fi
 
@@ -734,7 +745,7 @@ function safeWget() {
         if ($(isCID "$EXPECTED_HASH_FIRST")) ; then
             echoInfo "INFO: Detected IPFS CID, searching available gatewys..."
             COSIGN_PUB_KEY="$TMP_PATH_PUB"
-            ipfsGet "$COSIGN_PUB_KEY" "$EXPECTED_HASH_FIRST"
+            ipfsGet --file="$COSIGN_PUB_KEY" --cid="$EXPECTED_HASH_FIRST" --timeout="30"
 
             if ($(isFileEmpty $COSIGN_PUB_KEY)); then
                 echoErr "ERROR: Failed to locate or download public key file '$EXPECTED_HASH_FIRST' from any public IPFS gateway :("
@@ -760,6 +771,7 @@ function safeWget() {
     if ( (! $(isFileEmpty $COSIGN_PUB_KEY)) || ($(urlExists "${COSIGN_PUB_KEY}" 1)) ) && (! $(isFileEmpty $TMP_PATH)) ; then
         echoInfo "INFO: Using cosign to verify temporary file integrity..."
         COSIGN_VERIFIED="true"  
+        cosign verify-blob --key="$COSIGN_PUB_KEY" --signature="$TMP_PATH_SIG" "$TMP_PATH" --insecure-ignore-tlog --insecure-ignore-sct || \
         cosign verify-blob --key="$COSIGN_PUB_KEY" --signature="$TMP_PATH_SIG" "$TMP_PATH" || COSIGN_VERIFIED="false"
 
         if [ "$COSIGN_VERIFIED" == "true" ] ; then
@@ -795,6 +807,7 @@ function safeWget() {
 
         echoInfo "INFO: Using cosign to verify final file integrity..."
         COSIGN_VERIFIED="true"
+        cosign verify-blob --key="$COSIGN_PUB_KEY" --signature="$TMP_PATH_SIG" "$OUT_PATH" --insecure-ignore-tlog --insecure-ignore-sct || \
         cosign verify-blob --key="$COSIGN_PUB_KEY" --signature="$TMP_PATH_SIG" "$OUT_PATH" || COSIGN_VERIFIED="false"
 
         if [ "$COSIGN_VERIFIED" == "true" ] ; then
@@ -857,7 +870,7 @@ function getArch() {
 }
 
 function getArchX() {
-    echo $(bash-utils getArch 'short')
+    echo $(bu getArch 'short')
 }
 
 function getPlatform() {
@@ -869,10 +882,10 @@ function tryMkDir {
     for kg_var in "$@" ; do
         kg_var=$(echo "$kg_var" | tr -d '\011\012\013\014\015\040' 2>/dev/null || echo -n "")
         [ -z "$kg_var" ] && continue
-        [ "$(bash-utils toLower "$kg_var")" == "-v" ] && continue
+        [ "$(bu toLower "$kg_var")" == "-v" ] && continue
         
         if [ -f "$kg_var" ] ; then
-            if [ "$(bash-utils toLower "$1")" == "-v" ] ; then
+            if [ "$(bu toLower "$1")" == "-v" ] ; then
                 rm -f "$kg_var" 2> /dev/null || : 
                 [ ! -f "$kg_var" ] && echo "removed file '$kg_var'" || echo "failed to remove file '$kg_var'"
             else
@@ -880,7 +893,7 @@ function tryMkDir {
             fi
         fi
 
-        if [ "$(bash-utils toLower "$1")" == "-v" ]  ; then
+        if [ "$(bu toLower "$1")" == "-v" ]  ; then
             [ ! -d "$kg_var" ] && mkdir -p "$var" 2> /dev/null || :
             [ -d "$kg_var" ] && echo "created directory '$kg_var'" || echo "failed to create direcotry '$kg_var'"
         elif [ ! -d "$kg_var" ] ; then
@@ -906,9 +919,9 @@ function isDirEmpty() {
 function isSimpleJsonObjOrArr() {
     if ($(isNullOrEmpty "$1")) ; then echo "false"
     else
-        kg_HEADS=$(echo "$1" | head -c 8)
-        kg_TAILS=$(echo "$1" | tail -c 8)
-        kg_STR=$(echo "${kg_HEADS}${kg_TAILS}" | tr -d '\n' | tr -d '\r' | tr -d '\a' | tr -d '\t' | tr -d ' ')
+        local kg_HEADS=$(echo "$1" | head -c 8)
+        local kg_TAILS=$(echo "$1" | tail -c 8)
+        local kg_STR=$(echo "${kg_HEADS}${kg_TAILS}" | tr -d '\n' | tr -d '\r' | tr -d '\a' | tr -d '\t' | tr -d ' ')
         if ($(isNullOrEmpty "$kg_STR")) ; then echo "false"
         elif [[ "$kg_STR" =~ ^\{.*\}$ ]] ; then echo "true"
         elif [[ "$kg_STR" =~ ^\[.*\]$ ]] ; then echo "true"
@@ -919,8 +932,8 @@ function isSimpleJsonObjOrArr() {
 function isSimpleJsonObjOrArrFile() {
     if [ ! -f "$1" ] ; then echo "false"
     else
-        kg_HEADS=$(head -c 8 $1 2>/dev/null || echo -ne "")
-        kg_TAILS=$(tail -c 8 $1 2>/dev/null || echo -ne "")
+        local kg_HEADS=$(head -c 8 $1 2>/dev/null || echo -ne "")
+        local kg_TAILS=$(tail -c 8 $1 2>/dev/null || echo -ne "")
         echo $(isSimpleJsonObjOrArr "${kg_HEADS}${kg_TAILS}")
     fi
 }

@@ -9,14 +9,15 @@ Cosign requires simple initial setup of the signer keys described more precisely
 
 ```bash
 # install cosign
-COSIGN_VERSION="v1.13.1" && \
+COSIGN_VERSION="v2.0.0" && \
 if [[ "$(uname -m)" == *"ar"* ]] ; then ARCH="arm64"; else ARCH="amd64" ; fi && echo $ARCH && \
 PLATFORM=$(uname) && FILE=$(echo "cosign-${PLATFORM}-${ARCH}" | tr '[:upper:]' '[:lower:]') && \
  wget https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/$FILE && chmod +x -v ./$FILE && \
  mv -fv ./$FILE /usr/local/bin/cosign && cosign version
 
 # save KIRA public cosign key
-cat > ./cosign.pub << EOL
+KIRA_COSIGN_PUB=/usr/keys/kira-cosign.pub && mkdir -p $KIRA_COSIGN_PUB && \
+ cat > ./cosign.pub << EOL
 -----BEGIN PUBLIC KEY-----
 MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE/IrzBQYeMwvKa44/DF/HB7XDpnE+
 f+mU9F/Qbfq25bBWV2+NlYMJv3KvKHNtu3Jknt6yizZjUV4b8WGfKBzFYw==
@@ -26,21 +27,37 @@ EOL
 # download desired files and the corresponding .sig file from: https://github.com/KiraCore/tools/releases
 
 # verify signature of downloaded files
-cosign verify-blob --key=./cosign.pub --signature=./<file>.sig ./<file>
+# NOTE: You might need insecure-ignore-tlog and/or insecure-ignore-sct if you verify old signatures from before v2.0.0
+cosign verify-blob --key=./cosign.pub --signature=./<file>.sig ./<file> --insecure-ignore-tlog --insecure-ignore-sct
 ```
 
 ## bash-utils
 
-KIRA bash-utils is a general purpose tool for simplifying scripts & commands
+KIRA bash-utils (BU) is a general purpose tool for simplifying scripts & commands
 
 ```bash
 # one line install
-TOOLS_VERSION="v0.3.4" && mkdir -p /usr/keys && FILE_NAME="bash-utils.sh" && \
- if [ -z "$KIRA_COSIGN_PUB" ] ; then KIRA_COSIGN_PUB=/usr/keys/kira-cosign.pub ; fi && \
- echo -e "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE/IrzBQYeMwvKa44/DF/HB7XDpnE+\nf+mU9F/Qbfq25bBWV2+NlYMJv3KvKHNtu3Jknt6yizZjUV4b8WGfKBzFYw==\n-----END PUBLIC KEY-----" > $KIRA_COSIGN_PUB && \
+TOOLS_VERSION="v0.3.36" && cd /tmp && FILE_NAME="bash-utils.sh" && \
  wget "https://github.com/KiraCore/tools/releases/download/$TOOLS_VERSION/${FILE_NAME}" -O ./$FILE_NAME && \
  wget "https://github.com/KiraCore/tools/releases/download/$TOOLS_VERSION/${FILE_NAME}.sig" -O ./${FILE_NAME}.sig && \
- cosign verify-blob --key="$KIRA_COSIGN_PUB" --signature=./${FILE_NAME}.sig ./$FILE_NAME && \
+ cosign verify-blob --key="$KIRA_COSIGN_PUB" --signature=./${FILE_NAME}.sig ./$FILE_NAME --insecure-ignore-tlog && \
  chmod -v 555 ./$FILE_NAME && ./$FILE_NAME bashUtilsSetup "/var/kiraglob" && . /etc/profile && \
  echoInfo "Installed bash-utils $(bashUtilsVersion)"
+```
+
+## bip39gen
+
+A simple and secure bip39 words generator that is able to mix computer and human provided entropy 
+
+```bash
+# once BU is installed, you can easily and securely install all tools for a relevant architecture and platform
+# one line install with verification of IPFS CID referencing a public key used to sign the release
+TOOLS_VERSION="v0.3.36" && TOOL_NAME="bip39gen" && cd /tmp && \
+ bu safeWget ./${TOOL_NAME}.deb "https://github.com/KiraCore/tools/releases/download/$TOOLS_VERSION/${TOOL_NAME}-$(getPlatform)-$(getArch).deb" \
+ "QmeqFDLGfwoWgCy2ZEFXerVC5XW8c5xgRyhK5bLArBr2ue" && rm -rfv ./$TOOL_NAME&& dpkg-deb -x ./${TOOL_NAME}.deb ./$TOOL_NAME && \
+ cp -fv ./$TOOL_NAME/bin/$TOOL_NAME /usr/local/bin/$TOOL_NAME && chmod +x "/usr/local/bin/$TOOL_NAME" && \
+ rm -rfv ./$TOOL_NAME ./${TOOL_NAME}.deb
+
+# Check bip39gen version
+bip39gen version
 ```
