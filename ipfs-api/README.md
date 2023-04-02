@@ -1,40 +1,77 @@
-# IPFS-API
+# IPFS API CLI
+A command-line interface (CLI) for interacting with the IPFS API, providing functionality to pin, unpin, and manage data and metadata using the Pinata service.
 
-The app to manipulate data whithin IPFS using pinata.cloud as node service provider.
+## Installation
+To install the CLI, clone the repository and build the project using Go.
 
-## Getting Started
-
-Get the repo from github.
-
-`
-git clone https://github.com/KiraCore/tools.git 
-`
-
-### Installing
-
-Installation script:
+## Usage
+The CLI provides several subcommands to interact with the IPFS API:
 
 ```
-TOOLS_VERSION="v0.2.7" && rm -rfv /tmp/ipfs-api && \
- safeWget /tmp/ipfs-api.deb "https://github.com/KiraCore/tools/releases/download/$TOOLS_VERSION/ipfs-api-$(getPlatform)-$(getArch).deb" "$KIRA_COSIGN_PUB" && \
- dpkg-deb -x /tmp/ipfs-api.deb /tmp/ipfs-api && cp -fv "/tmp/ipfs-api/bin/ipfs-api" /usr/local/bin/ipfs-api && chmod -v 755 /usr/local/bin/ipfs-api && \
- ipfs-api version
- ```
+ipfs-api [sub]
+```
 
-## Use
+### Global Flags
 
+- --verbose, -v: Toggle verbosity level. If set to true, log output will be verbose; otherwise, it will only output JSON and errors.
 
+### Pin Command
+Pin a file or folder to IPFS using the Pinata service.
 
+```
+ipfs-api pin [options] <path>
+```
 
-## Built With
+#### Pin Command Flags
+- --key, -k: Path to your Pinata API key.
+- --cid, -c: CID version. Use 0 for CIDv0 and 1 for CIDv1.
+- --force, -f: Force a name change if the file/folder already exists (default: false).
+- --overwrite, -o: Delete and pin the given file/folder again (default: false).
+- --metadata, -m: Additional metadata, comma-separated. Example: -m=key,value,key,value.
 
-* [Pinata.Cloud](https://docs.pinata.cloud/pinata-api) - The API v1. is used
+### Pinned Command
+Retrieve pinned content by its IPFS hash or metadata name using the Pinata API.
 
+```
+ipfs-api pinned [options] <hash_or_name>
+```
 
-## Versioning
+#### Pinned Command Flags
+- --key, -k: Path to your Pinata API key.
 
-We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags](https://github.com/KiraCore/tools/tags)
+### Unpin Command
+Unpin content from IPFS using the Pinata API.
 
-## Authors
+```
+ipfs-api unpin [options] <hash_or_name>
+```
 
-* **Yevhen Yakubovskiyi** - *Initial work* - [MrLutik](https://github.com/mrlutik)
+#### Unpin Command Flags
+- --key, -k: Path to your Pinata API key.
+
+### DAG Command
+Interact with IPFS DAGs (Directed Acyclic Graphs).
+
+```
+ipfs-api dag [options] <subcommand>
+```
+
+#### DAG Command Flags
+
+- --export, -e: Export CID to stdout.
+- --version, -c: Set CAR (Content Addressed Archives) version (default: v2).
+- --out, -o: Path to save the CAR file (default: ./file.car).
+
+#### Test Command
+Test the Pinata API connection.
+
+```
+ipfs-api test [options]
+```
+
+#### Test Command Flags
+- --key, -k: Path to your Pinata API key.
+
+### Contributing
+To contribute to this project, please follow the standard GitHub workflow: fork the repository, create a branch for your changes, make the changes, and submit a pull request.
+
