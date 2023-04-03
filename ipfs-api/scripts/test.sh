@@ -1,12 +1,8 @@
 set -e
-set +x
-
-. ../../bash-utils/bash-utils.sh
-
 set -x
 
 echoInfo "Starting unit tests..."
-go test ./... -vet=off -v || echo "IPFS-API test finished successfully"
+go test ./... -vet=off -v || echoInfo "IPFS-API test finished successfully"
 
 echoInfo "Starting integration tests..."
 
@@ -53,15 +49,13 @@ function dagExportTest(){
 function pinTest(){
     echoNInfo "[    ] pinTest"
     local WANT="bafybeiajf7mv3htewce3zozleukne3vfmagrc7bmk7uzzcsy7gjexkuwg4"
-    local GOT=$(go run $MAIN_DIR pin $ENTRY_DIR --key="${{secrets.PINATA_API_JWT_TEST}}" | jq -r .hash)
+    local GOT=$(go run $MAIN_DIR pin $ENTRY_DIR --key="$PINATA_API_JWT_TEST" | jq -r .hash)
 
     if [[ $WANT -eq $GOT ]]; 
     then
-        echo -en "\e[0m\e[36;1m\033[1G[PASS] pinTest\e[0m"
-        echo
+        echo -en "\e[0m\e[36;1m\033[1G[PASS] pinTest\e[0m"; echo
     else
-        echo -en "\e[0m\e[31;1m\033[1G[FAILED] pinTest\e[0m"
-        echo
+        echo -en "\e[0m\e[31;1m\033[1G[FAILED] pinTest\e[0m"; echo
         exit 1
     fi
 
@@ -71,7 +65,7 @@ function deleteByHashTest(){
     echoNInfo "[    ] deleteByHashTest"
     
     local WANT="bafybeiajf7mv3htewce3zozleukne3vfmagrc7bmk7uzzcsy7gjexkuwg4"
-    local GOT=$(go run $MAIN_DIR delete $WANT --key="${{secrets.PINATA_API_JWT_TEST}}" | jq .success)
+    local GOT=$(go run $MAIN_DIR delete $WANT --key="$PINATA_API_JWT_TEST" | jq .success)
     
     if [[ $GOT -eq $WANT ]];
     then
@@ -86,7 +80,7 @@ function pinWithMetaTest(){
     echoNInfo "[    ] pinWithMetaTest"
 
     local WANT="bafybeiajf7mv3htewce3zozleukne3vfmagrc7bmk7uzzcsy7gjexkuwg4"
-    local GOT=$(go run $MAIN_DIR pin $ENTRY_DIR meta --key="${{secrets.PINATA_API_JWT_TEST}}" | jq -r .hash)
+    local GOT=$(go run $MAIN_DIR pin $ENTRY_DIR meta --key="$PINATA_API_JWT_TEST" | jq -r .hash)
 
     if [[ $WANT -eq $GOT ]]; 
     then
@@ -102,7 +96,7 @@ function pinWithMetaForceTest(){
     echoNInfo "[    ] pinWithMetaForceTest"
 
     local WANT="bafybeiajf7mv3htewce3zozleukne3vfmagrc7bmk7uzzcsy7gjexkuwg4"
-    local GOT=$(go run $MAIN_DIR pin $ENTRY_DIR foobar --key="${{secrets.PINATA_API_JWT_TEST}}" | jq -r .hash)
+    local GOT=$(go run $MAIN_DIR pin $ENTRY_DIR foobar --key="$PINATA_API_JWT_TEST" | jq -r .hash)
 
     if [[ $WANT -eq $GOT ]]; 
     then
@@ -117,7 +111,7 @@ function pinWithMetaOverwriteTest(){
     echoNInfo "[    ] pinWithMetaOverwriteTest"
 
     local WANT="OK"
-    local GOT=$(go run $MAIN_DIR pin $ENTRY_DIR foobar --overwrite --key="${{secrets.PINATA_API_JWT_TEST}}")
+    local GOT=$(go run $MAIN_DIR pin $ENTRY_DIR foobar --overwrite --key="$PINATA_API_JWT_TEST")
     if [[ $WANT -eq $GOT ]]; 
     then
        echo -en "\e[0m\e[36;1m\033[1G[PASS] pinWithMetaOverwriteTest\e[0m"; echo
@@ -132,7 +126,7 @@ function deleteByMetaTest(){
     echoNInfo "[PASS] deleteByMetaTest"
 
     local WANT=true
-    local GOT=$(go run $MAIN_DIR delete meta --key="${{secrets.PINATA_API_JWT_TEST}}" | jq .success)
+    local GOT=$(go run $MAIN_DIR delete meta --key="$PINATA_API_JWT_TEST" | jq .success)
     if [[ $GOT -eq $WANT ]];
      then
         echo -en "\e[0m\e[36;1m\033[1G[PASS] deleteByMetaTest\e[0m"; echo
@@ -145,8 +139,8 @@ function deleteByMetaTest(){
 function deleteByMetaOverwriteTest(){
     echoNInfo "[PASS] deleteByMetaOverwriteTest"
 
-    local WANT="bafybeiajf7mv3htewce3zozleukne3vfmagrc7bmk7uzzcsy7gjexkuwg4"
-    local GOT=$(go run $MAIN_DIR delete foobar --key="${{secrets.PINATA_API_JWT_TEST}}" | jq .success)
+    local WANT=true
+    local GOT=$(go run $MAIN_DIR delete foobar --key="$PINATA_API_JWT_TEST" | jq .success)
 
     if [[ $GOT -eq true ]];
      then
@@ -156,7 +150,9 @@ function deleteByMetaOverwriteTest(){
         exit 1
     fi
 }
+
 echoInfo "Starting tests..."
+
 TESTS=(dagExportTest pinTest deleteByHashTest pinWithMetaTest deleteByMetaTest pinWithMetaTest pinWithMetaOverwriteTest deleteByMetaOverwriteTest pinWithMetaTest pinWithMetaForceTest deleteByMetaOverwriteTest)
 for TEST in "${TESTS[@]}"; do
     $TEST
