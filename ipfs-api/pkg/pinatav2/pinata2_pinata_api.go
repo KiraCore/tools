@@ -167,6 +167,7 @@ func (p *PinataApi) Pinned(hash string) error {
 	} else {
 		// Set the URL to search by metadata name.
 		url.Set(tp.BASE_URL + tp.PINNEDDATA + "/?status=pinned&metadata[name]=" + hash)
+		log.Debug("Url formed to get meta: ", url.url)
 	}
 
 	// Create a new request using the PinataApi request object.
