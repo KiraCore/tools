@@ -75,7 +75,8 @@ deleteByHashTest(){
 
 pinWithMetaTest(){
     local WANT="bafybeiajf7mv3htewce3zozleukne3vfmagrc7bmk7uzzcsy7gjexkuwg4"
-    local GOT=$(go run $MAIN_DIR pin $ENTRY_DIR meta --key="$PINATA_API_JWT_TEST" | jq -r .hash)
+
+    local GOT=$(go run $MAIN_DIR pin $ENTRY_DIR meta --key="$PINATA_API_JWT_TEST"  | jq -r .hash)
 
     if [[ $WANT == $GOT ]]; 
     then
