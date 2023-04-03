@@ -34,121 +34,122 @@ done
 
 
 dagExportTest(){
-    bu echoNInfo "[    ] dagExportTest"
+    echo -en "\033[1G\e[0m\e[36;1m[    ] dagExportTest\e[0m"
 
     local WANT="bafybeiajf7mv3htewce3zozleukne3vfmagrc7bmk7uzzcsy7gjexkuwg4"
     local GOT=$(go run $MAIN_DIR dag $ENTRY_DIR --export)
     
-    if [[ $WANT -eq $GOT ]]; 
+    if [[ $WANT == $GOT ]]; 
     then
-        echo -en "\e[0m\e[36;1m\033[1G[PASS] dagExportTest\e[0m"; echo
+        echo -en "\033[1G\e[0m\e[36;1m[PASS] dagExportTest\e[0m"; echo
     else
-        echo -en "\e[0m\e[31;1m\033[1G[PASS] dagExportTest\e[0m"; echo
+        echo -en "\033[1G\e[0m\e[31;1m[FAIL] dagExportTest\e[0m"; echo
         exit 1
     fi
 }
 
 pinTest(){
-    bu echoNInfo "[    ] pinTest"
+    echo -en "\033[1G\e[0m\e[36;1m[    ] pinTest\e[0m"
+
     local WANT="bafybeiajf7mv3htewce3zozleukne3vfmagrc7bmk7uzzcsy7gjexkuwg4"
     local GOT=$(go run $MAIN_DIR pin $ENTRY_DIR --key="$PINATA_API_JWT_TEST" | jq -r .hash)
 
-    if [[ $WANT -eq $GOT ]]; 
+    if [[ $WANT == $GOT ]]; 
     then
-        echo -en "\e[0m\e[36;1m\033[1G[PASS] pinTest\e[0m"; echo
+        echo -en "\033[1G\e[0m\e[36;1m[PASS] pinTest\e[0m"; echo
     else
-        echo -en "\e[0m\e[31;1m\033[1G[FAILED] pinTest\e[0m"; echo
+        echo -en "\033[1G\e[0m\e[31;1m[FAIL] pinTest\e[0m"; echo
         exit 1
     fi
 
 }
 
 deleteByHashTest(){
-    bu echoNInfo "[    ] deleteByHashTest"
+    echo -en "\033[1G\e[0m\e[36;1m[    ] deleteByHashTest\e[0m"
     
     local WANT="bafybeiajf7mv3htewce3zozleukne3vfmagrc7bmk7uzzcsy7gjexkuwg4"
     local GOT=$(go run $MAIN_DIR delete $WANT --key="$PINATA_API_JWT_TEST" | jq .success)
     
-    if [[ $GOT -eq $WANT ]];
+    if [[ $GOT == $WANT ]];
     then
-        echo -en "\e[0m\e[36;1m\033[1G[PASS] deleteByHashTest\e[0m"; echo
+        echo -en "\033[1G\e[0m\e[36;1m[PASS] deleteByHashTest\e[0m"; echo
     else
-        echo -en "\e[0m\e[31;1m\033[1G[FAILED] deleteByHashTest\e[0m"; echo
+        echo -en "\033[1G\e[0m\e[31;1m[FAIL] deleteByHashTest\e[0m"; echo
         exit 1
     fi
 }
 
 pinWithMetaTest(){
-    bu echoNInfo "[    ] pinWithMetaTest"
+    echo -en "\033[1G\e[0m\e[36;1m[    ] pinWithMetaTest\e[0m"
 
     local WANT="bafybeiajf7mv3htewce3zozleukne3vfmagrc7bmk7uzzcsy7gjexkuwg4"
     local GOT=$(go run $MAIN_DIR pin $ENTRY_DIR meta --key="$PINATA_API_JWT_TEST" | jq -r .hash)
 
-    if [[ $WANT -eq $GOT ]]; 
+    if [[ $WANT == $GOT ]]; 
     then
-        echo -en "\e[0m\e[36;1m\033[1G[PASS] pinWithMetaTest\e[0m"; echo
+        echo -en "\033[1G\e[0m\e[36;1m[PASS] pinWithMetaTest\e[0m"; echo
     else
-        echo -en "\e[0m\e[31;1m\033[1G[FAILED] pinWithMetaTest\e[0m"; echo
+        echo -en "\033[1G\e[0m\e[31;1m[FAIL] pinWithMetaTest\e[0m"; echo
         exit 1
     fi
 
 }
 
 pinWithMetaForceTest(){
-    bu echoNInfo "[    ] pinWithMetaForceTest"
+    echo -en "\033[1G\e[0m\e[36;1m[    ] pinWithMetaForceTest\e[0m"
 
     local WANT="bafybeiajf7mv3htewce3zozleukne3vfmagrc7bmk7uzzcsy7gjexkuwg4"
     local GOT=$(go run $MAIN_DIR pin $ENTRY_DIR foobar --key="$PINATA_API_JWT_TEST" | jq -r .hash)
 
-    if [[ $WANT -eq $GOT ]]; 
+    if [[ $WANT == $GOT ]]; 
     then
-        echo -en "\e[0m\e[36;1m\033[1G[PASS] pinWithMetaForceTest\e[0m"; echo
+        echo -en "\033[1G\e[0m\e[36;1m[PASS] pinWithMetaForceTest\e[0m"; echo
     else
-        echo -en "\e[0m\e[31;1m\033[1G[FAILED] pinWithMetaForceTest\e[0m"; echo
+        echo -en "\033[1G\e[0m\e[31;1m[FAIL] pinWithMetaForceTest\e[0m"; echo
         exit 1
     fi
 
 }
 pinWithMetaOverwriteTest(){
-    bu echoNInfo "[    ] pinWithMetaOverwriteTest"
+    echo -en "\033[1G\e[0m\e[36;1m[    ] pinWithMetaOverwriteTest\e[0m"
 
     local WANT="OK"
     local GOT=$(go run $MAIN_DIR pin $ENTRY_DIR foobar --overwrite --key="$PINATA_API_JWT_TEST")
-    if [[ $WANT -eq $GOT ]]; 
+    if [[ $WANT == $GOT ]]; 
     then
-       echo -en "\e[0m\e[36;1m\033[1G[PASS] pinWithMetaOverwriteTest\e[0m"; echo
+        echo -en "\033[1G\e[0m\e[36;1m[PASS] pinWithMetaOverwriteTest\e[0m"; echo
     else
-       echo -en "\e[0m\e[31;1m\033[1G[FAILED] pinWithMetaOverwriteTest\e[0m"; echo
-       exit 1
+        echo -en "\033[1G\e[0m\e[31;1m[FAIL] pinWithMetaOverwriteTest\e[0m"; echo
+        exit 1
     fi
 
 }
 
 deleteByMetaTest(){
-    bu echoNInfo "[PASS] deleteByMetaTest"
+    echo -en "\033[1G\e[0m\e[36;1m[    ] deleteByMetaTest\e[0m"
 
     local WANT=true
     local GOT=$(go run $MAIN_DIR delete meta --key="$PINATA_API_JWT_TEST" | jq .success)
-    if [[ $GOT -eq $WANT ]];
-     then
-        echo -en "\e[0m\e[36;1m\033[1G[PASS] deleteByMetaTest\e[0m"; echo
+    if [[ $GOT == $WANT ]];
+    then
+        echo -en "\033[1G\e[0m\e[36;1m[PASS] deleteByMetaTest\e[0m"; echo
     else
-        echo -en "\e[0m\e[31;1m\033[1G[FAILED] deleteByMetaTest\e[0m"; echo
+        echo -en "\033[1G\e[0m\e[31;1m[FAIL] deleteByMetaTest\e[0m"; echo
         exit 1
     fi
 }
 
 deleteByMetaOverwriteTest(){
-    bu echoNInfo "[PASS] deleteByMetaOverwriteTest"
+    echo -en "\033[1G\e[0m\e[36;1m[    ] deleteByMetaOverwriteTest\e[0m"
 
     local WANT=true
     local GOT=$(go run $MAIN_DIR delete foobar --key="$PINATA_API_JWT_TEST" | jq .success)
 
-    if [[ $GOT -eq true ]];
-     then
-        echo -en "\e[0m\e[36;1m\033[1G[PASS] deleteByMetaOverwriteTest\e[0m"; echo
+    if [[ $GOT == $WANT ]];
+    then
+        echo -en "\033[1G\e[0m\e[36;1m[PASS] deleteByMetaOverwriteTest\e[0m"; echo
     else
-        echo -en "\e[0m\e[31;1m\033[1G[FAILED] deleteByMetaOverwriteTest\e[0m"; echo
+        echo -en "\033[1G\e[0m\e[31;1m[FAIL] deleteByMetaOverwriteTest\e[0m"; echo
         exit 1
     fi
 }
@@ -159,7 +160,10 @@ TESTS=(dagExportTest pinTest deleteByHashTest pinWithMetaTest deleteByMetaTest p
 for TEST in "${TESTS[@]}"; do
     $TEST
 done
+
 bu echoInfo "All tests finished. Cleaning up the environment..."
+
 set -x
+
 rm -rf $ENTRY_DIR || bu echoError "Failed to clean up an the environment"
 bu echoInfo "All done..."
