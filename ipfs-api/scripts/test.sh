@@ -34,8 +34,6 @@ done
 
 
 dagExportTest(){
-    echo -en "\033[1G\e[0m\e[36;1m[    ] dagExportTest\e[0m"
-
     local WANT="bafybeiajf7mv3htewce3zozleukne3vfmagrc7bmk7uzzcsy7gjexkuwg4"
     local GOT=$(go run $MAIN_DIR dag $ENTRY_DIR --export)
     
@@ -49,8 +47,6 @@ dagExportTest(){
 }
 
 pinTest(){
-    echo -en "\033[1G\e[0m\e[36;1m[    ] pinTest\e[0m"
-
     local WANT="bafybeiajf7mv3htewce3zozleukne3vfmagrc7bmk7uzzcsy7gjexkuwg4"
     local GOT=$(go run $MAIN_DIR pin $ENTRY_DIR --key="$PINATA_API_JWT_TEST" | jq -r .hash)
 
@@ -65,9 +61,7 @@ pinTest(){
 }
 
 deleteByHashTest(){
-    echo -en "\033[1G\e[0m\e[36;1m[    ] deleteByHashTest\e[0m"
-    
-    local WANT="bafybeiajf7mv3htewce3zozleukne3vfmagrc7bmk7uzzcsy7gjexkuwg4"
+    local WANT=true
     local GOT=$(go run $MAIN_DIR delete $WANT --key="$PINATA_API_JWT_TEST" | jq .success)
     
     if [[ $GOT == $WANT ]];
@@ -80,8 +74,6 @@ deleteByHashTest(){
 }
 
 pinWithMetaTest(){
-    echo -en "\033[1G\e[0m\e[36;1m[    ] pinWithMetaTest\e[0m"
-
     local WANT="bafybeiajf7mv3htewce3zozleukne3vfmagrc7bmk7uzzcsy7gjexkuwg4"
     local GOT=$(go run $MAIN_DIR pin $ENTRY_DIR meta --key="$PINATA_API_JWT_TEST" | jq -r .hash)
 
@@ -96,8 +88,6 @@ pinWithMetaTest(){
 }
 
 pinWithMetaForceTest(){
-    echo -en "\033[1G\e[0m\e[36;1m[    ] pinWithMetaForceTest\e[0m"
-
     local WANT="bafybeiajf7mv3htewce3zozleukne3vfmagrc7bmk7uzzcsy7gjexkuwg4"
     local GOT=$(go run $MAIN_DIR pin $ENTRY_DIR foobar --key="$PINATA_API_JWT_TEST" | jq -r .hash)
 
@@ -111,8 +101,6 @@ pinWithMetaForceTest(){
 
 }
 pinWithMetaOverwriteTest(){
-    echo -en "\033[1G\e[0m\e[36;1m[    ] pinWithMetaOverwriteTest\e[0m"
-
     local WANT="OK"
     local GOT=$(go run $MAIN_DIR pin $ENTRY_DIR foobar --overwrite --key="$PINATA_API_JWT_TEST")
     if [[ $WANT == $GOT ]]; 
@@ -126,8 +114,6 @@ pinWithMetaOverwriteTest(){
 }
 
 deleteByMetaTest(){
-    echo -en "\033[1G\e[0m\e[36;1m[    ] deleteByMetaTest\e[0m"
-
     local WANT=true
     local GOT=$(go run $MAIN_DIR delete meta --key="$PINATA_API_JWT_TEST" | jq .success)
     if [[ $GOT == $WANT ]];
@@ -140,8 +126,6 @@ deleteByMetaTest(){
 }
 
 deleteByMetaOverwriteTest(){
-    echo -en "\033[1G\e[0m\e[36;1m[    ] deleteByMetaOverwriteTest\e[0m"
-
     local WANT=true
     local GOT=$(go run $MAIN_DIR delete foobar --key="$PINATA_API_JWT_TEST" | jq .success)
 
