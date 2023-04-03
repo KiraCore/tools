@@ -1,3 +1,5 @@
+#!/usr/bin/bash
+
 set -e
 set -x
 
@@ -31,7 +33,7 @@ do
 done
 
 
-function dagExportTest(){
+dagExportTest(){
     bu echoNInfo "[    ] dagExportTest"
 
     local WANT="bafybeiajf7mv3htewce3zozleukne3vfmagrc7bmk7uzzcsy7gjexkuwg4"
@@ -46,7 +48,7 @@ function dagExportTest(){
     fi
 }
 
-function pinTest(){
+pinTest(){
     bu echoNInfo "[    ] pinTest"
     local WANT="bafybeiajf7mv3htewce3zozleukne3vfmagrc7bmk7uzzcsy7gjexkuwg4"
     local GOT=$(go run $MAIN_DIR pin $ENTRY_DIR --key="$PINATA_API_JWT_TEST" | jq -r .hash)
@@ -61,7 +63,7 @@ function pinTest(){
 
 }
 
-function deleteByHashTest(){
+deleteByHashTest(){
     bu echoNInfo "[    ] deleteByHashTest"
     
     local WANT="bafybeiajf7mv3htewce3zozleukne3vfmagrc7bmk7uzzcsy7gjexkuwg4"
@@ -76,7 +78,7 @@ function deleteByHashTest(){
     fi
 }
 
-function pinWithMetaTest(){
+pinWithMetaTest(){
     bu echoNInfo "[    ] pinWithMetaTest"
 
     local WANT="bafybeiajf7mv3htewce3zozleukne3vfmagrc7bmk7uzzcsy7gjexkuwg4"
@@ -92,7 +94,7 @@ function pinWithMetaTest(){
 
 }
 
-function pinWithMetaForceTest(){
+pinWithMetaForceTest(){
     bu echoNInfo "[    ] pinWithMetaForceTest"
 
     local WANT="bafybeiajf7mv3htewce3zozleukne3vfmagrc7bmk7uzzcsy7gjexkuwg4"
@@ -107,7 +109,7 @@ function pinWithMetaForceTest(){
     fi
 
 }
-function pinWithMetaOverwriteTest(){
+pinWithMetaOverwriteTest(){
     bu echoNInfo "[    ] pinWithMetaOverwriteTest"
 
     local WANT="OK"
@@ -122,7 +124,7 @@ function pinWithMetaOverwriteTest(){
 
 }
 
-function deleteByMetaTest(){
+deleteByMetaTest(){
     bu echoNInfo "[PASS] deleteByMetaTest"
 
     local WANT=true
@@ -136,7 +138,7 @@ function deleteByMetaTest(){
     fi
 }
 
-function deleteByMetaOverwriteTest(){
+deleteByMetaOverwriteTest(){
     bu echoNInfo "[PASS] deleteByMetaOverwriteTest"
 
     local WANT=true
