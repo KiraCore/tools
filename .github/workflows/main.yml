@@ -71,6 +71,8 @@ jobs:
               echo "    Release exists: ${{ env.RELEASE_EXISTS }}"
               go version
           - name: Testing & Building TOOLS
+            env:
+              PINATA_API_JWT_TEST="${{secrets.PINATA_API_JWT_TEST}}"
             run: |
               set -x
               echo "(current dir): $PWD" && ls -l ./
