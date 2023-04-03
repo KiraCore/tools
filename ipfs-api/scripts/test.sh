@@ -62,7 +62,7 @@ pinTest(){
 
 deleteByHashTest(){
     local WANT=true
-    local GOT=$(go run $MAIN_DIR delete $WANT --key="$PINATA_API_JWT_TEST" | jq .success)
+    local GOT=$(go run $MAIN_DIR delete bafybeiajf7mv3htewce3zozleukne3vfmagrc7bmk7uzzcsy7gjexkuwg4 --key="$PINATA_API_JWT_TEST" | jq .success)
     
     if [[ $GOT == $WANT ]];
     then
