@@ -87,6 +87,19 @@ pinWithMetaTest(){
 
 }
 
+deleteByMetaTest(){
+    local WANT=true
+    local GOT=$(go run $MAIN_DIR delete meta --key="$PINATA_API_JWT_TEST" | jq .success)
+    if [[ $GOT == $WANT ]];
+    then
+        echo -en "\033[1G\e[0m\e[36;1m[PASS] deleteByMetaTest\e[0m"; echo
+    else
+        echo -en "\033[1G\e[0m\e[31;1m[FAIL] deleteByMetaTest\e[0m"; echo
+        echo "SUCCESS: $GOT"
+        exit 1
+    fi
+}
+
 pinWithMetaForceTest(){
     local WANT="bafybeiajf7mv3htewce3zozleukne3vfmagrc7bmk7uzzcsy7gjexkuwg4"
     local GOT=$(go run $MAIN_DIR pin $ENTRY_DIR foobar --key="$PINATA_API_JWT_TEST" | jq -r .hash)
@@ -113,17 +126,6 @@ pinWithMetaOverwriteTest(){
 
 }
 
-deleteByMetaTest(){
-    local WANT=true
-    local GOT=$(go run $MAIN_DIR delete meta --key="$PINATA_API_JWT_TEST" | jq .success)
-    if [[ $GOT == $WANT ]];
-    then
-        echo -en "\033[1G\e[0m\e[36;1m[PASS] deleteByMetaTest\e[0m"; echo
-    else
-        echo -en "\033[1G\e[0m\e[31;1m[FAIL] deleteByMetaTest\e[0m"; echo
-        exit 1
-    fi
-}
 
 deleteByMetaOverwriteTest(){
     local WANT=true
@@ -138,9 +140,22 @@ deleteByMetaOverwriteTest(){
     fi
 }
 
+deleteByMetaForceTest(){
+    local WANT=true
+    local GOT=$(go run $MAIN_DIR delete foobar --key="$PINATA_API_JWT_TEST" | jq .success)
+
+    if [[ $GOT == $WANT ]];
+    then
+        echo -en "\033[1G\e[0m\e[36;1m[PASS] deleteByMetaOverwriteTest\e[0m"; echo
+    else
+        echo -en "\033[1G\e[0m\e[31;1m[FAIL] deleteByMetaOverwriteTest\e[0m"; echo
+        exit 1
+    fi
+}
+
 bu echoInfo "Starting tests..."
 
-TESTS=(dagExportTest pinTest deleteByHashTest pinWithMetaTest deleteByMetaTest pinWithMetaTest pinWithMetaOverwriteTest deleteByMetaOverwriteTest pinWithMetaTest pinWithMetaForceTest deleteByMetaOverwriteTest)
+TESTS=(dagExportTest pinTest deleteByHashTest pinWithMetaTest deleteByMetaTest pinWithMetaTest pinWithMetaOverwriteTest deleteByMetaOverwriteTest pinWithMetaTest pinWithMetaForceTest deleteByMetaForceTest)
 for TEST in "${TESTS[@]}"; do
     $TEST
 done
@@ -150,4 +165,5 @@ bu echoInfo "All tests finished. Cleaning up the environment..."
 set -x
 
 rm -rf $ENTRY_DIR || bu echoError "Failed to clean up an the environment"
+
 bu echoInfo "All done..."
