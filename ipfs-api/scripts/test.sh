@@ -164,6 +164,7 @@ bu echoInfo "Running tests"
 TESTS=(dagExportTest pinWithMetaTest deleteByMetaTest pinTest deleteByHashTest pinWithMetaTest pinWithMetaOverwriteTest deleteByMetaOverwriteTest pinWithMetaTest pinWithMetaForceTest deleteByMetaForceTest)
 for TEST in "${TESTS[@]}"; do
     $TEST
+    sleep 3
 done
 
 bu echoInfo "All tests finished. Cleaning up the environment..."
