@@ -25,7 +25,12 @@ var unpinCommand = &cobra.Command{
 //
 // Returns an error if the unpin operation fails or the arguments are empty.
 func unpin(cmd *cobra.Command, args []string) error {
+	log.Debug("Call unpin ...")
+
 	hash := args[0]
+	log.Debug("Args: ", args)
+	log.Debug("Hash: ", hash)
+
 	// Check if the arguments are empty.
 	if len(args) == 0 {
 		log.Error("unpin: empty arg")
@@ -40,19 +45,20 @@ func unpin(cmd *cobra.Command, args []string) error {
 	}
 
 	// Set up the PinataApi instance with the obtained keys and the provided argument.
+
 	pin := pnt.PinataApi{}
+	log.Debug("Created PinataApi")
 
 	pin.SetKeys(keys)
-	pin.SetData(hash)
-
 	pin.Pinned(hash)
+	log.Debug("Struct after pinned call %#v", pin)
 
 	// Unmarshal the response into a PinnedResponse struct.
 	pinned, err := pin.OutputPinnedJsonObj()
 	if err != nil {
 		return err
 	}
-
+	log.Debug("Struct of obj pinned %#v", pinned)
 	// Check the count of pinned content with the given metadata name.
 	switch pinned.Count {
 	case 0:

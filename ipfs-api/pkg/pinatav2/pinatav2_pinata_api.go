@@ -89,11 +89,14 @@ func (p *PinataApi) Test() error {
 //
 // Returns an error if any operation fails.
 func (p *PinataApi) Unpin(hash string) error {
+	log.Debug("Call Unpin ...")
+	log.Debug("Received arg:", hash)
 	// Initialize a Url instance.
 	url := Url{}
 
 	// Set the URL for unpinning by IPFS hash.
 	url.Set(tp.BASE_URL + tp.UNPIN + "/" + hash)
+	log.Debug("Formed URL: ", url.Get())
 
 	// Create a new DELETE request using the PinataApi request object.
 	req, err := p.request.Del(url.Get())
@@ -115,7 +118,9 @@ func (p *PinataApi) Unpin(hash string) error {
 	}
 
 	// Save the response body and status code to the PinataApi instance.
+	log.Debug("Response string([]byte): ", b)
 	p.SaveResp(b)
+	log.Debug("Response stat code: ", resp.StatusCode)
 	p.SetRespCode(resp.StatusCode)
 
 	return nil
@@ -128,6 +133,7 @@ func (p *PinataApi) Unpin(hash string) error {
 //
 // Returns an error if any operation fails.
 func (p *PinataApi) Pinned(hash string) error {
+	log.Debug("Call pinned ...")
 	// Initialize a Url instance.
 	url := Url{}
 
@@ -135,10 +141,11 @@ func (p *PinataApi) Pinned(hash string) error {
 	if ValidateCid(hash) {
 		// Set the URL to search by IPFS hash.
 		url.Set(tp.BASE_URL + tp.PINNEDDATA + "/?status=pinned&hashContains=" + hash)
+		log.Debug("ValidateCId return true. Url: ", url.Get())
 	} else {
 		// Set the URL to search by metadata name.
 		url.Set(tp.BASE_URL + tp.PINNEDDATA + "/?status=pinned&metadata[name]=" + hash)
-		log.Debug("Url formed to get meta: ", url.url)
+		log.Debug("Url formed to get meta: ", url.Get())
 	}
 
 	// Create a new request using the PinataApi request object.
@@ -162,7 +169,9 @@ func (p *PinataApi) Pinned(hash string) error {
 	}
 
 	// Save the response body and status code to the PinataApi instance.
+	log.Debug("Response string([]byte): ", string(b))
 	p.SaveResp(b)
+	log.Debug("Response stat code: ", resp.StatusCode)
 	p.SetRespCode(resp.StatusCode)
 
 	return nil
