@@ -156,7 +156,7 @@ deleteByMetaForceTest(){
 
 bu echoInfo "Starting tests..."
 
-TESTS=(dagExportTest pinTest deleteByHashTest pinWithMetaTest deleteByHashTest pinWithMetaTest deleteByMetaTest pinWithMetaTest pinWithMetaOverwriteTest deleteByMetaOverwriteTest pinWithMetaTest pinWithMetaForceTest deleteByMetaForceTest)
+TESTS=(dagExportTest pinWithMetaTest deleteByMetaTest pinTest deleteByHashTest pinWithMetaTest pinWithMetaOverwriteTest deleteByMetaOverwriteTest pinWithMetaTest pinWithMetaForceTest deleteByMetaForceTest)
 for TEST in "${TESTS[@]}"; do
     $TEST
 done
