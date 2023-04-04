@@ -58,13 +58,7 @@ func unpin(cmd *cobra.Command, args []string) error {
 	log.Debug("Created PinataApi")
 
 	pin.SetKeys(keys)
-	for i := 0; i == 4; i++ {
-		pin.Pinned(hash)
-		if out, err := pin.OutputPinnedJsonObj(); out.Count == 1 && err == nil {
-			break
-		}
-		randomSleep(10 * time.Second)
-	}
+	pin.Pinned(hash)
 
 	log.Debug("Struct after pinned call %#v", pin)
 

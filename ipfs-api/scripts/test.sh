@@ -43,15 +43,15 @@ runTest() {
 
 
   # Execute the test command and get the exit code
-  eval "$test_cmd"
+  eval "$test_cmd &> /dev/null ||:"
   exit_code=$?
 
   # Get the command name
   # Check the exit code and print the result
   if [ $exit_code -eq 0 ]; then
-    echo "[PASS] Test $test_name"
+    echo "[PASS] $test_name"
   else
-    echo "[FAIL] Test $test_name"
+    bu echoError "[FAIL] $test_name"
   fi
 }
 
@@ -62,27 +62,32 @@ go run $MAIN_DIR delete bafybeiajf7mv3htewce3zozleukne3vfmagrc7bmk7uzzcsy7gjexku
 go run $MAIN_DIR delete meta --key="$PINATA_API_JWT_TEST" --verbose &> /dev/null ||:
 
 bu echoInfo "Running tests"
+# DAG test DAG:
+runTest "go run $MAIN_DIR dag $ENTRY_DIR &> /dev/null" "DAG: Dag"
 
-runTest "go run $MAIN_DIR dag $ENTRY_DIR" "Dag"
+# Pin dir test PIN: 
+runTest "go run $MAIN_DIR pin $ENTRY_DIR --key=$PINATA_API_JWT_TEST" "PIN: Pin with CID"
+runTest "go run $MAIN_DIR pinned $CID --key=$PINATA_API_JWT_TEST" "PIN: Pinned with CID"
+runTest "go run $MAIN_DIR delete $CID --key=$PINATA_API_JWT_TEST" "PIN: Unpin with CID"
 
-runTest "go run $MAIN_DIR pin $ENTRY_DIR --key=$PINATA_API_JWT_TEST" "Pin without metadata"
-runTest "go run $MAIN_DIR pinned $CID --key=$PINATA_API_JWT_TEST" "Pinned wiht CID"
-runTest "go run $MAIN_DIR delete $CID --key=$PINATA_API_JWT_TEST" "Unpin with CID"
+#Pin with meta test META:
+runTest "go run $MAIN_DIR pin $ENTRY_DIR $META --key=$PINATA_API_JWT_TEST" "META: Pin with metadata"
+runTest "go run $MAIN_DIR pinned $META --key=$PINATA_API_JWT_TEST" "META: Pinned with metadata"
+runTest "go run $MAIN_DIR delete $META --key=$PINATA_API_JWT_TEST" "META: Delete with metadata"
 
-runTest "go run $MAIN_DIR pin $ENTRY_DIR $META --key=$PINATA_API_JWT_TEST" "Pin with metadata"
-runTest "go run $MAIN_DIR pinned $META --key=$PINATA_API_JWT_TEST" "Pinned with metadata"
-runTest "go run $MAIN_DIR delete $META --key=$PINATA_API_JWT_TEST" "Delete with metadata"
+#Pin with meta --force FORCE:
+runTest "go run $MAIN_DIR pin $ENTRY_DIR $META --key=$PINATA_API_JWT_TEST" "FORCE: Pin with metadata"
+runTest "go run $MAIN_DIR pinned $META --key=$PINATA_API_JWT_TEST" "FORCE: Pinned with metadata"
+runTest "go run $MAIN_DIR pin $ENTRY_DIR $META_FORCE --key=$PINATA_API_JWT_TEST --force=true" "FORCE: pin with meta --force"
+runTest "go run $MAIN_DIR delete $META_FORCE --key=$PINATA_API_JWT_TEST" "FORCE: Delete with metadata"
 
-runTest "go run $MAIN_DIR pin $ENTRY_DIR $META --key=$PINATA_API_JWT_TEST" "Pin with metadata"
-runTest "go run $MAIN_DIR pinned $META --key=$PINATA_API_JWT_TEST" "Pinned with metadata"
-runTest "go run $MAIN_DIR pin $ENTRY_DIR $META_FORCE --key=$PINATA_API_JWT_TEST --force=true" "Forced pin"
-runTest "go run $MAIN_DIR delete $META_FORCE --key=$PINATA_API_JWT_TEST" "Delete with metadata"
-
-runTest "go run $MAIN_DIR pin $ENTRY_DIR $META --key=$PINATA_API_JWT_TEST" "Pin with metadata"
-runTest "go run $MAIN_DIR pinned $META --key=$PINATA_API_JWT_TEST" "Pinned with metadata"
-runTest "go run $MAIN_DIR pin $ENTRY_DIR $META_FORCE --key=$PINATA_API_JWT_TEST --overwrite=true" "Overwrite pin"
-runTest "go run $MAIN_DIR delete $META_FORCE --key=$PINATA_API_JWT_TEST" "Delete with metadata"
-
+#Pin with meta --overwrite OVERWRITE: 
+runTest "go run $MAIN_DIR pin $ENTRY_DIR $META --key=$PINATA_API_JWT_TEST" "OVERWRITE: Pin with metadata"
+runTest "go run $MAIN_DIR pinned $META --key=$PINATA_API_JWT_TEST" "OVERWRITE: Pinned with metadata"
+runTest "go run $MAIN_DIR pin $ENTRY_DIR $META_FORCE --key=$PINATA_API_JWT_TEST --overwrite=true" "OVERWRITE: Pin with metadata --overwrite"
+runTest "go run $MAIN_DIR pinned $META_FORCE --key=$PINATA_API_JWT_TEST" "OVERWRITE: Pinned with metadata"
+runTest "go run $MAIN_DIR delete $META_FORCE --key=$PINATA_API_JWT_TEST" "OVERWRITE: Delete with metadata"
+#TODO: collect exit codes for later processing
 
 bu echoInfo "All tests finished. Cleaning up the environment..."
 rm -rf $ENTRY_DIR || bu echoError "Failed to clean up an the environment"
