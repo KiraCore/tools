@@ -2,6 +2,7 @@ package cli
 
 import (
 	"errors"
+	"fmt"
 
 	log "github.com/kiracore/tools/ipfs-api/pkg/ipfslog"
 	pnt "github.com/kiracore/tools/ipfs-api/pkg/pinatav2"
@@ -24,6 +25,7 @@ var unpinCommand = &cobra.Command{
 //
 // Returns an error if the unpin operation fails or the arguments are empty.
 func unpin(cmd *cobra.Command, args []string) error {
+	hash := args[0]
 	// Check if the arguments are empty.
 	if len(args) == 0 {
 		log.Error("unpin: empty arg")
@@ -38,21 +40,40 @@ func unpin(cmd *cobra.Command, args []string) error {
 	}
 
 	// Set up the PinataApi instance with the obtained keys and the provided argument.
-	p := pnt.PinataApi{}
-	p.SetKeys(keys)
-	p.SetData(args[0])
+	pin := pnt.PinataApi{}
 
-	// Unpin the content using the Pinata API.
-	if err := p.Unpin(args[0]); err != nil {
-		log.Error("unable to unpin: %v", err)
+	pin.SetKeys(keys)
+	pin.SetData(hash)
+
+	pin.Pinned(hash)
+
+	// Unmarshal the response into a PinnedResponse struct.
+	pinned, err := pin.OutputPinnedJsonObj()
+	if err != nil {
 		return err
 	}
 
-	// Output the result of the unpin operation.
-	err = p.OutputUnpinJson()
-	if err != nil {
-		log.Error("failed to print results")
-		return err
+	// Check the count of pinned content with the given metadata name.
+	switch pinned.Count {
+	case 0:
+		return fmt.Errorf(`not found. data with name %s doesn't exist`, hash)
+	case 1:
+		// Set the URL for unpinning by IPFS hash.
+		unpin := pnt.PinataApi{}
+		unpin.SetKeys(keys)
+
+		if err := unpin.Unpin(pinned.Rows[0].CID); err != nil {
+			log.Error("unable to unpin: %v", err)
+			return err
+		}
+		err = unpin.OutputUnpinJson()
+		if err != nil {
+			log.Error("failed to print results")
+			return err
+		}
+
+	default:
+		return errors.New("more than one result returned")
 	}
 
 	return nil
