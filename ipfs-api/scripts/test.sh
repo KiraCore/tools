@@ -166,12 +166,15 @@ go run $MAIN_DIR delete bafybeiajf7mv3htewce3zozleukne3vfmagrc7bmk7uzzcsy7gjexku
 go run $MAIN_DIR delete meta --key="$PINATA_API_JWT_TEST" --verbose &> /dev/null ||:
 
 bu echoInfo "Running tests"
-
+set +x
 TESTS=(dagExportTest pinWithMetaTest pinnedMeta deleteByMetaTest pinTest pinnedHash deleteByHashTest pinWithMetaTest pinnedMeta pinWithMetaOverwriteTest pinnedMeta deleteByMetaOverwriteTest pinWithMetaTest pinnedMeta pinWithMetaForceTest pinnedMeta deleteByMetaForceTest)
 for TEST in "${TESTS[@]}"; do
+    set -x
     $TEST
+    set +x
 done
 
+set -x
 bu echoInfo "All tests finished. Cleaning up the environment..."
 
 rm -rf $ENTRY_DIR || bu echoError "Failed to clean up an the environment"
