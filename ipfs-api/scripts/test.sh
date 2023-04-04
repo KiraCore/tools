@@ -72,6 +72,12 @@ deleteByHashTest(){
         exit 1
     fi
 }
+pinnedMeta(){
+    go run $MAIN_DIR pinned meta --key="$PINATA_API_JWT_TEST" | jq
+}
+pinnedHash(){
+    go run $MAIN_DIR pinned bafybeiajf7mv3htewce3zozleukne3vfmagrc7bmk7uzzcsy7gjexkuwg4 --key="$PINATA_API_JWT_TEST" | jq
+}
 
 pinWithMetaTest(){
     local WANT="bafybeiajf7mv3htewce3zozleukne3vfmagrc7bmk7uzzcsy7gjexkuwg4"
@@ -153,23 +159,20 @@ deleteByMetaForceTest(){
         exit 1
     fi
 }
-
+set -x
 bu echoInfo "Clearing failed results if any..."
 
-go run $MAIN_DIR delete bafybeiajf7mv3htewce3zozleukne3vfmagrc7bmk7uzzcsy7gjexkuwg4 --key="$PINATA_API_JWT_TEST" --verbose ||:
-go run $MAIN_DIR delete meta --key="$PINATA_API_JWT_TEST" --verbose ||:
+go run $MAIN_DIR delete bafybeiajf7mv3htewce3zozleukne3vfmagrc7bmk7uzzcsy7gjexkuwg4 --key="$PINATA_API_JWT_TEST" --verbose &> /dev/null ||:
+go run $MAIN_DIR delete meta --key="$PINATA_API_JWT_TEST" --verbose &> /dev/null ||:
 
 bu echoInfo "Running tests"
 
-TESTS=(dagExportTest pinWithMetaTest deleteByMetaTest pinTest deleteByHashTest pinWithMetaTest pinWithMetaOverwriteTest deleteByMetaOverwriteTest pinWithMetaTest pinWithMetaForceTest deleteByMetaForceTest)
+TESTS=(dagExportTest pinWithMetaTest pinnedMeta deleteByMetaTest pinTest pinnedHash deleteByHashTest pinWithMetaTest pinnedMeta pinWithMetaOverwriteTest pinnedMeta deleteByMetaOverwriteTest pinWithMetaTest pinnedMeta pinWithMetaForceTest pinnedMeta deleteByMetaForceTest)
 for TEST in "${TESTS[@]}"; do
     $TEST
-    sleep 3
 done
 
 bu echoInfo "All tests finished. Cleaning up the environment..."
-
-set -x
 
 rm -rf $ENTRY_DIR || bu echoError "Failed to clean up an the environment"
 
