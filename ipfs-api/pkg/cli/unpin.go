@@ -3,6 +3,8 @@ package cli
 import (
 	"errors"
 	"fmt"
+	"math/rand"
+	"time"
 
 	log "github.com/kiracore/tools/ipfs-api/pkg/ipfslog"
 	pnt "github.com/kiracore/tools/ipfs-api/pkg/pinatav2"
@@ -24,6 +26,12 @@ var unpinCommand = &cobra.Command{
 // args: The arguments passed to the unpin command.
 //
 // Returns an error if the unpin operation fails or the arguments are empty.
+func randomSleep(maxDuration time.Duration) {
+	rand.Seed(time.Now().UnixNano())
+	sleepDuration := time.Duration(rand.Int63n(int64(maxDuration)))
+	time.Sleep(sleepDuration)
+}
+
 func unpin(cmd *cobra.Command, args []string) error {
 	log.Debug("Call unpin ...")
 
@@ -50,7 +58,14 @@ func unpin(cmd *cobra.Command, args []string) error {
 	log.Debug("Created PinataApi")
 
 	pin.SetKeys(keys)
-	pin.Pinned(hash)
+	for i := 0; i == 4; i++ {
+		pin.Pinned(hash)
+		if out, err := pin.OutputPinnedJsonObj(); out.Count == 1 && err == nil {
+			break
+		}
+		randomSleep(10 * time.Second)
+	}
+
 	log.Debug("Struct after pinned call %#v", pin)
 
 	// Unmarshal the response into a PinnedResponse struct.
