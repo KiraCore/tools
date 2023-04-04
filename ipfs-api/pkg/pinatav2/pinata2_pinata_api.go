@@ -114,7 +114,7 @@ func (p *PinataApi) Unpin(hash string) error {
 		// Check the count of pinned content with the given metadata name.
 		switch s.Count {
 		case 0:
-			return fmt.Errorf(`not found. data with name %s doesn't exist`, hash)
+			log.Warn(`metadata %s not found. trying to delete anyway`, hash)
 		case 1:
 			// Set the URL for unpinning by IPFS hash.
 			url.Set(tp.BASE_URL + tp.UNPIN + "/" + s.Rows[0].CID)
