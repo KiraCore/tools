@@ -154,7 +154,12 @@ deleteByMetaForceTest(){
     fi
 }
 
-bu echoInfo "Starting tests..."
+bu echoInfo "Clearing failed results if any..."
+
+go run $MAIN_DIR delete bafybeiajf7mv3htewce3zozleukne3vfmagrc7bmk7uzzcsy7gjexkuwg4 --key="$PINATA_API_JWT_TEST" --verbose ||:
+go run $MAIN_DIR delete meta --key="$PINATA_API_JWT_TEST" --verbose ||:
+
+bu echoInfo "Running tests"
 
 TESTS=(dagExportTest pinWithMetaTest deleteByMetaTest pinTest deleteByHashTest pinWithMetaTest pinWithMetaOverwriteTest deleteByMetaOverwriteTest pinWithMetaTest pinWithMetaForceTest deleteByMetaForceTest)
 for TEST in "${TESTS[@]}"; do
