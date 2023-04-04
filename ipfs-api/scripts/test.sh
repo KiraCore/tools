@@ -35,7 +35,7 @@ for i in {6..10};
 do
     echo "file$i">"$SECOND_DIR/file$i.txt" || bu echoError "Failed to create file$i.txt"
 done
-set -x
+
 
 runTest() {
   local test_cmd="$1"
@@ -78,7 +78,7 @@ runTest "go run $MAIN_DIR delete $META --key=$PINATA_API_JWT_TEST" "META: Delete
 #Pin with meta --force FORCE:
 runTest "go run $MAIN_DIR pin $ENTRY_DIR $META --key=$PINATA_API_JWT_TEST" "FORCE: Pin with metadata"
 runTest "go run $MAIN_DIR pinned $META --key=$PINATA_API_JWT_TEST" "FORCE: Pinned with metadata"
-runTest "go run $MAIN_DIR pin $ENTRY_DIR $META_FORCE --key=$PINATA_API_JWT_TEST --force=true" "FORCE: pin with meta --force"
+runTest "go run $MAIN_DIR pin $ENTRY_DIR $META_FORCE --key=$PINATA_API_JWT_TEST --force=true" "FORCE: Pin with metadata --force"
 runTest "go run $MAIN_DIR delete $META_FORCE --key=$PINATA_API_JWT_TEST" "FORCE: Delete with metadata"
 
 #Pin with meta --overwrite OVERWRITE: 
