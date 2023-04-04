@@ -115,6 +115,8 @@ func (p *PinataApi) Unpin(hash string) error {
 		switch s.Count {
 		case 0:
 			log.Warn(`metadata %s not found. trying to delete anyway`, hash)
+			url.Set(tp.BASE_URL + tp.UNPIN + "/" + s.Rows[0].CID)
+			p.SetData(s.Rows[0].CID)
 		case 1:
 			// Set the URL for unpinning by IPFS hash.
 			url.Set(tp.BASE_URL + tp.UNPIN + "/" + s.Rows[0].CID)
