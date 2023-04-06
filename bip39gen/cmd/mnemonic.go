@@ -68,16 +68,22 @@ func validateHexEntropyFlagInput(str string) error {
 }
 
 // Check if string contain hex or binary prefix and return string without it
-func checkInputPrefix(str string) string {
+func checkInputPrefix(str string) (string, error) {
 	if len(str) > 2 {
 		switch str[0:2] {
 		case "0x":
-			return strings.TrimSpace(str[2:])
+			if err := validateHexEntropyFlagInput(str[2:]); err != nil {
+				return "", err
+			}
+			return strings.TrimSpace(str[2:]), nil
 		case "0b":
-			return strings.TrimSpace(str[2:])
+			if err := validateEntropyFlagInput(str[2:]); err != nil {
+				return "", err
+			}
+			return strings.TrimSpace(str[2:]), nil
 		}
 	}
-	return str
+	return str, nil
 }
 func processSHA256() error {
 	hex = true
@@ -156,8 +162,14 @@ func processPadding() error {
 // cmdMnemonicPreRun validates the provided flags and sets the required variables.
 func cmdMnemonicPreRun(cmd *cobra.Command, args []string) error {
 
-	userEntropy = checkInputPrefix(userEntropy)
-	rawEntropy = checkInputPrefix(rawEntropy)
+	userEntropy, err := checkInputPrefix(userEntropy)
+	if err != nil {
+		return err
+	}
+	rawEntropy, err := checkInputPrefix(rawEntropy)
+	if err != nil {
+		return err
+	}
 
 	input := []string{userEntropy, rawEntropy}
 
