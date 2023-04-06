@@ -32,6 +32,24 @@ MNEMONIC_TEST_2="panther door little taxi unfold remain notable smooth trap beac
 [ "$MNEMONIC_TEST_1" != "$MNEMONIC_TEST_2" ] && \
  echoErr "ERROR: When sha256 raw entropy is provided expected to end up with deterministic mnemonic, but results differ :(" && exit 1 || echoInfo "INFO: Test 2 passed"
 
+runTest() {
+  local test_cmd="$1"
+  local test_name="$2"
+
+
+  # Execute the test command and get the exit code
+  eval "$test_cmd &> /dev/null ||:"
+  exit_code=$?
+
+  # Get the command name
+  # Check the exit code and print the result
+  if [ $exit_code -eq 0 ]; then
+    echo "[PASS] $test_name"
+  else
+    bu echoError "[FAIL] $test_name"
+  fi
+}
+
 
 
 
