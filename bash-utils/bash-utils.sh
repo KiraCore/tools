@@ -26,7 +26,7 @@ function bashUtilsVersion() {
 # this is default installation script for utils
 # ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
 function bashUtilsSetup() {
-    local BASH_UTILS_VERSION="v0.3.43"
+    local BASH_UTILS_VERSION="v0.3.44"
     local COSIGN_VERSION="v2.0.0"
     if [ "$1" == "version" ] ; then
         echo "$BASH_UTILS_VERSION"
@@ -2307,6 +2307,8 @@ if declare -f "$1" > /dev/null ; then
   # call arguments verbatim
   "$@"
 fi
+
+
 
 
 
