@@ -2,7 +2,6 @@ package cli
 
 import (
 	"errors"
-	"os"
 
 	"github.com/ipld/go-ipld-prime/datamodel"
 	log "github.com/kiracore/tools/ipfs-api/pkg/ipfslog"
@@ -113,7 +112,7 @@ func pinAndOutputResult(p *pnt.PinataApi, content string) error {
 	}
 	if err := p.OutputPinJson(); err != nil {
 		log.Error("failed to print results: %v", err)
-		os.Exit(1)
+		return err
 	}
 	return nil
 }

@@ -1,7 +1,7 @@
 import re
 import sys
 
-version = "v0.3.39"
+version = "v0.3.44"
 
 if len(sys.argv) != 2:
     print("Usage: python3 update_version.py <new_release>")
@@ -55,6 +55,8 @@ change={
     "../bip39gen/cmd/version.go":updateVersion,
     "../ipfs-api/types/constants.go":updateVersion,
     "../validator-key-gen/main.go":updateVersion,
+    "../validator-key-gen/README.md":updateVersion,
+    "../ipfs-api/README.md":updateVersion,
     }
 
 new_release = sys.argv[1]
