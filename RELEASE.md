@@ -1,3 +1,5 @@
 Features:
-* ipfs-api: add integration tests
-* bip39gen: refactor, fix err handling
+* bip39gen: add integration test
+* bip39gen: deprecate chacha20
+* bip39gen: fix bugs
+* bip39gen: refactor prefix logic
