@@ -5,13 +5,11 @@ import (
 	"crypto/sha512"
 	"errors"
 	"fmt"
-	"os"
 	"regexp"
 	"strings"
 
 	"github.com/kiracore/tools/bip39gen/pkg/bip39"
 	"github.com/spf13/cobra"
-	"golang.org/x/crypto/chacha20poly1305"
 )
 
 var (
@@ -68,16 +66,26 @@ func validateHexEntropyFlagInput(str string) error {
 }
 
 // Check if string contain hex or binary prefix and return string without it
-func checkInputPrefix(str string) string {
-	if len(str) > 2 {
-		switch str[0:2] {
-		case "0x":
-			return strings.TrimSpace(str[2:])
-		case "0b":
-			return strings.TrimSpace(str[2:])
+func checkInputPrefix(str string) (string, error) {
+	if hex && len(str) > 2 {
+		if str[0:2] == "0x" {
+			if err := validateHexEntropyFlagInput(str[2:]); err != nil {
+				return "", err
+			}
+			return strings.TrimSpace(str[2:]), nil
 		}
 	}
-	return str
+	if !hex && len(str) > 2 {
+		if str[0:2] == "0b" {
+			if err := validateEntropyFlagInput(str[2:]); err != nil {
+				return "", err
+			}
+			return strings.TrimSpace(str[2:]), nil
+		}
+
+	}
+
+	return str, nil
 }
 func processSHA256() error {
 	hex = true
@@ -114,32 +122,49 @@ func processSHA512() error {
 	return nil
 }
 
-func processChaCha20() error {
-	hex = true
-	if words != 24 {
-		fmt.Println(colors.Print("Warning. With sha256 you can generate 24 words", 3))
-		words = 24
-	}
-	sum := sha256.Sum256([]byte(userEntropy))
+// Deprecated
+// func processChaCha20() error {
+// 	hex = true
+// 	if words != 24 {
+// 		fmt.Println(colors.Print("Warning. With sha256 you can generate 24 words", 3))
+// 		words = 24
+// 	}
 
-	// Flip bytes to string hex
-	userEntropy = string(sum[:])
-	userEntropy = fmt.Sprintf("%x", userEntropy)
+// 	// Generate a 256-bit key from the user-entered phrase using SHA-256
+// 	key := sha256.Sum256([]byte(userEntropy))
 
-	aead, err := chacha20poly1305.NewX(sum[:])
-	if err != nil {
-		return err
-	}
+// 	// Generate random nonce
+// 	nonce := make([]byte, chacha20.NonceSize)
+// 	if _, err := rand.Read(nonce); err != nil {
+// 		panic(err)
+// 	}
 
-	mnemonic := NewMnemonic()
-	msg := mnemonic.String()
+// 	// Generate random plaintext (32 bytes) to be encrypted using ChaCha20
+// 	plaintext := make([]byte, 32)
+// 	if _, err := rand.Read(plaintext); err != nil {
+// 		panic(err)
+// 	}
 
-	nonce := make([]byte, chacha20poly1305.NonceSizeX)
-	ciphertext := aead.Seal(nil, nonce, []byte(msg), nil)
-	fmt.Fprintf(os.Stdout, "Cipher stream: %x\n", ciphertext)
-	mnemonic.Print(verbose)
-	return nil
-}
+// 	// Encrypt plaintext using ChaCha20
+// 	cipher, err := chacha20.NewUnauthenticatedCipher(key[:], nonce)
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	ciphertext := make([]byte, len(plaintext))
+// 	cipher.XORKeyStream(ciphertext, plaintext)
+
+// 	// Use the first 256 bits of the ciphertext as entropy for BIP39
+// 	entropy := ciphertext[:32]
+
+// 	userEntropy = fmt.Sprintf("%x", entropy)
+// 	fmt.Fprintf(os.Stdout, "Key: %x\n", key)
+// 	fmt.Fprintf(os.Stdout, "Nonce(HEX): %x\n", nonce)
+// 	fmt.Fprintf(os.Stdout, "Ciphertex(HEX): %x\n", ciphertext)
+// 	mnemonic, err := bip39c.NewMnemonic(entropy)
+// 	fmt.Fprintf(os.Stdout, "Mnemonic: %v\n", mnemonic)
+// 	return nil
+// }
+
 func processPadding() error {
 	hex = false
 	if err := validateEntropyFlagInput(rawEntropy); err != nil {
@@ -155,9 +180,20 @@ func processPadding() error {
 
 // cmdMnemonicPreRun validates the provided flags and sets the required variables.
 func cmdMnemonicPreRun(cmd *cobra.Command, args []string) error {
+	var err error
+	if len(userEntropy) > 0 {
+		userEntropy, err = checkInputPrefix(userEntropy)
+		_ = userEntropy
+		if err != nil {
+			return err
+		}
+	}
 
-	userEntropy = checkInputPrefix(userEntropy)
-	rawEntropy = checkInputPrefix(rawEntropy)
+	if len(rawEntropy) > 0 {
+		rawEntropy, err = checkInputPrefix(rawEntropy)
+		_ = rawEntropy
+		return err
+	}
 
 	input := []string{userEntropy, rawEntropy}
 
@@ -198,10 +234,12 @@ func cmdMnemonicPreRun(cmd *cobra.Command, args []string) error {
 			if err := processSHA512(); err != nil {
 				return err
 			}
-		case "chacha20":
-			if err := processChaCha20(); err != nil {
-				return err
-			}
+
+			// Deprecated
+			// case "chacha20":
+			// 	if err := processChaCha20(); err != nil {
+			// 		return err
+			// 	}
 
 		case "padding":
 			if err := processPadding(); err != nil {
@@ -218,6 +256,7 @@ func cmdMnemonic(cmd *cobra.Command, args []string) error {
 
 	mnemonic := NewMnemonic()
 	mnemonic.Print(verbose)
+
 	return nil
 
 }

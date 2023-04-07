@@ -45,7 +45,7 @@ func Execute() {
 
 	mnemonicCommand.Flags().StringVarP(&userEntropy, "entropy", "e", "", "provide entropy for mixing and generating new mnemonic sentences")
 	mnemonicCommand.Flags().StringVarP(&rawEntropy, "raw-entropy", "r", "", "provide entropy to regenerate mnemonic sentences from")
-	mnemonicCommand.Flags().StringVarP(&cipher, "cipher", "c", "", "choose cipher to generate mnemonics. Available options are: sha256,sha512, chacha20, padding")
+	mnemonicCommand.Flags().StringVarP(&cipher, "cipher", "c", "", "choose cipher to generate mnemonics. Available options are: sha256, sha512, padding")
 
 	mnemonicCommand.Flags().Changed("entropy")
 	mnemonicCommand.Flags().Changed("raw-entropy")
