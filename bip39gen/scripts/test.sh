@@ -89,13 +89,13 @@ runTest "$BIN_bip39gen mnemonic --raw-entropy=$RAW_ENT_HEX_WITH_PREFIX --hex=tru
 runTest "$BIN_bip39gen mnemonic --raw-entropy=$RAW_ENT_HEX_WITH_PREFIX_UPPER --hex=true" "RAW: hex entropy with prefix, upper" "$MNEMONIC_TEST_CASE_2"
 
 #TestCase3(Cipher: SHA256)
-MNEMONIC_TEST_CASE_3="volcano uncle castle avocado hole wear embark steak upper afraid era donor result member host dream end enemy switch marble exit hungry donate setup"
-runTest "$BIN_bip39gen mnemonic --entropy="Hello, Kira!" --cipher=sha256" "CIPHER[SHA256]: Test" "MNEMONIC_TEST_CASE_3"
+MNEMONIC_TEST_CASE_3="keen lunar camp clutch between glass offer garden brand blame easy couple use loop coin another tortoise stove stamp fence pet coach festival then"
+runTest "$BIN_bip39gen mnemonic --raw-entropy=TestTest --cipher=sha256" "CIPHER[SHA256]: Test" "$MNEMONIC_TEST_CASE_3"
 
 #TestCase4(Cipher: SHA512)
-MNEMONIC_TEST_CASE_4="dress depth dolphin math attract hole ribbon vague text popular tool hood source puppy reason feature birth display upgrade snow stand play chief rubber isolate woman deposit hip okay plug silver clock buzz help future artist neck spend walk century snack word clip dynamic enforce eight ski canal"
-runTest "$BIN_bip39gen mnemonic --entropy="Hello, Kira!" --cipher=sha512" "CIPHER[SHA512]: Test" "MNEMONIC_TEST_CASE_4"
+MNEMONIC_TEST_CASE_4="iron moral siege volume sad assume brass bless flock palm version lunar logic fault robot virus perfect stick health skate size enter pattern hold erupt able segment day simple void float vibrant major iron skate duty hard pretty state leisure panel verify still fork film icon empty garlic"
+runTest "$BIN_bip39gen mnemonic --raw-entropy=TestTest --cipher=sha512" "CIPHER[SHA512]: Test" "$MNEMONIC_TEST_CASE_4"
 
 #TestCase6(Cipher: padding)
 MNEMONIC_TEST_CASE_5="outdoor level scale abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon antique"
-runTest "$BIN_bip39gen mnemonic -l 12 --entropy=100111010011000000010111 --cipher=padding" "CIPHER[padding]: Test" "MNEMONIC_TEST_CASE_5"
+runTest "$BIN_bip39gen mnemonic -l 12 --raw-entropy=100111010011000000010111 --cipher=padding" "CIPHER[padding]: Test" "$MNEMONIC_TEST_CASE_5"
