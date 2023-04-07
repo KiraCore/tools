@@ -176,13 +176,18 @@ func processPadding() error {
 
 // cmdMnemonicPreRun validates the provided flags and sets the required variables.
 func cmdMnemonicPreRun(cmd *cobra.Command, args []string) error {
-
-	userEntropy, err := checkInputPrefix(userEntropy)
-	if err != nil {
-		return err
+	var err error
+	if len(userEntropy) > 0 {
+		userEntropy, err = checkInputPrefix(userEntropy)
+		_ = userEntropy
+		if err != nil {
+			return err
+		}
 	}
-	rawEntropy, err := checkInputPrefix(rawEntropy)
-	if err != nil {
+
+	if len(rawEntropy) > 0 {
+		rawEntropy, err = checkInputPrefix(rawEntropy)
+		_ = rawEntropy
 		return err
 	}
 
