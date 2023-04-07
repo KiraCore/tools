@@ -67,20 +67,24 @@ func validateHexEntropyFlagInput(str string) error {
 
 // Check if string contain hex or binary prefix and return string without it
 func checkInputPrefix(str string) (string, error) {
-	if len(str) > 2 {
-		switch str[0:2] {
-		case "0x":
+	if hex && len(str) > 2 {
+		if str[0:2] == "0x" {
 			if err := validateHexEntropyFlagInput(str[2:]); err != nil {
-				return "", err
-			}
-			return strings.TrimSpace(str[2:]), nil
-		case "0b":
-			if err := validateEntropyFlagInput(str[2:]); err != nil {
 				return "", err
 			}
 			return strings.TrimSpace(str[2:]), nil
 		}
 	}
+	if !hex && len(str) > 2 {
+		if str[0:2] == "0b" {
+			if err := validateEntropyFlagInput(str[2:]); err != nil {
+				return "", err
+			}
+			return strings.TrimSpace(str[2:]), nil
+		}
+
+	}
+
 	return str, nil
 }
 func processSHA256() error {
