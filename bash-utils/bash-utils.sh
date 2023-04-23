@@ -763,6 +763,11 @@ function safeWget() {
         return 1
     fi
 
+    if (! $(isCommand curl)) ; then
+        echoINFO "INFO: Curl not installed. Installing..."
+        apt-get install curl -y || ( echoErr "Failed to install curl, missing dependency" && exit 1 )
+    fi
+
     if (! $(isSHA256 "$EXPECTED_HASH_FIRST")) ; then
         if ($(isCID "$EXPECTED_HASH_FIRST")) ; then
             echoInfo "INFO: Detected IPFS CID, searching available gatewys..."
