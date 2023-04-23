@@ -18,7 +18,7 @@ import (
 	"github.com/tendermint/tendermint/privval"
 )
 
-const PrivValidatorKeyGenVersion = "v0.3.45"
+const PrivValidatorKeyGenVersion = "v0.3.46"
 
 type Prefix struct {
 	fullPath             *hd.BIP44Params
