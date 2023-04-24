@@ -5,13 +5,11 @@ import (
 	"crypto/sha512"
 	"errors"
 	"fmt"
-	"os"
 	"regexp"
 	"strings"
 
 	"github.com/kiracore/tools/bip39gen/pkg/bip39"
 	"github.com/spf13/cobra"
-	"golang.org/x/crypto/chacha20poly1305"
 )
 
 var (
@@ -28,15 +26,30 @@ func validateLengthFlagInput(length int) error {
 	}
 	return nil
 }
+func validateLengthEntropyInput(str string) error {
+	if len(str) == 0 {
+		return nil
+	}
+
+	if (words/3)*32 != len(str) {
+		err := errors.New(fmt.Sprintf("human provided entropy has insufficient length, expected %v bits but supplied only %v of entropy, your mnemonic is NOT secure. You can specify a cipher flag to extrapolate your input.", (words/3)*32, len(str)))
+		return err
+	}
+	return nil
+
+}
 
 // validateEntropyFlagInput checks if the provided entropy string is valid.
 func validateEntropyFlagInput(str string) error {
-	if len(str) > 0 {
-		match, _ := regexp.MatchString("^[0-1]{1,}$", str)
-		if !match {
-			return errBinary
-		}
+	if len(str) == 0 {
+		return nil
 	}
+
+	match, _ := regexp.MatchString("^[0-1]+$", str)
+	if !match {
+		return errBinary
+	}
+
 	return nil
 }
 
@@ -53,23 +66,134 @@ func validateHexEntropyFlagInput(str string) error {
 }
 
 // Check if string contain hex or binary prefix and return string without it
-func checkInputPrefix(str string) string {
-	if len(str) > 2 {
-		switch str[0:2] {
-		case "0x":
-			return strings.TrimSpace(str[2:])
-		case "0b":
-			return strings.TrimSpace(str[2:])
+func checkInputPrefix(str string) (string, error) {
+	if hex && len(str) > 2 {
+		if str[0:2] == "0x" {
+			if err := validateHexEntropyFlagInput(str[2:]); err != nil {
+				return "", err
+			}
+			return strings.TrimSpace(str[2:]), nil
 		}
 	}
-	return str
+	if !hex && len(str) > 2 {
+		if str[0:2] == "0b" {
+			if err := validateEntropyFlagInput(str[2:]); err != nil {
+				return "", err
+			}
+			return strings.TrimSpace(str[2:]), nil
+		}
+
+	}
+
+	return str, nil
+}
+func processSHA256() error {
+	hex = true
+	if words != 24 {
+		fmt.Println(colors.Print("Warning. With sha256 you can generate 24 words", 3))
+		words = 24
+	}
+	sum := sha256.Sum256([]byte(userEntropy))
+
+	userEntropy = string(sum[:])
+	userEntropy = fmt.Sprintf("%x", userEntropy)
+
+	if err := validateHexEntropyFlagInput(userEntropy); err != nil {
+		return err
+	}
+	return nil
+}
+
+func processSHA512() error {
+	hex = true
+	if words != 48 {
+		fmt.Println(colors.Print("Warning. With sha512 you can generate 48 words", 3))
+		words = 48
+	}
+	sum := sha512.Sum512([]byte(userEntropy))
+
+	// Flip bytes to string hex
+	userEntropy = string(sum[:])
+	userEntropy = fmt.Sprintf("%x", userEntropy)
+
+	if err := validateHexEntropyFlagInput(userEntropy); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Deprecated
+// func processChaCha20() error {
+// 	hex = true
+// 	if words != 24 {
+// 		fmt.Println(colors.Print("Warning. With sha256 you can generate 24 words", 3))
+// 		words = 24
+// 	}
+
+// 	// Generate a 256-bit key from the user-entered phrase using SHA-256
+// 	key := sha256.Sum256([]byte(userEntropy))
+
+// 	// Generate random nonce
+// 	nonce := make([]byte, chacha20.NonceSize)
+// 	if _, err := rand.Read(nonce); err != nil {
+// 		panic(err)
+// 	}
+
+// 	// Generate random plaintext (32 bytes) to be encrypted using ChaCha20
+// 	plaintext := make([]byte, 32)
+// 	if _, err := rand.Read(plaintext); err != nil {
+// 		panic(err)
+// 	}
+
+// 	// Encrypt plaintext using ChaCha20
+// 	cipher, err := chacha20.NewUnauthenticatedCipher(key[:], nonce)
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	ciphertext := make([]byte, len(plaintext))
+// 	cipher.XORKeyStream(ciphertext, plaintext)
+
+// 	// Use the first 256 bits of the ciphertext as entropy for BIP39
+// 	entropy := ciphertext[:32]
+
+// 	userEntropy = fmt.Sprintf("%x", entropy)
+// 	fmt.Fprintf(os.Stdout, "Key: %x\n", key)
+// 	fmt.Fprintf(os.Stdout, "Nonce(HEX): %x\n", nonce)
+// 	fmt.Fprintf(os.Stdout, "Ciphertex(HEX): %x\n", ciphertext)
+// 	mnemonic, err := bip39c.NewMnemonic(entropy)
+// 	fmt.Fprintf(os.Stdout, "Mnemonic: %v\n", mnemonic)
+// 	return nil
+// }
+
+func processPadding() error {
+	hex = false
+	if err := validateEntropyFlagInput(rawEntropy); err != nil {
+		return err
+	}
+	bits := (words / 3) * 32
+	bitsEnt := len(rawEntropy)
+	for i := bitsEnt; i <= bits; i++ {
+		rawEntropy += "0"
+	}
+	return nil
 }
 
 // cmdMnemonicPreRun validates the provided flags and sets the required variables.
 func cmdMnemonicPreRun(cmd *cobra.Command, args []string) error {
+	var err error
+	if len(userEntropy) > 0 {
+		userEntropy, err = checkInputPrefix(userEntropy)
+		_ = userEntropy
+		if err != nil {
+			return err
+		}
+	}
 
-	userEntropy = checkInputPrefix(userEntropy)
-	rawEntropy = checkInputPrefix(rawEntropy)
+	if len(rawEntropy) > 0 {
+		rawEntropy, err = checkInputPrefix(rawEntropy)
+		_ = rawEntropy
+		return err
+	}
 
 	input := []string{userEntropy, rawEntropy}
 
@@ -90,85 +214,37 @@ func cmdMnemonicPreRun(cmd *cobra.Command, args []string) error {
 				if err := validateEntropyFlagInput(i); err != nil {
 					return err
 				}
-				if (words/3)*32 != len(userEntropy) {
-					err := errors.New(fmt.Sprintf("human provided entropy has insufficient length, expected %v bits but only %v, your mnemonic is NOT secure. You can specify a cipher flag to extrapolate your input.", (words/3)*32, len(userEntropy)))
+				err := validateLengthEntropyInput(i)
+				if err != nil {
 					return err
 				}
+
 			}
 
 		}
+
 	}
 	if (len(userEntropy) > 0 || len(rawEntropy) > 0) && len(cipher) != 0 {
 		switch cipher {
 		case "sha256":
-			hex = true
-			if words != 24 {
-				fmt.Println(colors.Print("Warning. With sha256 you can generate 24 words", 3))
-				words = 24
-			}
-			sum := sha256.Sum256([]byte(userEntropy))
-
-			userEntropy = string(sum[:])
-			userEntropy = fmt.Sprintf("%x", userEntropy)
-
-			if err := validateHexEntropyFlagInput(userEntropy); err != nil {
+			if err := processSHA256(); err != nil {
 				return err
 			}
-
 		case "sha512":
-			hex = true
-			if words != 48 {
-				fmt.Println(colors.Print("Warning. With sha512 you can generate 48 words", 3))
-				words = 48
-			}
-			sum := sha512.Sum512([]byte(userEntropy))
-
-			// Flip bytes to string hex
-			userEntropy = string(sum[:])
-			userEntropy = fmt.Sprintf("%x", userEntropy)
-
-			if err := validateHexEntropyFlagInput(userEntropy); err != nil {
+			if err := processSHA512(); err != nil {
 				return err
 			}
 
-		case "chacha20":
-			hex = true
-			if words != 24 {
-				fmt.Println(colors.Print("Warning. With sha256 you can generate 24 words", 3))
-				words = 24
-			}
-			sum := sha256.Sum256([]byte(userEntropy))
-
-			// Flip bytes to string hex
-			userEntropy = string(sum[:])
-			userEntropy = fmt.Sprintf("%x", userEntropy)
-
-			aead, _ := chacha20poly1305.NewX(sum[:])
-
-			mnemonic := NewMnemonic()
-			msg := mnemonic.String()
-
-			nonce := make([]byte, chacha20poly1305.NonceSizeX)
-			ciphertext := aead.Seal(nil, nonce, []byte(msg), nil)
-
-			fmt.Printf("Cipher stream: %x\n", ciphertext)
-
-			mnemonic.Print(verbose)
-			// should refactor this. Perhaps with a context.
-			os.Exit(0)
-			return nil
+			// Deprecated
+			// case "chacha20":
+			// 	if err := processChaCha20(); err != nil {
+			// 		return err
+			// 	}
 
 		case "padding":
-			hex = false
-			if err := validateEntropyFlagInput(rawEntropy); err != nil {
+			if err := processPadding(); err != nil {
 				return err
 			}
-			bits := (words / 3) * 32
-			bitsEnt := len(rawEntropy)
-			for i := bitsEnt; i <= bits; i++ {
-				rawEntropy += "0"
-			}
-			return nil
 		}
 	}
 
@@ -180,6 +256,7 @@ func cmdMnemonic(cmd *cobra.Command, args []string) error {
 
 	mnemonic := NewMnemonic()
 	mnemonic.Print(verbose)
+
 	return nil
 
 }

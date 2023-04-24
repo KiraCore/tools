@@ -89,40 +89,14 @@ func (p *PinataApi) Test() error {
 //
 // Returns an error if any operation fails.
 func (p *PinataApi) Unpin(hash string) error {
+	log.Debug("Call Unpin ...")
+	log.Debug("Received arg:", hash)
 	// Initialize a Url instance.
 	url := Url{}
 
-	// Check if the provided hash is a valid CID.
-	if ValidateCid(hash) {
-		// Set the URL for unpinning by IPFS hash.
-		url.Set(tp.BASE_URL + tp.UNPIN + "/" + hash)
-		log.Debug("unpin: url: %v", url.Get())
-	} else {
-		// Retrieve the pinned content by metadata name.
-		err := p.Pinned(hash)
-		if err != nil {
-			return err
-		}
-
-		// Unmarshal the response into a PinnedResponse struct.
-		s := PinnedResponse{}
-		if err := json.Unmarshal(p.resp, &s); err != nil {
-			log.Error("unpin: failed to unmarshal")
-			return err
-		}
-
-		// Check the count of pinned content with the given metadata name.
-		switch s.Count {
-		case 0:
-			return fmt.Errorf(`not found. data with name %s doesn't exist`, hash)
-		case 1:
-			// Set the URL for unpinning by IPFS hash.
-			url.Set(tp.BASE_URL + tp.UNPIN + "/" + s.Rows[0].CID)
-			p.SetData(s.Rows[0].CID)
-		default:
-			return errors.New("more than one result returned")
-		}
-	}
+	// Set the URL for unpinning by IPFS hash.
+	url.Set(tp.BASE_URL + tp.UNPIN + "/" + hash)
+	log.Debug("Formed URL: ", url.Get())
 
 	// Create a new DELETE request using the PinataApi request object.
 	req, err := p.request.Del(url.Get())
@@ -144,7 +118,9 @@ func (p *PinataApi) Unpin(hash string) error {
 	}
 
 	// Save the response body and status code to the PinataApi instance.
+	log.Debug("Response string([]byte): ", b)
 	p.SaveResp(b)
+	log.Debug("Response stat code: ", resp.StatusCode)
 	p.SetRespCode(resp.StatusCode)
 
 	return nil
@@ -157,6 +133,7 @@ func (p *PinataApi) Unpin(hash string) error {
 //
 // Returns an error if any operation fails.
 func (p *PinataApi) Pinned(hash string) error {
+	log.Debug("Call pinned ...")
 	// Initialize a Url instance.
 	url := Url{}
 
@@ -164,9 +141,11 @@ func (p *PinataApi) Pinned(hash string) error {
 	if ValidateCid(hash) {
 		// Set the URL to search by IPFS hash.
 		url.Set(tp.BASE_URL + tp.PINNEDDATA + "/?status=pinned&hashContains=" + hash)
+		log.Debug("ValidateCId return true. Url: ", url.Get())
 	} else {
 		// Set the URL to search by metadata name.
 		url.Set(tp.BASE_URL + tp.PINNEDDATA + "/?status=pinned&metadata[name]=" + hash)
+		log.Debug("Url formed to get meta: ", url.Get())
 	}
 
 	// Create a new request using the PinataApi request object.
@@ -190,7 +169,9 @@ func (p *PinataApi) Pinned(hash string) error {
 	}
 
 	// Save the response body and status code to the PinataApi instance.
+	log.Debug("Response string([]byte): ", string(b))
 	p.SaveResp(b)
+	log.Debug("Response stat code: ", resp.StatusCode)
 	p.SetRespCode(resp.StatusCode)
 
 	return nil
@@ -427,6 +408,15 @@ func (p *PinataApi) OutputPinJsonObj() (PinResponseJSON, error) {
 	}
 	return s, nil
 
+}
+
+func (p *PinataApi) OutputPinnedJsonObj() (PinnedResponse, error) {
+	s := PinnedResponse{}
+	if err := json.Unmarshal(p.resp, &s); err != nil {
+		log.Error("failed to unmarshal in json")
+		return PinnedResponse{}, err
+	}
+	return s, nil
 }
 
 func (p *PinataApi) OutputPinJson() error {

@@ -1,3 +1,2 @@
 Features:
-
-* added timeout and retry to safeWget
+* bu: add curl check

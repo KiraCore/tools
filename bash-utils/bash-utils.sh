@@ -26,7 +26,7 @@ function bashUtilsVersion() {
 # this is default installation script for utils
 # ./bash-utils.sh bashUtilsSetup "/var/kiraglob"
 function bashUtilsSetup() {
-    local BASH_UTILS_VERSION="v0.3.42"
+    local BASH_UTILS_VERSION="v0.3.46"
     local COSIGN_VERSION="v2.0.0"
     if [ "$1" == "version" ] ; then
         echo "$BASH_UTILS_VERSION"
@@ -761,6 +761,11 @@ function safeWget() {
     if (! $(isCommand cosign)) ; then
         echoErr "ERROR: Cosign tool is not installed, please install version v2.0.0 or later."
         return 1
+    fi
+
+    if (! $(isCommand curl)) ; then
+        echoINFO "INFO: Curl not installed. Installing..."
+        apt-get install curl -y || ( echoErr "Failed to install curl, missing dependency" && exit 1 )
     fi
 
     if (! $(isSHA256 "$EXPECTED_HASH_FIRST")) ; then
@@ -2307,6 +2312,11 @@ if declare -f "$1" > /dev/null ; then
   # call arguments verbatim
   "$@"
 fi
+
+
+
+
+
 
 
 
