@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"flag"
 	"fmt"
 	"io"
@@ -169,7 +171,7 @@ func checkMnemonic(mnemonic string) error {
 
 var out io.Writer = os.Stdout
 
-func ValKeyGen(mnemonic, defaultPrefix, defaultPath, valkey, nodekey, keyid string, acadr, valadr, consadr bool) {
+func ValKeyGen(mnemonic, defaultPrefix, defaultPath, valkey, nodekey, keyid string, acadr, valadr, consadr bool) string {
 	prefix := Prefix{}
 
 	// Setting up prefix with default or provided values
@@ -209,8 +211,8 @@ func ValKeyGen(mnemonic, defaultPrefix, defaultPath, valkey, nodekey, keyid stri
 	config.SetBech32PrefixForConsensusNode(prefix.GetBech32PrefixConsAddr(), prefix.GetBech32PrefixConsPub())
 	config.SetPurpose(prefix.fullPath.Purpose)
 	config.SetCoinType(prefix.fullPath.CoinType)
-	config.Seal()
-
+	// config.Seal()
+	var ret string
 	if ok, err := checkPath([]string{valkey, nodekey, keyid}); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -236,6 +238,7 @@ func ValKeyGen(mnemonic, defaultPrefix, defaultPath, valkey, nodekey, keyid stri
 				if err != nil {
 					panic(err)
 				}
+				ret = string([]byte(filenodekey.ID()))
 			}
 
 		} else {
@@ -251,9 +254,89 @@ func ValKeyGen(mnemonic, defaultPrefix, defaultPath, valkey, nodekey, keyid stri
 
 		}
 	}
-
+	return ret
 }
 
+func generateMnemonicFromAnotherMnemonic(name, t, masterMnemonic string) (string, error) {
+	lowerCaseString := strings.ToLower(fmt.Sprintf("%s ; %s %s", masterMnemonic, name, t))
+	lowerCaseString = strings.ReplaceAll(lowerCaseString, " ", "")
+
+	hasher := sha256.New()
+	hasher.Write([]byte(lowerCaseString))
+	entropyHex := hex.EncodeToString(hasher.Sum(nil))
+
+	entropy, err := hex.DecodeString(entropyHex)
+	if err != nil {
+		return "", fmt.Errorf("error decoding hex string: %w", err)
+	}
+
+	mnemonic, err := bip39.NewMnemonic(entropy)
+	if err != nil {
+		return "", fmt.Errorf("error generating mnemonic: %w", err)
+	}
+
+	return mnemonic, nil
+}
+
+var nodeIDkey string
+
+func MasterKeysGen(mnemonic, defaultPrefix, defaultPath, masterkeys string) {
+
+	err := checkMnemonic(mnemonic)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
+	types := [3]string{"node", "addr", "val"}
+	ok, err := checkPath([]string{masterkeys})
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
+	if ok {
+
+		// VALIDATOR_NODE_MNEMONIC
+		validatorNodeMnemonic, err := generateMnemonicFromAnotherMnemonic("validator", types[0], mnemonic)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+
+		keyid := ValKeyGen(validatorNodeMnemonic, defaultPrefix, defaultPath, "",
+			fmt.Sprintf("%s/validator_node_key.json", masterkeys),
+			fmt.Sprintf("%s/validator_node_id.key", masterkeys),
+			false, false, false)
+		// VALIDATOR_NODE_ID
+		validatorNodeId := &keyid
+		//VALIDATOR_ADDR_MNEMONIC
+
+		validatorAddrMnemonic, err := generateMnemonicFromAnotherMnemonic("validator", types[1], mnemonic)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+
+		//VALIDATOR_VAL_MNEMONIC
+		validatorValMnemonic, err := generateMnemonicFromAnotherMnemonic("validator", types[2], mnemonic)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		ValKeyGen(validatorValMnemonic, defaultPrefix, defaultPath, fmt.Sprintf("%s/priv_validator_key.json", masterkeys), "", "", false, false, false)
+
+		//SIGNER_ADDR_MNEMONIC
+		signerAddrMnemonic, err := generateMnemonicFromAnotherMnemonic("signer", types[1], mnemonic)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+
+		fmt.Printf("MASTER_MNEMONIC=%s\nVALIDATOR_ADDR_MNEMONIC=%s\nVALIDATOR_NODE_MNEMONIC=%s\nVALIDATOR_NODE_ID=%s\nVALIDATOR_VAL_MNEMONIC=%s\nSIGNER_ADDR_MNEMONIC=%s\n ", mnemonic, validatorAddrMnemonic, validatorNodeMnemonic, *validatorNodeId, validatorValMnemonic, signerAddrMnemonic)
+	}
+
+}
 func main() {
 
 	var (
@@ -265,23 +348,27 @@ func main() {
 		defaultPath   string
 
 		// Output path block
-		valkey  string
-		nodekey string
-		keyid   string
+		valkey     string
+		nodekey    string
+		keyid      string
+		masterkeys string
 
 		// Printout options block
 		acadr   bool
 		valadr  bool
 		consadr bool
 		version bool
+		master  bool
 	)
 
 	fs := flag.NewFlagSet("validator-key-gen", flag.ExitOnError)
 
 	fs.StringVar(&mnemonic, "mnemonic", "", "Valid BIP39 mnemonic(required)")
+	fs.BoolVar(&master, "master", false, "boolean , if true - generate whole mnemonic set")
 
 	// Path to place files. Path should exist.
 
+	fs.StringVar(&masterkeys, "masterkeys", "", "path, where master's mnemonic set and keys key files will be placed")
 	fs.StringVar(&valkey, "valkey", "", "path, where validator key json file will be placed")
 	fs.StringVar(&nodekey, "nodekey", "", "path, where node key json file will be placed")
 	fs.StringVar(&keyid, "keyid", "", "path, where NodeID file will be placed")
@@ -315,7 +402,12 @@ func main() {
 		fmt.Fprintln(os.Stdout, PrivValidatorKeyGenVersion)
 		os.Exit(0)
 	case false:
-		ValKeyGen(mnemonic, defaultPrefix, defaultPath, valkey, nodekey, keyid, acadr, valadr, consadr)
+
+		// ValKeyGen(mnemonic, defaultPrefix, defaultPath, valkey, nodekey, keyid, acadr, valadr, consadr)
+		if master {
+			MasterKeysGen(mnemonic, defaultPrefix, defaultPath, masterkeys)
+		}
+
 	}
 
 }
