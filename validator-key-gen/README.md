@@ -46,6 +46,8 @@ validator-key-gen --mnemonic="your mnemonic phrase" [OPTIONS]
 - -valkey:        Path to save the validator key JSON file
 - -nodekey:       Path to save the node key JSON file
 - -keyid:         Path to save the NodeID file
+- -masterkeys     Path to save mnemonics.env, validator key, node key, node id files. Only works with -master flag 
+- -master  	   If true, generate whole mnemonic set
 - -accadr:        If true, output the account address
 - -valadr:        If true, output the validator address
 - -consadr:       If true, output the consensus address
@@ -60,18 +62,24 @@ validator-key-gen --mnemonic="your mnemonic phrase" [OPTIONS]
 validator-key-gen --mnemonic="your mnemonic phrase" --valkey="validator_key.json" --nodekey="node_key.json" --keyid="node_id.txt"
 ```
 
-2. Output the account, validator, and consensus addresses:
+2. Generate whole mnemonic set from Master mnemonic
+   
+```bash
+ validator-key-gen  --mnemonic="your mnemonic phrase" --masterkeys="path to folder" --master 
+```
+ 
+3. Output the account, validator, and consensus addresses:
 
 ```bash
 validator-key-gen --mnemonic="your mnemonic phrase" --accadr --valadr --consadr
 ```
 
-3. Customize the Bech32 prefix and BIP44 derivation path:
+4. Customize the Bech32 prefix and BIP44 derivation path:
 
 ```bash
 validator-key-gen --mnemonic="your mnemonic phrase" --prefix="custom_prefix" --path="44'/12345'/0'/0/0"
 ```
-4. Version
+5. Version
 ```bash
 validator-key-gen --version
 ```
