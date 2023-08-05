@@ -271,12 +271,13 @@ func createEnvFileForGeneratedMnemonics(path string, mnemonicData []byte) error 
 	return nil
 }
 
-func generateMnemonicFromAnotherMnemonic(name, t string, masterMnemonic []byte) ([]byte, error) {
-	lowerCaseString := strings.ToLower(fmt.Sprintf("%s ; %s %s", masterMnemonic, name, t))
-	lowerCaseString = strings.ReplaceAll(lowerCaseString, " ", "")
+// acceps name and t=type as salt and mnemonic, for example MnemonicGenerator --name="validator" --type="addr"  - validator address
+func generateFromMasterMnemonic(name, t string, masterMnemonic []byte) ([]byte, error) {
+	stringToHash := strings.ToLower(fmt.Sprintf("%s ; %s %s", masterMnemonic, name, t))
+	stringToHash = strings.ReplaceAll(stringToHash, " ", "")
 
 	hasher := sha256.New()
-	hasher.Write([]byte(lowerCaseString))
+	hasher.Write([]byte(stringToHash))
 	entropyHex := hex.EncodeToString(hasher.Sum(nil))
 
 	entropy, err := hex.DecodeString(entropyHex)
@@ -308,7 +309,7 @@ func MasterKeysGen(mnemonic []byte, defaultPrefix, defaultPath, masterkeys strin
 	if ok {
 
 		// VALIDATOR_NODE_MNEMONIC
-		validatorNodeMnemonic, err := generateMnemonicFromAnotherMnemonic("validator", "node", mnemonic)
+		validatorNodeMnemonic, err := generateFromMasterMnemonic("validator", "node", mnemonic)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
@@ -322,14 +323,14 @@ func MasterKeysGen(mnemonic []byte, defaultPrefix, defaultPath, masterkeys strin
 		validatorNodeId := &keyid
 
 		//VALIDATOR_ADDR_MNEMONIC
-		validatorAddrMnemonic, err := generateMnemonicFromAnotherMnemonic("validator", "addr", mnemonic)
+		validatorAddrMnemonic, err := generateFromMasterMnemonic("validator", "addr", mnemonic)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
 
 		//VALIDATOR_VAL_MNEMONIC
-		validatorValMnemonic, err := generateMnemonicFromAnotherMnemonic("validator", "val", mnemonic)
+		validatorValMnemonic, err := generateFromMasterMnemonic("validator", "val", mnemonic)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
@@ -337,7 +338,7 @@ func MasterKeysGen(mnemonic []byte, defaultPrefix, defaultPath, masterkeys strin
 		ValKeyGen(string(validatorValMnemonic), defaultPrefix, defaultPath, fmt.Sprintf("%s/priv_validator_key.json", masterkeys), "", "", false, false, false)
 
 		//SIGNER_ADDR_MNEMONIC
-		signerAddrMnemonic, err := generateMnemonicFromAnotherMnemonic("signer", "addr", mnemonic)
+		signerAddrMnemonic, err := generateFromMasterMnemonic("signer", "addr", mnemonic)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
