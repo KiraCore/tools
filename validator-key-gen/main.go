@@ -256,6 +256,7 @@ func ValKeyGen(mnemonic, defaultPrefix, defaultPath, valkey, nodekey, keyid stri
 	}
 	return ret
 }
+
 func createEnvFileForGeneratedMnemonics(path string, mnemonicData []byte) error {
 	file, err := os.Create(path)
 	if err != nil {
@@ -293,6 +294,7 @@ func generateFromMasterMnemonic(name, t string, masterMnemonic []byte) ([]byte, 
 	return []byte(mnemonic), nil
 }
 
+// go run .\main.go --mnemonic "want vanish frown filter resemble purchase trial baby equal never cinnamon claim wrap cash snake cable head tray few daring shine clip loyal series" --masterkeys .\test\ --master
 func MasterKeysGen(mnemonic []byte, defaultPrefix, defaultPath, masterkeys string) {
 	err := checkMnemonic(string(mnemonic))
 	if err != nil {
@@ -354,6 +356,7 @@ func MasterKeysGen(mnemonic []byte, defaultPrefix, defaultPath, masterkeys strin
 	}
 
 }
+
 func main() {
 
 	var (
