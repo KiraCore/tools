@@ -306,7 +306,9 @@ func generateFromMasterMnemonic(name, typeOfMnemonic string, masterMnemonic []by
 	return []byte(mnemonic), nil
 }
 
-// # Generates set of mnemonics from master mnemonic
+// # Generates set of mnemonics from master mnemonic, accepts masterMnemonic string as byte
+//
+// Default function call MasterKeysGen([]byte("mnemonic string"), "", "", "./path")
 //
 // go run .\main.go --mnemonic "want vanish frown filter resemble purchase trial baby equal never cinnamon claim wrap cash snake cable head tray few daring shine clip loyal series" --masterkeys .\test\ --master
 func MasterKeysGen(masterMnemonic []byte, defaultPrefix, defaultPath, masterkeys string) (validatorAddrMnemonic, validatorNodeMnemonic, validatorNodeId, validatorValMnemonic, signerAddrMnemonic []byte) {
