@@ -9,7 +9,7 @@ Cosign requires simple initial setup of the signer keys described more precisely
 
 ```bash
 # install cosign
-COSIGN_VERSION="v2.0.0" && \
+COSIGN_VERSION="v2.0.2" && \
 if [[ "$(uname -m)" == *"ar"* ]] ; then ARCH="arm64"; else ARCH="amd64" ; fi && echo $ARCH && \
 PLATFORM=$(uname) && FILE=$(echo "cosign-${PLATFORM}-${ARCH}" | tr '[:upper:]' '[:lower:]') && \
  wget https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/$FILE && chmod +x -v ./$FILE && \
