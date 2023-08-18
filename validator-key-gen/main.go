@@ -9,6 +9,8 @@ import (
 	valkeygen "github.com/KiraCore/tools/validator-key-gen/ValKeyGen"
 )
 
+const PrivValidatorKeyGenVersion = "v0.3.47"
+
 func main() {
 
 	var (
@@ -71,7 +73,7 @@ func main() {
 	}
 	switch version {
 	case true:
-		fmt.Fprintln(os.Stdout, valkeygen.PrivValidatorKeyGenVersion)
+		fmt.Fprintln(os.Stdout, PrivValidatorKeyGenVersion)
 		os.Exit(0)
 	case false:
 		if master {
