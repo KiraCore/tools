@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	mnemonicsgenerator "github.com/PeepoFrog/validator-key-gen/MnemonicsGenerator"
+	mnemonicsgenerator "github.com/KiraCore/tools/validator-key-gen/MnemonicsGenerator"
 )
 
 // Test mnemonic:
