@@ -1,2 +1,4 @@
 Features:
-* bu: add curl check
+* Refactor: validator-key-gen refactored for package usage
+* Add: new mnemonic to set - PrivKeyMnemonic
+
