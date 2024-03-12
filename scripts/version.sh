@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-echo "v0.3.47"
+echo "v0.3.48"
