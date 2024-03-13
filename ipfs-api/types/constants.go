@@ -1,7 +1,7 @@
 package types
 
 const (
-	IpfsApiVersion = "v0.3.51"
+	IpfsApiVersion = "v0.3.52"
 
 	// Pinata v1 constants
 	BASE_URL     = "https://api.pinata.cloud"
