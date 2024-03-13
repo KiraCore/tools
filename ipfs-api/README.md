@@ -5,7 +5,7 @@ A command-line interface (CLI) for interacting with the IPFS API, providing func
 To install the CLI, clone the repository and build the project using Go.= or dowload from existing release
 
 ```
-TOOLS_VERSION="v0.3.46" && rm -rfv /tmp/ipfs-api && \
+TOOLS_VERSION="v0.3.51" && rm -rfv /tmp/ipfs-api && \
  safeWget /tmp/ipfs-api.deb "https://github.com/KiraCore/tools/releases/download/$TOOLS_VERSION/ipfs-api-$(getPlatform)-$(getArch).deb" "QmeqFDLGfwoWgCy2ZEFXerVC5XW8c5xgRyhK5bLArBr2ue" && \
  dpkg-deb -x /tmp/ipfs-api.deb /tmp/ipfs-api && cp -fv "/tmp/ipfs-api/bin/ipfs-api" /usr/local/bin/ipfs-api && chmod -v 755 /usr/local/bin/ipfs-api && \
  ipfs-api version
