@@ -149,14 +149,28 @@ func MasterKeysGen(masterMnemonic []byte, defaultPrefix, defaultPath, masterkeys
 
 		if masterkeys != "" {
 			// validator_node_key.json validator_node_id.key" files
-			valkeygen.ValKeyGen(string(mnemonicSet.ValidatorNodeMnemonic), defaultPrefix, defaultPath, "",
-				fmt.Sprintf("%s/%s", masterkeys, DefaultValidatorNodeKeyFileName),
-				fmt.Sprintf("%s/%s", masterkeys, DefaultValidatorNodeIdFileName),
-				false, false, false)
+			// valkeygen.ValKeyGen(string(mnemonicSet.ValidatorNodeMnemonic), defaultPrefix, defaultPath, "",
+			// 	fmt.Sprintf("%s/%s", masterkeys, DefaultValidatorNodeKeyFileName),
+			// 	fmt.Sprintf("%s/%s", masterkeys, DefaultValidatorNodeIdFileName),
+			// 	false, false, false)
+			// priv_validator_key.json file
+			// valkeygen.ValKeyGen(string(mnemonicSet.ValidatorValMnemonic), defaultPrefix, defaultPath, fmt.Sprintf("%s/%s", masterkeys, DefaultPrivValidatorKeyFileName), "", "", false, false, false)
 
-			// priv_validator_key.json files
-			valkeygen.ValKeyGen(string(mnemonicSet.ValidatorValMnemonic), defaultPrefix, defaultPath, fmt.Sprintf("%s/%s", masterkeys, DefaultPrivValidatorKeyFileName), "", "", false, false, false)
-
+			// validator_node_key.json file
+			err = GenerateValidatorNodeKeyJson(mnemonicSet.ValidatorNodeMnemonic, fmt.Sprintf("%s/%s", masterkeys, DefaultValidatorNodeKeyFileName), defaultPrefix, defaultPath)
+			if err != nil {
+				return mnemonicSet, err
+			}
+			// validator_node_id.key" file
+			err = GenerateValidatorNodeIdFile(mnemonicSet.ValidatorNodeMnemonic, fmt.Sprintf("%s/%s", masterkeys, DefaultValidatorNodeIdFileName), defaultPrefix, defaultPath)
+			if err != nil {
+				return mnemonicSet, err
+			}
+			// priv_validator_key.json file
+			err = GeneratePrivValidatorKeyJson(mnemonicSet.ValidatorValMnemonic, fmt.Sprintf("%s/%s", masterkeys, DefaultPrivValidatorKeyFileName), defaultPrefix, defaultPath)
+			if err != nil {
+				return mnemonicSet, err
+			}
 			// mnemonics.env file
 			dataToWrite := []byte(fmt.Sprintf("MASTER_MNEMONIC=%s\nVALIDATOR_ADDR_MNEMONIC=%s\nVALIDATOR_NODE_MNEMONIC=%s\nVALIDATOR_NODE_ID=%s\nVALIDATOR_VAL_MNEMONIC=%s\nSIGNER_ADDR_MNEMONIC=%s\n ", masterMnemonic, mnemonicSet.ValidatorAddrMnemonic, mnemonicSet.ValidatorNodeMnemonic, mnemonicSet.ValidatorNodeId, mnemonicSet.ValidatorValMnemonic, mnemonicSet.SignerAddrMnemonic))
 
@@ -191,4 +205,37 @@ func DerivePrivKeyMnemonicFromMasterMnemonic(masterMnemonic []byte) (privKey []b
 		return nil, fmt.Errorf("error while generating ")
 	}
 	return
+}
+
+func GenerateValidatorNodeKeyJson(validatorNodeMnemonic []byte, keyPath, defaultPrefix, defaultPath string) error {
+	// validator_node_key.json file
+	err := valkeygen.ValKeyGen(string(validatorNodeMnemonic), defaultPrefix, defaultPath, "",
+		keyPath,
+		"",
+		false, false, false)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func GenerateValidatorNodeIdFile(validatorNodeMnemonic []byte, keyPath, defaultPrefix, defaultPath string) error {
+	//validator_node_id.key" file
+	err := valkeygen.ValKeyGen(string(validatorNodeMnemonic), defaultPrefix, defaultPath, "",
+		"",
+		keyPath,
+		false, false, false)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func GeneratePrivValidatorKeyJson(validatorValMnemonic []byte, keyPath, defaultPrefix, defaultPath string) error {
+	// priv_validator_key.json file
+	err := valkeygen.ValKeyGen(string(validatorValMnemonic), defaultPrefix, defaultPath, keyPath, "", "", false, false, false)
+	if err != nil {
+		return err
+	}
+	return nil
 }

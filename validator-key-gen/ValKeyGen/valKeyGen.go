@@ -17,8 +17,6 @@ import (
 	"github.com/tendermint/tendermint/privval"
 )
 
-
-
 type Prefix struct {
 	fullPath             *hd.BIP44Params
 	bech32MainPrefix     string
@@ -161,32 +159,35 @@ func CheckMnemonic(mnemonic string) error {
 	}
 
 	if isValid := bip39.IsMnemonicValid(mnemonic); !isValid {
-		return fmt.Errorf("mnemonic is invalid!")
+		return fmt.Errorf("mnemonic is invalid")
 	}
 	return nil
 }
 
 var out io.Writer = os.Stdout
 
-func ValKeyGen(mnemonic, defaultPrefix, defaultPath, valkey, nodekey, keyid string, acadr, valadr, consadr bool) {
+func ValKeyGen(mnemonic, defaultPrefix, defaultPath, valkey, nodekey, keyid string, acadr, valadr, consadr bool) error {
 	prefix := Prefix{}
 
 	// Setting up prefix with default or provided values
 	err := prefix.New(defaultPrefix, defaultPath)
 	if err != nil {
-		panic(fmt.Errorf("malformed prefix %v", err))
+		// panic(fmt.Errorf("malformed prefix %v", err))
+		return fmt.Errorf("malformed prefix %v", err)
 	}
 
 	// Check if mnemonic is provided and valid
 	if err := CheckMnemonic(mnemonic); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		// fmt.Fprintln(os.Stderr, err)
+		// os.Exit(1)
+		return err
 	}
 
 	// Generate HD(Hierarchical Deterministic) path from string
 	hdPath, err := hd.NewParamsFromPath(defaultPath)
 	if err != nil {
-		panic(err)
+		// panic(err)
+		return err
 	}
 
 	// Generate tendermint MASTER private key from mnemonic
@@ -210,8 +211,9 @@ func ValKeyGen(mnemonic, defaultPrefix, defaultPath, valkey, nodekey, keyid stri
 	config.SetCoinType(prefix.fullPath.CoinType)
 	// config.Seal()
 	if ok, err := CheckPath([]string{valkey, nodekey, keyid}); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		// fmt.Fprintln(os.Stderr, err)
+		// os.Exit(1)
+		return err
 	} else {
 		if ok {
 			filepvkey := privval.NewFilePV(tmPrivKey, valkey, "").Key
@@ -226,13 +228,15 @@ func ValKeyGen(mnemonic, defaultPrefix, defaultPath, valkey, nodekey, keyid stri
 			if len(nodekey) != 0 {
 				err = filenodekey.SaveAs(nodekey)
 				if err != nil {
-					panic(err)
+					// panic(err)
+					return err
 				}
 			}
 			if len(keyid) != 0 {
 				err = ioutil.WriteFile(keyid, []byte(filenodekey.ID()), 0644)
 				if err != nil {
-					panic(err)
+					// panic(err)
+					return err
 				}
 			}
 
@@ -249,5 +253,5 @@ func ValKeyGen(mnemonic, defaultPrefix, defaultPath, valkey, nodekey, keyid stri
 
 		}
 	}
-
+	return nil
 }
