@@ -1929,7 +1929,8 @@ function getTomlVarNames() {
        elif  [ -z "$line" ] || [[ $line = \#* ]] ; then 
             continue
        elif [[ $line = *=* ]] ; then
-           name=$(echo "$line" | cut -d= -f1 | xargs)
+           local name=$(echo "$line" | cut -d= -f1 | xargs)
+           name=$(echo "$name" | tr '.' '_') # Fix: replace dots with undescore
            [ ! -z "$name" ] && echo "$tag $name"
        fi
     done
