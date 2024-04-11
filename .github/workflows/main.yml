@@ -8,7 +8,7 @@ on:
 jobs:
   build-amd64:
     name: AMD64 - Repo Test & Build
-    runs-on: [ self-hosted, github-actions-amd64-runner-2 ]
+    runs-on: [ self-hosted, X64 ]
     permissions:
       contents: read
       packages: write
@@ -99,7 +99,7 @@ jobs:
               path: ./tools-bin-amd64.tar.gz
   build-arm64:
     name: ARM64 - Repo Test & Build
-    runs-on: [ self-hosted, github-actions-arm64-runner-1 ]
+    runs-on: [ self-hosted, ARM64 ]
     needs: [build-amd64]
     permissions:
       contents: read
