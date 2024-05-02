@@ -9,7 +9,7 @@ import (
 	valkeygen "github.com/KiraCore/tools/validator-key-gen/ValKeyGen"
 )
 
-const PrivValidatorKeyGenVersion = "v0.3.54"
+const PrivValidatorKeyGenVersion = "v0.3.55"
 
 func main() {
 
