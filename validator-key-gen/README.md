@@ -5,7 +5,10 @@ Validator Key Generator is a CLI tool that generates validator keys, node keys, 
 ### Setup from binary file
 
 ```bash
-TOOLS_VERSION="v0.3.54"
+
+TOOLS_VERSION="v0.3.56"
+
+
 
 # Quick-Install bash-utils or see root repository README file for secure download
 FILE_NAME="bash-utils.sh" && \

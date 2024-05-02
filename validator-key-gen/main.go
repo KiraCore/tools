@@ -9,7 +9,10 @@ import (
 	valkeygen "github.com/KiraCore/tools/validator-key-gen/ValKeyGen"
 )
 
-const PrivValidatorKeyGenVersion = "v0.3.54"
+
+const PrivValidatorKeyGenVersion = "v0.3.56"
+
+
 
 func main() {
 
@@ -79,7 +82,10 @@ func main() {
 		if master {
 			mnemonicsgenerator.MasterKeysGen([]byte(mnemonic), defaultPrefix, defaultPath, masterkeys)
 		} else {
-			valkeygen.ValKeyGen(mnemonic, defaultPrefix, defaultPath, valkey, nodekey, keyid, acadr, valadr, consadr)
+			err := valkeygen.ValKeyGen(mnemonic, defaultPrefix, defaultPath, valkey, nodekey, keyid, acadr, valadr, consadr)
+			if err != nil {
+				fmt.Println("ERROR: %w", err)
+			}
 
 		}
 
