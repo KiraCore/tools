@@ -1,7 +1,7 @@
 import re
 import sys
 
-version = "v0.3.55"
+version = "v0.3.56"
 
 if len(sys.argv) != 2:
     print("Usage: python3 update_version.py <new_release>")
