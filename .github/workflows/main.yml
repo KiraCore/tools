@@ -8,7 +8,7 @@ on:
 jobs:
   build-amd64:
     name: AMD64 - Repo Test & Build
-    runs-on: [ self-hosted, github-actions-amd64-runner-2 ]
+    runs-on: [ self-hosted, X64 ]
     permissions:
       contents: read
       packages: write
@@ -99,7 +99,7 @@ jobs:
               path: ./tools-bin-amd64.tar.gz
   build-arm64:
     name: ARM64 - Repo Test & Build
-    runs-on: [ self-hosted, github-actions-arm64-runner-1 ]
+    runs-on: [ self-hosted, ARM64 ]
     needs: [build-amd64]
     permissions:
       contents: read
@@ -227,9 +227,9 @@ jobs:
       id-token: write
       pull-requests: write
     steps:
-            # ref.: https://github.com/sigstore/cosign-installer, v3.0.1
+            # ref.: https://github.com/sigstore/cosign-installer, v3.2.0
           - name: Install cosign
-            uses: sigstore/cosign-installer@c3667d99424e7e6047999fb6246c0da843953c65
+            uses: sigstore/cosign-installer@1fc5bd396d372bee37d608f955b336615edf79c8
             with:
               cosign-release: 'v2.0.0'
           - name: Download AMD64 artifacts
