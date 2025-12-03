@@ -1,10 +1,19 @@
-# Bip39 Mnemonic Generator
+# BIP39 Mnemonic Generator
 
-The Bip39 Mnemonic Generator is a command-line tool that generates mnemonic words based on the BIP39 standard. These mnemonic words can be used for creating and recovering deterministic wallets in the cryptocurrency ecosystem.
+A command-line tool for generating BIP39-compliant mnemonic phrases. These mnemonic words can be used for creating and recovering deterministic wallets in the cryptocurrency ecosystem.
 
-### Installation
+## Features
 
-To install the Bip39 Mnemonic Generator, clone the repository, and build the project. Make sure you have the required dependencies installed.
+- Generate BIP39-compliant mnemonic phrases (12 to 768 words)
+- Hybrid entropy system combining computer-generated and user-provided entropy via XOR
+- Multiple entropy input formats (binary `0b...` and hexadecimal `0x...`)
+- Cipher-based entropy extrapolation (SHA-256, SHA-512, padding)
+- Verbose mode with detailed entropy breakdown
+- Official BIP39 English wordlist with CRC32 integrity validation
+
+## Installation
+
+### From Source
 
 ```bash
 git clone https://github.com/KiraCore/tools.git
@@ -12,7 +21,29 @@ cd tools/bip39gen
 make install
 ```
 
-#### Quick-Install bash-utils or see root repository README file for secure download
+### Docker Build
+
+Build binary and .deb package using Docker:
+```bash
+# Build the image
+docker build -t bip39gen-builder .
+
+# Extract artifacts to ./dist
+docker run --rm -v $(pwd)/dist:/dist bip39gen-builder sh -c "cp /output/* /dist/"
+```
+
+The output includes:
+- `bip39gen` - standalone binary
+- `bip39gen-linux-amd64.deb` - Debian package
+
+Cross-compile for different architectures:
+```bash
+# Build for ARM64
+docker build --platform linux/arm64 -t bip39gen-builder-arm64 .
+```
+
+### Quick-Install bash-utils
+
 ```bash
 FILE_NAME="bash-utils.sh" && \
  wget "https://github.com/KiraCore/tools/releases/download/$TOOLS_VERSION/${FILE_NAME}" -O ./$FILE_NAME && \
@@ -20,7 +51,8 @@ FILE_NAME="bash-utils.sh" && \
  echoInfo "INFO: Installed bash-utils $(bash-utils bashUtilsVersion)"
 ```
 
-#### Install bip39gen for platform specific system & verify signature file
+### Install Platform-Specific Binary
+
 ```bash
 safeWget ./bip39gen.deb \
  "https://github.com/KiraCore/tools/releases/download/$TOOLS_VERSION/bip39gen-$(getPlatform)-$(getArch).deb" \
@@ -29,48 +61,76 @@ safeWget ./bip39gen.deb \
  chmod +x "/usr/local/bin/bip39gen" && rm -rfv ./bip39gen ./bip39gen.deb
 ```
 
-
-### Usage
-
-To use the Bip39 Mnemonic Generator, execute the tool with the desired options and flags. The following commands and flags are available:
+## Usage
 
 ```bash
-bip39gen [COMMANDS] [OPTIONS]
+bip39gen [COMMAND] [OPTIONS]
 ```
 
 ### Commands
 
-- mnemonic: Generate mnemonic words
-- version: Check the current version of the tool
+| Command    | Description                          |
+|------------|--------------------------------------|
+| `mnemonic` | Generate BIP39 mnemonic words        |
+| `version`  | Display the current tool version     |
 
-### Options
-- -length (-l):       Specify the number of mnemonic words to generate (default: 24)
-- -entropy (-e):      Provide entropy for mixing and generating new mnemonic sentences
-- -raw-entropy (-r):  Provide entropy to regenerate mnemonic sentences from
-- -cipher (-c):       Choose a cipher to generate mnemonics. Available options are: sha256, sha512, chacha20, padding
-- -hex:               Set hexadecimal string format for input
-- -verbose (-v):      Set the verbose level of output
+### Options for `mnemonic` Command
 
-The tool checks for input validity, including length, entropy, and hex format. It also supports generating mnemonic words using different ciphers, such as SHA-256, SHA-512, and ChaCha20.
+| Flag             | Short | Type    | Default | Description                                                |
+|------------------|-------|---------|---------|------------------------------------------------------------|
+| `--length`       | `-l`  | int     | 24      | Number of mnemonic words (must be divisible by 3, max 768) |
+| `--entropy`      | `-e`  | string  | ""      | User entropy to mix with computer-generated entropy        |
+| `--raw-entropy`  | `-r`  | string  | ""      | Pre-existing entropy to regenerate mnemonics from          |
+| `--cipher`       | `-c`  | string  | ""      | Cipher for entropy extrapolation: `sha256`, `sha512`, `padding` |
+| `--hex`          |       | boolean | false   | Interpret input as hexadecimal format                      |
+| `--verbose`      | `-v`  | boolean | false   | Enable verbose output with entropy breakdown               |
 
-### Examples
+### Entropy Calculation
 
-Generate a new 24-word mnemonic:
+The relationship between word count and entropy bits:
 
+| Words | Entropy Bits | Checksum Bits |
+|-------|--------------|---------------|
+| 12    | 128          | 4             |
+| 15    | 160          | 5             |
+| 18    | 192          | 6             |
+| 21    | 224          | 7             |
+| 24    | 256          | 8             |
+| 48    | 512          | 16            |
+
+**Formula:** `Entropy Bits = (words / 3) * 32` and `Checksum Bits = Entropy Bits / 32`
+
+### Ciphers
+
+| Cipher    | Description                                                                 |
+|-----------|-----------------------------------------------------------------------------|
+| `sha256`  | Hash input entropy with SHA-256, produces 256-bit entropy (24-word mnemonic) |
+| `sha512`  | Hash input entropy with SHA-512, produces 512-bit entropy (48-word mnemonic) |
+| `padding` | Pad insufficient entropy with zeros to reach required length                |
+
+## Examples
+
+### Basic Usage
+
+Generate a 24-word mnemonic (default):
 ```bash
 bip39gen mnemonic
 ```
 
-Generate a new 12-word mnemonic:
-
+Generate a 12-word mnemonic:
 ```bash
 bip39gen mnemonic --length 12
 ```
 
-Generate a new 24 word mnemonic with verbal output:
-
+Check version:
 ```bash
-In: 
+bip39gen version
+```
+
+### Verbose Output
+
+Generate with detailed entropy breakdown:
+```bash
 bip39gen mnemonic -v
 
 Output:
@@ -110,38 +170,65 @@ NR.       COMPUTER       HUMAN          BIN        DEC   BIP39 WORD
 23.     00001001011 ⊕ 00000000000 = 00001001011 -> 75    -> annual
 24.     01100011001 ⊕ 00000000000 = 01100011001 -> 793   -> glimpse
 ============================================================================================
-Mnemonic words: 
+Mnemonic words:
 benefit plug road common scan discover ill chief shock depth wagon verb purity sausage horn journey hover alien develop rib robust auction annual glimpse
 ```
 
-Generate a mnemonic using user-provided entropy:
+### User-Provided Entropy
 
+Mix user entropy with computer-generated entropy:
 ```bash
 bip39gen mnemonic --entropy "your_entropy_here"
 ```
 
-Generate a mnemonic using raw entropy:
-
+With SHA-256 cipher for deterministic 24-word output:
 ```bash
-bip39gen mnemonic --raw-entropy "your_raw_entropy_here"
+bip39gen mnemonic --entropy "your_passphrase" --cipher sha256
 ```
-Generate a mnemonic using user-provided or human entropy in format "0x.." or "0b..". If hex is provided the flag should be set explicitly: 
 
+With SHA-512 cipher for deterministic 48-word output:
+```bash
+bip39gen mnemonic --entropy "your_passphrase" --cipher sha512 --length 48
+```
+
+### Raw Entropy
+
+Regenerate mnemonic from existing entropy (hexadecimal):
 ```bash
 bip39gen mnemonic --hex=true --raw-entropy="0xacb5e5e6e31f4a122723da97e1404c28b331e643e9aa2dc4d3c1d1be50ce3264"
 ```
 
+Regenerate from binary entropy:
 ```bash
 bip39gen mnemonic --raw-entropy="0b10101100101101...."
 ```
 
-Use a specific cipher to generate mnemonics:
-
+With padding for insufficient entropy:
 ```bash
-bip39gen mnemonic --cipher sha256
+bip39gen mnemonic --raw-entropy="10101100101101" --cipher padding
 ```
 
-### Contributing
+## How Entropy Mixing Works
 
-Contributions are welcome! If you'd like to report bugs or suggest improvements, please open an issue or submit a pull request.
+The tool uses a hybrid entropy system for enhanced security:
 
+1. **Computer Entropy**: Cryptographically secure random bytes from `crypto/rand`
+2. **User Entropy**: Optional input provided via `--entropy` flag
+3. **XOR Operation**: Both sources are combined using XOR, ensuring security even if one source is weak
+
+In verbose mode, each word shows the XOR operation:
+```
+COMPUTER       HUMAN          BIN        DEC   BIP39 WORD
+00010101001 ⊕ 00000000000 = 00010101001 -> 169 -> benefit
+```
+
+## Security
+
+- Uses cryptographically secure random generation via Go's `crypto/rand`
+- BIP39 wordlist integrity verified on startup (CRC32 checksum: `c1dbd296`)
+- Each word maps to an 11-bit index (2^11 = 2048 words in the BIP39 wordlist)
+- Comprehensive test vectors for validation
+
+## Contributing
+
+Contributions are welcome! Please open an issue or submit a pull request on [GitHub](https://github.com/KiraCore/tools).

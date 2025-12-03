@@ -1,0 +1,6 @@
+dist/
+*.deb
+scripts/
+.git/
+README.md
+Makefile
